@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -9,11 +9,24 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-const items = [
-  { title: "Painel", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Associados", url: "/associados", icon: Users },
-  { title: "Planos", url: "/planos", icon: FileText },
-  { title: "Financeiro", url: "/financeiro", icon: Wallet },
+const groups: { label: string; items: { title: string; url: string; icon: any }[] }[] = [
+  {
+    label: "Associados",
+    items: [
+      { title: "Painel", url: "/dashboard", icon: LayoutDashboard },
+      { title: "Associados", url: "/associados", icon: Users },
+      { title: "Planos", url: "/planos", icon: FileText },
+      { title: "Mensalidades", url: "/financeiro", icon: Wallet },
+    ],
+  },
+  {
+    label: "Gestão Financeira",
+    items: [
+      { title: "Painel Financeiro", url: "/empresa-financeiro", icon: Building2 },
+      { title: "Contas a Pagar/Receber", url: "/contas", icon: Receipt },
+      { title: "Centros de Custo", url: "/centros-custo", icon: Layers },
+    ],
+  },
 ];
 
 function AppSidebar() {
@@ -40,23 +53,25 @@ function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Navegação</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {groups.map((g) => (
+          <SidebarGroup key={g.label}>
+            <SidebarGroupLabel>{g.label}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {g.items.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
+                      <Link to={item.url} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">

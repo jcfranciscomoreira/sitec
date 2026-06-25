@@ -14,7 +14,10 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated/planos'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
+import { Route as AuthenticatedEmpresaFinanceiroRouteImport } from './routes/_authenticated/empresa-financeiro'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedContasRouteImport } from './routes/_authenticated/contas'
+import { Route as AuthenticatedCentrosCustoRouteImport } from './routes/_authenticated/centros-custo'
 import { Route as AuthenticatedAssociadosRouteImport } from './routes/_authenticated/associados'
 
 const AuthRoute = AuthRouteImport.update({
@@ -41,11 +44,28 @@ const AuthenticatedFinanceiroRoute = AuthenticatedFinanceiroRouteImport.update({
   path: '/financeiro',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEmpresaFinanceiroRoute =
+  AuthenticatedEmpresaFinanceiroRouteImport.update({
+    id: '/empresa-financeiro',
+    path: '/empresa-financeiro',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedContasRoute = AuthenticatedContasRouteImport.update({
+  id: '/contas',
+  path: '/contas',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCentrosCustoRoute =
+  AuthenticatedCentrosCustoRouteImport.update({
+    id: '/centros-custo',
+    path: '/centros-custo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAssociadosRoute = AuthenticatedAssociadosRouteImport.update({
   id: '/associados',
   path: '/associados',
@@ -56,7 +76,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/associados': typeof AuthenticatedAssociadosRoute
+  '/centros-custo': typeof AuthenticatedCentrosCustoRoute
+  '/contas': typeof AuthenticatedContasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/planos': typeof AuthenticatedPlanosRoute
 }
@@ -64,7 +87,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/associados': typeof AuthenticatedAssociadosRoute
+  '/centros-custo': typeof AuthenticatedCentrosCustoRoute
+  '/contas': typeof AuthenticatedContasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/planos': typeof AuthenticatedPlanosRoute
 }
@@ -74,7 +100,10 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/associados': typeof AuthenticatedAssociadosRoute
+  '/_authenticated/centros-custo': typeof AuthenticatedCentrosCustoRoute
+  '/_authenticated/contas': typeof AuthenticatedContasRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
   '/_authenticated/planos': typeof AuthenticatedPlanosRoute
 }
@@ -84,18 +113,33 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/associados'
+    | '/centros-custo'
+    | '/contas'
     | '/dashboard'
+    | '/empresa-financeiro'
     | '/financeiro'
     | '/planos'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/associados' | '/dashboard' | '/financeiro' | '/planos'
+  to:
+    | '/'
+    | '/auth'
+    | '/associados'
+    | '/centros-custo'
+    | '/contas'
+    | '/dashboard'
+    | '/empresa-financeiro'
+    | '/financeiro'
+    | '/planos'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/associados'
+    | '/_authenticated/centros-custo'
+    | '/_authenticated/contas'
     | '/_authenticated/dashboard'
+    | '/_authenticated/empresa-financeiro'
     | '/_authenticated/financeiro'
     | '/_authenticated/planos'
   fileRoutesById: FileRoutesById
@@ -143,11 +187,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinanceiroRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/empresa-financeiro': {
+      id: '/_authenticated/empresa-financeiro'
+      path: '/empresa-financeiro'
+      fullPath: '/empresa-financeiro'
+      preLoaderRoute: typeof AuthenticatedEmpresaFinanceiroRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/contas': {
+      id: '/_authenticated/contas'
+      path: '/contas'
+      fullPath: '/contas'
+      preLoaderRoute: typeof AuthenticatedContasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/centros-custo': {
+      id: '/_authenticated/centros-custo'
+      path: '/centros-custo'
+      fullPath: '/centros-custo'
+      preLoaderRoute: typeof AuthenticatedCentrosCustoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/associados': {
@@ -162,14 +227,20 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssociadosRoute: typeof AuthenticatedAssociadosRoute
+  AuthenticatedCentrosCustoRoute: typeof AuthenticatedCentrosCustoRoute
+  AuthenticatedContasRoute: typeof AuthenticatedContasRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedEmpresaFinanceiroRoute: typeof AuthenticatedEmpresaFinanceiroRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
   AuthenticatedPlanosRoute: typeof AuthenticatedPlanosRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssociadosRoute: AuthenticatedAssociadosRoute,
+  AuthenticatedCentrosCustoRoute: AuthenticatedCentrosCustoRoute,
+  AuthenticatedContasRoute: AuthenticatedContasRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedEmpresaFinanceiroRoute: AuthenticatedEmpresaFinanceiroRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
   AuthenticatedPlanosRoute: AuthenticatedPlanosRoute,
 }
