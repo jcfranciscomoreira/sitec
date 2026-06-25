@@ -93,6 +93,114 @@ function AssociadosPage() {
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
 
+  const darBaixa = useMutation({
+    mutationFn: async (a: Associado) => {
+      const { data: pend, error } = await supabase
+        .from("mensalidades")
+        .select("id, competencia, valor")
+        .eq("associado_id", a.id)
+        .neq("status", "pago")
+        .neq("status", "cancelado")
+        .order("vencimento", { ascending: true })
+        .limit(1);
+      if (error) throw error;
+      if (!pend || pend.length === 0) throw new Error("Nenhuma mensalidade pendente para este associado.");
+      const m = pend[0];
+      const { error: e2 } = await supabase.from("mensalidades").update({
+        status: "pago",
+        data_pagamento: new Date().toISOString().slice(0, 10),
+        forma_pagamento: "dinheiro",
+      }).eq("id", m.id);
+      if (e2) throw e2;
+      return m;
+    },
+    onSuccess: (m) => {
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Baixa registrada", { description: `${competenciaLabel(m.competencia)} — ${brl(m.valor)}` });
+    },
+    onError: (e: any) => toast.error("Erro", { description: e.message }),
+  });
+
+  const gerarMens = useMutation({
+    mutationFn: async (a: Associado) => {
+      if (!a.plano_id || !a.planos) throw new Error("Associado sem plano vinculado.");
+      const hoje = new Date();
+      const competencia = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-01`;
+      const venc = new Date(hoje.getFullYear(), hoje.getMonth(), Math.min(a.dia_vencimento, 28))
+        .toISOString().slice(0, 10);
+      const { error, count } = await supabase.from("mensalidades").upsert([{
+        associado_id: a.id,
+        competencia,
+        valor: a.planos.valor_mensal,
+        vencimento: venc,
+        status: "pendente" as const,
+      }] as any, { onConflict: "associado_id,competencia", ignoreDuplicates: true, count: "exact" });
+      if (error) throw error;
+      return { count: count ?? 0, competencia };
+    },
+    onSuccess: (r) => {
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      if (r.count === 0) toast.info("Mensalidade já existia para este mês.");
+      else toast.success("Mensalidade gerada", { description: competenciaLabel(r.competencia) });
+    },
+    onError: (e: any) => toast.error("Erro", { description: e.message }),
+  });
+
+  async function imprimirRelatorio(a: Associado) {
+    const [{ data: deps }, { data: mens }] = await Promise.all([
+      supabase.from("dependentes").select("*").eq("associado_id", a.id).order("nome"),
+      supabase.from("mensalidades").select("*").eq("associado_id", a.id).order("competencia", { ascending: false }),
+    ]);
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) { toast.error("Permita pop-ups para imprimir."); return; }
+    const linha = (k: string, v: string) => `<tr><td style="padding:4px 8px;color:#666;width:180px">${k}</td><td style="padding:4px 8px">${v}</td></tr>`;
+    const depsRows = (deps ?? []).map((d: any) =>
+      `<tr><td>${d.nome}</td><td>${d.parentesco}</td><td>${d.data_nascimento ? fmtDate(d.data_nascimento) : "—"}</td><td>${d.cpf ?? "—"}</td></tr>`
+    ).join("") || `<tr><td colspan="4" style="text-align:center;color:#888;padding:8px">Nenhum dependente</td></tr>`;
+    const mensRows = (mens ?? []).map((m: any) =>
+      `<tr><td>${competenciaLabel(m.competencia)}</td><td>${fmtDate(m.vencimento)}</td><td>${brl(m.valor)}</td><td>${m.status}</td><td>${m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</td></tr>`
+    ).join("") || `<tr><td colspan="5" style="text-align:center;color:#888;padding:8px">Sem mensalidades</td></tr>`;
+    const totalPago = (mens ?? []).filter((m: any) => m.status === "pago").reduce((s: number, m: any) => s + Number(m.valor), 0);
+    const totalPend = (mens ?? []).filter((m: any) => m.status !== "pago" && m.status !== "cancelado").reduce((s: number, m: any) => s + Number(m.valor), 0);
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Relatório — ${a.nome}</title>
+      <style>
+        body{font-family:Georgia,serif;color:#111;padding:32px;max-width:820px;margin:0 auto}
+        h1{font-size:22px;margin:0 0 4px;border-bottom:2px solid #1e3a5f;padding-bottom:8px;color:#1e3a5f}
+        h2{font-size:14px;margin:24px 0 8px;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px}
+        table{width:100%;border-collapse:collapse;font-size:13px}
+        th,td{border:1px solid #ddd;padding:6px 8px;text-align:left}
+        th{background:#f4f4f4}
+        .meta{font-size:12px;color:#666;margin-bottom:16px}
+        .totais{margin-top:12px;font-size:13px}
+      </style></head><body>
+      <h1>Relatório do Associado</h1>
+      <div class="meta">Gerado em ${new Date().toLocaleString("pt-BR")} · Memorial</div>
+      <h2>Dados cadastrais</h2>
+      <table>
+        ${linha("Código", `#${String(a.codigo).padStart(4, "0")}`)}
+        ${linha("Nome", a.nome)}
+        ${linha("CPF / RG", `${a.cpf ?? "—"} / ${a.rg ?? "—"}`)}
+        ${linha("Nascimento", a.data_nascimento ? fmtDate(a.data_nascimento) : "—")}
+        ${linha("Telefone", a.telefone ?? "—")}
+        ${linha("E-mail", a.email ?? "—")}
+        ${linha("Endereço", `${a.endereco ?? "—"} — ${a.cidade ?? ""}/${a.estado ?? ""} ${a.cep ?? ""}`)}
+        ${linha("Plano", a.planos ? `${a.planos.nome} — ${brl(a.planos.valor_mensal)}` : "—")}
+        ${linha("Adesão", fmtDate(a.data_adesao))}
+        ${linha("Vencimento", `Dia ${a.dia_vencimento}`)}
+        ${linha("Status", a.status)}
+      </table>
+      <h2>Dependentes</h2>
+      <table><thead><tr><th>Nome</th><th>Parentesco</th><th>Nascimento</th><th>CPF</th></tr></thead><tbody>${depsRows}</tbody></table>
+      <h2>Histórico financeiro</h2>
+      <table><thead><tr><th>Competência</th><th>Vencimento</th><th>Valor</th><th>Status</th><th>Pagamento</th></tr></thead><tbody>${mensRows}</tbody></table>
+      <div class="totais"><strong>Total pago:</strong> ${brl(totalPago)} &nbsp;·&nbsp; <strong>Em aberto:</strong> ${brl(totalPend)}</div>
+      <script>window.onload=()=>{window.print();}</script>
+      </body></html>`);
+    w.document.close();
+  }
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
