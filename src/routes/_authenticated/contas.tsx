@@ -72,12 +72,12 @@ function ContasPage() {
   });
 
   const save = useMutation({
-    mutationFn: async (payload: Partial<Conta>) => {
+    mutationFn: async (payload: any) => {
       if (editing) {
         const { error } = await supabase.from("contas_financeiras").update(payload).eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("contas_financeiras").insert(payload as any);
+        const { error } = await supabase.from("contas_financeiras").insert(payload);
         if (error) throw error;
       }
     },
