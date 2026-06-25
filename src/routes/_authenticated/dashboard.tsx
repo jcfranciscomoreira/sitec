@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Users, AlertTriangle, CircleDollarSign, TrendingUp } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Users, AlertTriangle, CircleDollarSign, TrendingUp, Wallet } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -12,30 +15,50 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
+function buildMonthOptions(count = 12) {
+  const opts: { value: string; label: string }[] = [];
+  const ref = new Date();
+  for (let i = 0; i < count; i++) {
+    const d = new Date(ref.getFullYear(), ref.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    opts.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+  return opts;
+}
+
 function Dashboard() {
+  const monthOptions = useMemo(() => buildMonthOptions(12), []);
+  const [mes, setMes] = useState<string>(monthOptions[0].value);
+
+  const inicioMes = `${mes}-01`;
+  const [ano, m] = mes.split("-").map(Number);
+  const proxMes = new Date(ano, m, 1).toISOString().slice(0, 10);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard"],
+    queryKey: ["dashboard", mes],
     queryFn: async () => {
       const hojeIso = new Date().toISOString().slice(0, 10);
-      const inicioMes = new Date();
-      inicioMes.setDate(1);
-      const inicioMesIso = inicioMes.toISOString().slice(0, 10);
 
-      const [assocAtivos, assocTotal, pagasMes, pendentes, atrasadas, ultimas] = await Promise.all([
+      const [assocAtivos, assocTotal, pagasMes, pendentes, atrasadas, ultimas, entradasMes] = await Promise.all([
         supabase.from("associados").select("*", { count: "exact", head: true }).eq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }),
-        supabase.from("mensalidades").select("valor").eq("status", "pago").gte("data_pagamento", inicioMesIso),
+        supabase.from("mensalidades").select("valor").eq("status", "pago").gte("data_pagamento", inicioMes).lt("data_pagamento", proxMes),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).eq("status", "pendente"),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).in("status", ["pendente", "atrasado"]).lt("vencimento", hojeIso),
-        supabase.from("mensalidades").select("id, valor, vencimento, status, associados(nome)").order("created_at", { ascending: false }).limit(8),
+        supabase.from("mensalidades").select("id, valor, vencimento, status, associados(nome)").gte("vencimento", inicioMes).lt("vencimento", proxMes).order("vencimento", { ascending: false }).limit(10),
+        supabase.from("contas_financeiras").select("valor").eq("tipo", "entrada").eq("status", "pago").gte("data_pagamento", inicioMes).lt("data_pagamento", proxMes),
       ]);
 
-      const receitaMes = (pagasMes.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
+      const receitaPlanos = (pagasMes.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
+      const outrasReceitas = (entradasMes.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
 
       return {
         ativos: assocAtivos.count ?? 0,
         total: assocTotal.count ?? 0,
-        receitaMes,
+        receitaPlanos,
+        outrasReceitas,
+        totalRecebido: receitaPlanos + outrasReceitas,
         pendentes: pendentes.count ?? 0,
         atrasadas: atrasadas.count ?? 0,
         ultimas: ultimas.data ?? [],
@@ -45,14 +68,30 @@ function Dashboard() {
 
   const cards = [
     { label: "Associados ativos", value: data?.ativos ?? 0, sub: `${data?.total ?? 0} no total`, icon: Users, tone: "text-primary" },
-    { label: "Receita do mês", value: brl(data?.receitaMes ?? 0), sub: "Mensalidades quitadas", icon: TrendingUp, tone: "text-success" },
+    { label: "Receita de planos", value: brl(data?.receitaPlanos ?? 0), sub: "Mensalidades quitadas no mês", icon: TrendingUp, tone: "text-success" },
+    { label: "Outras receitas", value: brl(data?.outrasReceitas ?? 0), sub: "Entradas financeiras", icon: Wallet, tone: "text-gold" },
+    { label: "Total recebido", value: brl(data?.totalRecebido ?? 0), sub: "Planos + outras entradas", icon: CircleDollarSign, tone: "text-primary" },
     { label: "Pendentes", value: data?.pendentes ?? 0, sub: "Aguardando pagamento", icon: CircleDollarSign, tone: "text-gold" },
     { label: "Em atraso", value: data?.atrasadas ?? 0, sub: "Inadimplência ativa", icon: AlertTriangle, tone: "text-destructive" },
   ];
 
   return (
     <AppShell title="Painel de controle" subtitle="Visão geral do seu plano funerário">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Mês de referência</Label>
+          <Select value={mes} onValueChange={setMes}>
+            <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {cards.map((c) => (
           <Card key={c.label} className="border-border/60 shadow-soft">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -71,11 +110,11 @@ function Dashboard() {
 
       <Card className="mt-6 border-border/60 shadow-soft">
         <CardHeader>
-          <CardTitle className="font-serif">Últimas mensalidades</CardTitle>
+          <CardTitle className="font-serif">Mensalidades do mês</CardTitle>
         </CardHeader>
         <CardContent>
           {(!data?.ultimas || data.ultimas.length === 0) ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Nenhum lançamento ainda.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">Nenhum lançamento no período.</p>
           ) : (
             <div className="divide-y divide-border">
               {data.ultimas.map((m: any) => (
