@@ -321,9 +321,14 @@ function AssociadosPage() {
                   <TableCell>dia {a.dia_vencimento}</TableCell>
                   <TableCell><StatusBadge status={a.status} /></TableCell>
                   <TableCell className="text-right">
-                    <Button size="icon" variant="ghost" title="Dependentes" onClick={() => setDepOpen(a)}><Users className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" title="Editar" onClick={() => { setEditing(a); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" title="Excluir" onClick={() => { if (confirm(`Excluir ${a.nome}?`)) del.mutate(a.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <div className="flex justify-end gap-1">
+                      <Button size="icon" variant="ghost" title="Dar baixa (último pendente)" onClick={() => darBaixa.mutate(a)} disabled={darBaixa.isPending}><CheckCircle2 className="h-4 w-4 text-success" /></Button>
+                      <Button size="icon" variant="ghost" title="Gerar mensalidade do mês" onClick={() => gerarMens.mutate(a)} disabled={gerarMens.isPending}><Plus className="h-4 w-4 text-gold" /></Button>
+                      <Button size="icon" variant="ghost" title="Imprimir relatório" onClick={() => imprimirRelatorio(a)}><Printer className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" title="Dependentes" onClick={() => setDepOpen(a)}><Users className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" title="Editar" onClick={() => { setEditing(a); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" title="Excluir" onClick={() => { if (confirm(`Excluir ${a.nome}?`)) del.mutate(a.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
