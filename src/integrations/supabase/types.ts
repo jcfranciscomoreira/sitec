@@ -91,6 +91,98 @@ export type Database = {
           },
         ]
       }
+      centros_custo: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contas_financeiras: {
+        Row: {
+          categoria: string | null
+          centro_custo_id: string | null
+          created_at: string
+          created_by: string | null
+          data_emissao: string
+          data_pagamento: string | null
+          descricao: string
+          forma_pagamento: string | null
+          fornecedor_cliente: string | null
+          id: string
+          observacoes: string | null
+          status: Database["public"]["Enums"]["status_conta"]
+          tipo: Database["public"]["Enums"]["tipo_movimento"]
+          updated_at: string
+          valor: number
+          vencimento: string
+        }
+        Insert: {
+          categoria?: string | null
+          centro_custo_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string
+          data_pagamento?: string | null
+          descricao: string
+          forma_pagamento?: string | null
+          fornecedor_cliente?: string | null
+          id?: string
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["status_conta"]
+          tipo: Database["public"]["Enums"]["tipo_movimento"]
+          updated_at?: string
+          valor: number
+          vencimento: string
+        }
+        Update: {
+          categoria?: string | null
+          centro_custo_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string
+          data_pagamento?: string | null
+          descricao?: string
+          forma_pagamento?: string | null
+          fornecedor_cliente?: string | null
+          id?: string
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["status_conta"]
+          tipo?: Database["public"]["Enums"]["tipo_movimento"]
+          updated_at?: string
+          valor?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contas_financeiras_centro_custo_id_fkey"
+            columns: ["centro_custo_id"]
+            isOneToOne: false
+            referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dependentes: {
         Row: {
           associado_id: string
@@ -279,7 +371,9 @@ export type Database = {
     Enums: {
       app_role: "admin" | "operador"
       status_associado: "ativo" | "inativo" | "suspenso"
+      status_conta: "pendente" | "pago" | "atrasado" | "cancelado"
       status_mensalidade: "pendente" | "pago" | "atrasado" | "cancelado"
+      tipo_movimento: "entrada" | "saida"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -409,7 +503,9 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "operador"],
       status_associado: ["ativo", "inativo", "suspenso"],
+      status_conta: ["pendente", "pago", "atrasado", "cancelado"],
       status_mensalidade: ["pendente", "pago", "atrasado", "cancelado"],
+      tipo_movimento: ["entrada", "saida"],
     },
   },
 } as const
