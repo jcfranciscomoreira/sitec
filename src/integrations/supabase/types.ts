@@ -14,16 +14,272 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      associados: {
+        Row: {
+          cep: string | null
+          cidade: string | null
+          codigo: number
+          cpf: string | null
+          created_at: string
+          created_by: string | null
+          data_adesao: string
+          data_nascimento: string | null
+          dia_vencimento: number
+          email: string | null
+          endereco: string | null
+          estado: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          plano_id: string | null
+          rg: string | null
+          status: Database["public"]["Enums"]["status_associado"]
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          cep?: string | null
+          cidade?: string | null
+          codigo?: number
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_adesao?: string
+          data_nascimento?: string | null
+          dia_vencimento?: number
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          plano_id?: string | null
+          rg?: string | null
+          status?: Database["public"]["Enums"]["status_associado"]
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cep?: string | null
+          cidade?: string | null
+          codigo?: number
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_adesao?: string
+          data_nascimento?: string | null
+          dia_vencimento?: number
+          email?: string | null
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          plano_id?: string | null
+          rg?: string | null
+          status?: Database["public"]["Enums"]["status_associado"]
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "associados_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dependentes: {
+        Row: {
+          associado_id: string
+          cpf: string | null
+          created_at: string
+          data_nascimento: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          parentesco: string
+          updated_at: string
+        }
+        Insert: {
+          associado_id: string
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          parentesco: string
+          updated_at?: string
+        }
+        Update: {
+          associado_id?: string
+          cpf?: string | null
+          created_at?: string
+          data_nascimento?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          parentesco?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dependentes_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mensalidades: {
+        Row: {
+          associado_id: string
+          competencia: string
+          created_at: string
+          data_pagamento: string | null
+          forma_pagamento: string | null
+          id: string
+          observacoes: string | null
+          status: Database["public"]["Enums"]["status_mensalidade"]
+          updated_at: string
+          valor: number
+          vencimento: string
+        }
+        Insert: {
+          associado_id: string
+          competencia: string
+          created_at?: string
+          data_pagamento?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["status_mensalidade"]
+          updated_at?: string
+          valor: number
+          vencimento: string
+        }
+        Update: {
+          associado_id?: string
+          competencia?: string
+          created_at?: string
+          data_pagamento?: string | null
+          forma_pagamento?: string | null
+          id?: string
+          observacoes?: string | null
+          status?: Database["public"]["Enums"]["status_mensalidade"]
+          updated_at?: string
+          valor?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensalidades_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planos: {
+        Row: {
+          ativo: boolean
+          cobertura: string | null
+          created_at: string
+          descricao: string | null
+          id: string
+          max_dependentes: number
+          nome: string
+          updated_at: string
+          valor_mensal: number
+        }
+        Insert: {
+          ativo?: boolean
+          cobertura?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          max_dependentes?: number
+          nome: string
+          updated_at?: string
+          valor_mensal: number
+        }
+        Update: {
+          ativo?: boolean
+          cobertura?: string | null
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          max_dependentes?: number
+          nome?: string
+          updated_at?: string
+          valor_mensal?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "operador"
+      status_associado: "ativo" | "inativo" | "suspenso"
+      status_mensalidade: "pendente" | "pago" | "atrasado" | "cancelado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +406,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "operador"],
+      status_associado: ["ativo", "inativo", "suspenso"],
+      status_mensalidade: ["pendente", "pago", "atrasado", "cancelado"],
+    },
   },
 } as const
