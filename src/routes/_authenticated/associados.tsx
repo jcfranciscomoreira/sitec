@@ -1,8 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Users, Search, CheckCircle2, FileText, Printer } from "lucide-react";
-import { competenciaLabel } from "@/lib/format";
+import { Plus, Pencil, Trash2, Users, Search, CheckCircle2, Printer } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
