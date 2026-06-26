@@ -81,29 +81,15 @@ function BaixaWizard() {
               const fd = new FormData(e.currentTarget);
               const agente = String(fd.get("agente") || "").trim();
               const data = String(fd.get("data") || "");
-              const forma = String(fd.get("forma") || "dinheiro");
               if (!agente || !data) { toast.error("Preencha agente e data."); return; }
-              setSession({ agente, data, forma, responsavel });
+              setSession({ agente, data, responsavel });
               setItems([]);
               setStep(2);
             }}
           >
             <div className="space-y-2"><Label>Agente de recebimento</Label><Input name="agente" placeholder="Nome do cobrador" required /></div>
             <div className="space-y-2"><Label>Data do recebimento</Label><Input name="data" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
-            <div className="space-y-2">
-              <Label>Forma de pagamento</Label>
-              <Select name="forma" defaultValue="dinheiro">
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="cartao">Cartão</SelectItem>
-                  <SelectItem value="boleto">Boleto</SelectItem>
-                  <SelectItem value="transferencia">Transferência</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2"><Label>Responsável pela baixa</Label><Input value={responsavel} disabled /></div>
+            <div className="space-y-2 md:col-span-2"><Label>Responsável pela baixa</Label><Input value={responsavel} disabled /></div>
             <div className="md:col-span-2"><Button type="submit"><Plus className="mr-2 h-4 w-4" />Iniciar baixa</Button></div>
           </form>
         </CardContent>
