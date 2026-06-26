@@ -204,7 +204,6 @@ function AssociadosPage() {
         <div><b>Mensalidade:</b> ${brl(plano.valor_mensal)}</div>
         <div><b>Adesão:</b> ${fmtDate(a.data_adesao)}</div>
         <div><b>Vencimento mensal:</b> dia ${a.dia_vencimento}</div>
-        <div><b>Máx. dependentes:</b> ${plano.max_dependentes}</div>
         <div><b>Status:</b> ${a.status}</div>
       </div>
       ${plano.descricao ? `<p style="margin-top:8px"><b>Descrição:</b> ${plano.descricao}</p>` : ""}
