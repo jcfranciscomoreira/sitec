@@ -317,6 +317,14 @@ function AssociadosPage() {
                 <Button type="submit" disabled={upsert.isPending}>{upsert.isPending ? "Salvando..." : "Salvar"}</Button>
               </DialogFooter>
             </form>
+            <div className="mt-4 border-t border-border pt-4">
+              <h3 className="font-serif text-base mb-2">Dependentes</h3>
+              {editing?.id ? (
+                <DependentesSection associadoId={editing.id} />
+              ) : (
+                <p className="text-sm text-muted-foreground">Salve o associado para incluir dependentes.</p>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       }
