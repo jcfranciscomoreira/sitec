@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Users, Search, CheckCircle2, Printer } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, Search, CheckCircle2, Printer, Receipt } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +42,7 @@ function AssociadosPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Associado | null>(null);
   const [depOpen, setDepOpen] = useState<Associado | null>(null);
+  const [mensOpen, setMensOpen] = useState<Associado | null>(null);
 
   const { data: associados = [], isLoading } = useQuery({
     queryKey: ["associados"],
@@ -325,6 +326,7 @@ function AssociadosPage() {
                       <Button size="icon" variant="ghost" title="Dar baixa (último pendente)" onClick={() => darBaixa.mutate(a)} disabled={darBaixa.isPending}><CheckCircle2 className="h-4 w-4 text-success" /></Button>
                       <Button size="icon" variant="ghost" title="Gerar mensalidade do mês" onClick={() => gerarMens.mutate(a)} disabled={gerarMens.isPending}><Plus className="h-4 w-4 text-gold" /></Button>
                       <Button size="icon" variant="ghost" title="Imprimir relatório" onClick={() => imprimirRelatorio(a)}><Printer className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" title="Mensalidades geradas" onClick={() => setMensOpen(a)}><Receipt className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Dependentes" onClick={() => setDepOpen(a)}><Users className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Editar" onClick={() => { setEditing(a); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Excluir" onClick={() => { if (confirm(`Excluir ${a.nome}?`)) del.mutate(a.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
@@ -338,6 +340,7 @@ function AssociadosPage() {
       </Card>
 
       {depOpen && <DependentesDialog associado={depOpen} onClose={() => setDepOpen(null)} />}
+      {mensOpen && <MensalidadesDialog associado={mensOpen} onClose={() => setMensOpen(null)} />}
     </AppShell>
   );
 }
@@ -428,6 +431,111 @@ function DependentesDialog({ associado, onClose }: { associado: any; onClose: ()
             </div>
           ))}
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MensalidadesDialog({ associado, onClose }: { associado: Associado; onClose: () => void }) {
+  const qc = useQueryClient();
+  const { data: mens = [], isLoading } = useQuery({
+    queryKey: ["mensalidades-associado", associado.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("*")
+        .eq("associado_id", associado.id)
+        .order("competencia", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const baixar = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("mensalidades").update({
+        status: "pago",
+        data_pagamento: new Date().toISOString().slice(0, 10),
+        forma_pagamento: "dinheiro",
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["mensalidades-associado", associado.id] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      toast.success("Baixa registrada");
+    },
+    onError: (e: any) => toast.error("Erro", { description: e.message }),
+  });
+
+  const cancelar = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("mensalidades").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["mensalidades-associado", associado.id] });
+      toast.success("Mensalidade removida");
+    },
+    onError: (e: any) => toast.error("Erro", { description: e.message }),
+  });
+
+  const totalPago = mens.filter((m) => m.status === "pago").reduce((s, m) => s + Number(m.valor), 0);
+  const totalAberto = mens.filter((m) => m.status !== "pago" && m.status !== "cancelado").reduce((s, m) => s + Number(m.valor), 0);
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-serif">Mensalidades de {associado.nome}</DialogTitle>
+        </DialogHeader>
+        <div className="flex gap-4 text-sm">
+          <div className="rounded border border-border px-3 py-2">
+            <div className="text-xs text-muted-foreground">Total pago</div>
+            <div className="font-semibold text-success">{brl(totalPago)}</div>
+          </div>
+          <div className="rounded border border-border px-3 py-2">
+            <div className="text-xs text-muted-foreground">Em aberto</div>
+            <div className="font-semibold text-gold">{brl(totalAberto)}</div>
+          </div>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Competência</TableHead>
+              <TableHead>Vencimento</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Pagamento</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {!isLoading && mens.length === 0 && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Nenhuma mensalidade gerada.</TableCell></TableRow>}
+            {mens.map((m) => (
+              <TableRow key={m.id}>
+                <TableCell>{competenciaLabel(m.competencia)}</TableCell>
+                <TableCell>{fmtDate(m.vencimento)}</TableCell>
+                <TableCell>{brl(m.valor)}</TableCell>
+                <TableCell><StatusBadge status={m.status} /></TableCell>
+                <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
+                <TableCell className="text-right">
+                  <div className="flex justify-end gap-1">
+                    {m.status !== "pago" && m.status !== "cancelado" && (
+                      <Button size="icon" variant="ghost" title="Dar baixa" onClick={() => baixar.mutate(m.id)} disabled={baixar.isPending}>
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                      </Button>
+                    )}
+                    <Button size="icon" variant="ghost" title="Excluir" onClick={() => { if (confirm("Excluir mensalidade?")) cancelar.mutate(m.id); }}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </DialogContent>
     </Dialog>
   );

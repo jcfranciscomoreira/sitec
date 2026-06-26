@@ -34,6 +34,18 @@ function PainelFinanceiroPage() {
     },
   });
 
+  const { data: planosRev = [] } = useQuery({
+    queryKey: ["receitas-por-plano"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("valor, status, data_pagamento, competencia, associados(planos(nome))")
+        .eq("status", "pago");
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
   const stats = useMemo(() => {
     const hoje = new Date().toISOString().slice(0, 10);
     const mes = hoje.slice(0, 7);
@@ -71,6 +83,31 @@ function PainelFinanceiroPage() {
     return { recebidoMes, pagoMes, aReceber, aPagar, atrasadas, centros, maxCentro, serie, maxSerie, saldoMes: recebidoMes - pagoMes };
   }, [rows]);
 
+  const planoStats = useMemo(() => {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const mes = hoje.slice(0, 7);
+    const porPlano = new Map<string, { totalGeral: number; totalMes: number; qtdMes: number }>();
+    let totalMesGeral = 0;
+    for (const m of planosRev) {
+      const nome = m.associados?.planos?.nome ?? "Sem plano";
+      const v = Number(m.valor);
+      const cur = porPlano.get(nome) ?? { totalGeral: 0, totalMes: 0, qtdMes: 0 };
+      cur.totalGeral += v;
+      if (m.data_pagamento && m.data_pagamento.slice(0, 7) === mes) {
+        cur.totalMes += v;
+        cur.qtdMes += 1;
+        totalMesGeral += v;
+      }
+      porPlano.set(nome, cur);
+    }
+    const lista = Array.from(porPlano.entries())
+      .map(([nome, v]) => ({ nome, ...v }))
+      .sort((a, b) => b.totalMes - a.totalMes);
+    const maxMes = Math.max(1, ...lista.map((l) => l.totalMes));
+    return { lista, maxMes, totalMesGeral };
+  }, [planosRev]);
+
+
   return (
     <AppShell title="Painel Financeiro" subtitle="Resultados consolidados da empresa">
       {isLoading && <p className="text-muted-foreground">Carregando...</p>}
@@ -81,6 +118,36 @@ function PainelFinanceiroPage() {
         <KPI label="Saldo do mês" value={brl(stats.saldoMes)} icon={<Wallet className="h-5 w-5 text-gold" />} tone={stats.saldoMes >= 0 ? "success" : "destructive"} />
         <KPI label="Vencidas em aberto" value={String(stats.atrasadas.length)} icon={<AlertTriangle className="h-5 w-5 text-destructive" />} tone="destructive" />
       </div>
+
+      <Card className="mt-6 border-border/60 shadow-soft">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="font-serif">Receitas por plano (mensalidades pagas)</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Total do mês: <span className="font-semibold text-success">{brl(planoStats.totalMesGeral)}</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {planoStats.lista.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma mensalidade paga ainda.</p>}
+          <div className="space-y-3">
+            {planoStats.lista.map((p) => (
+              <div key={p.nome}>
+                <div className="mb-1 flex items-center justify-between text-sm">
+                  <span className="font-medium">{p.nome}</span>
+                  <span className="text-muted-foreground">
+                    <span className="mr-3">{p.qtdMes} pgto(s) no mês</span>
+                    <span className="font-semibold text-success">{brl(p.totalMes)}</span>
+                    <span className="ml-3 text-xs">acum: {brl(p.totalGeral)}</span>
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded bg-muted">
+                  <div className="h-full bg-success" style={{ width: `${(p.totalMes / planoStats.maxMes) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card className="border-border/60 shadow-soft">
