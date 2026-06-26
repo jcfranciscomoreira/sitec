@@ -328,7 +328,7 @@ function imprimirRelatorio(session: Session, items: RecebItem[]) {
   const total = items.reduce((s, i) => s + i.valorRecebido, 0);
   const rows = items.map((i) => `
     <tr>
-      <td>${i.codigo}</td>
+      <td>#${i.codigo}</td>
       <td>${i.associado}<br><span class="muted">#${String(i.codAssoc).padStart(4, "0")}</span></td>
       <td>${competenciaLabel(i.competencia)}</td>
       <td>${fmtDate(i.vencimento)}</td>
