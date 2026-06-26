@@ -231,6 +231,7 @@ export type Database = {
         Row: {
           agente_recebimento: string | null
           associado_id: string
+          codigo: number
           competencia: string
           created_at: string
           data_pagamento: string | null
@@ -245,6 +246,7 @@ export type Database = {
         Insert: {
           agente_recebimento?: string | null
           associado_id: string
+          codigo?: number
           competencia: string
           created_at?: string
           data_pagamento?: string | null
@@ -259,6 +261,7 @@ export type Database = {
         Update: {
           agente_recebimento?: string | null
           associado_id?: string
+          codigo?: number
           competencia?: string
           created_at?: string
           data_pagamento?: string | null
