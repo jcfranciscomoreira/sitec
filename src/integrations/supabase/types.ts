@@ -285,6 +285,7 @@ export type Database = {
           descricao: string | null
           id: string
           nome: string
+          taxa_adesao: number
           updated_at: string
           valor_mensal: number
         }
@@ -295,6 +296,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome: string
+          taxa_adesao?: number
           updated_at?: string
           valor_mensal: number
         }
@@ -305,6 +307,7 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome?: string
+          taxa_adesao?: number
           updated_at?: string
           valor_mensal?: number
         }

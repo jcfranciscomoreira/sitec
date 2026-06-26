@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,12 +36,15 @@ type Dependente = {
   data_nascimento: string | null; parentesco: string; observacoes: string | null;
 };
 
+type PendingDep = { nome: string; parentesco: string; data_nascimento: string; cpf: string };
+
 function AssociadosPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Associado | null>(null);
   const [mensOpen, setMensOpen] = useState<Associado | null>(null);
+  const [pendingDeps, setPendingDeps] = useState<PendingDep[]>([]);
 
   const { data: associados = [], isLoading } = useQuery({
     queryKey: ["associados"],
@@ -65,20 +68,33 @@ function AssociadosPage() {
   });
 
   const upsert = useMutation({
-    mutationFn: async (a: Partial<Associado> & { plano_id_form?: string }) => {
+    mutationFn: async (a: Partial<Associado> & { plano_id_form?: string; _pendingDeps?: PendingDep[] }) => {
+      const pendings = a._pendingDeps ?? [];
       const payload: any = { ...a };
+      delete payload._pendingDeps;
       if (a.plano_id_form !== undefined) { payload.plano_id = a.plano_id_form || null; delete payload.plano_id_form; }
       if (a.id) {
         const { error } = await supabase.from("associados").update(payload).eq("id", a.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("associados").insert(payload);
+        const { data: inserted, error } = await supabase.from("associados").insert(payload).select("id").single();
         if (error) throw error;
+        if (pendings.length && inserted?.id) {
+          const rows = pendings.map((d) => ({
+            associado_id: inserted.id,
+            nome: d.nome,
+            parentesco: d.parentesco,
+            data_nascimento: d.data_nascimento || null,
+            cpf: d.cpf || null,
+          }));
+          const { error: depErr } = await supabase.from("dependentes").insert(rows);
+          if (depErr) throw depErr;
+        }
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["associados"] });
-      setOpen(false); setEditing(null);
+      setOpen(false); setEditing(null); setPendingDeps([]);
       toast.success("Associado salvo");
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
@@ -92,6 +108,37 @@ function AssociadosPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["associados"] }); toast.success("Associado excluído"); },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
+
+  async function imprimirCarteirinha(a: Associado) {
+    const w = window.open("", "_blank", "width=600,height=400");
+    if (!w) { toast.error("Permita pop-ups para imprimir."); return; }
+    const codigo = `#${String(a.codigo).padStart(4, "0")}`;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Carteirinha — ${a.nome}</title>
+      <style>
+        body{font-family:Georgia,serif;margin:0;padding:24px;background:#eee}
+        .card{width:340px;height:210px;margin:20px auto;background:linear-gradient(135deg,#1e3a5f 0%,#2c5282 100%);color:#fff;border-radius:14px;padding:18px 22px;box-shadow:0 8px 24px rgba(0,0,0,.2);position:relative;font-family:Georgia,serif}
+        .brand{font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85}
+        .title{font-size:14px;margin-top:2px;color:#d4af37;letter-spacing:1px}
+        .label{font-size:9px;text-transform:uppercase;letter-spacing:2px;opacity:.7;margin-top:18px}
+        .value{font-size:18px;font-weight:bold;margin-top:2px}
+        .codigo{position:absolute;bottom:18px;right:22px;font-family:monospace;font-size:14px;background:#d4af37;color:#1e3a5f;padding:4px 10px;border-radius:6px;font-weight:bold}
+        .plano{position:absolute;bottom:18px;left:22px;font-size:11px;opacity:.85}
+        @media print{body{background:#fff;padding:0}.card{box-shadow:none;margin:0}}
+      </style></head><body>
+      <div class="card">
+        <div class="brand">Memorial</div>
+        <div class="title">Carteirinha do Associado</div>
+        <div class="label">Nome</div>
+        <div class="value">${a.nome}</div>
+        <div class="plano">${a.planos?.nome ?? "Plano não vinculado"}</div>
+        <div class="codigo">${codigo}</div>
+      </div>
+      <script>window.onload=()=>{window.print();}</script>
+      </body></html>`);
+    w.document.close();
+  }
+
+
 
 
   async function imprimirRelatorio(a: Associado) {
@@ -258,6 +305,7 @@ function AssociadosPage() {
       dia_vencimento: Number(fd.get("dia_vencimento") || 10),
       status: (fd.get("status") as any) || "ativo",
       observacoes: get("observacoes"),
+      _pendingDeps: editing?.id ? undefined : pendingDeps,
     });
   }
 
@@ -271,7 +319,7 @@ function AssociadosPage() {
       title="Associados"
       subtitle="Cadastro de titulares e dependentes"
       actions={
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setPendingDeps([]); } }}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Novo associado</Button>
           </DialogTrigger>
@@ -322,7 +370,7 @@ function AssociadosPage() {
               {editing?.id ? (
                 <DependentesSection associadoId={editing.id} />
               ) : (
-                <p className="text-sm text-muted-foreground">Salve o associado para incluir dependentes.</p>
+                <PendingDependentesSection list={pendingDeps} onChange={setPendingDeps} />
               )}
             </div>
           </DialogContent>
@@ -366,6 +414,7 @@ function AssociadosPage() {
                   <TableCell><StatusBadge status={a.status} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button size="icon" variant="ghost" title="Imprimir carteirinha" onClick={() => imprimirCarteirinha(a)}><CreditCard className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Gerar contrato" onClick={() => gerarContrato(a)}><FileSignature className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Imprimir relatório" onClick={() => imprimirRelatorio(a)}><Printer className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Mensalidades geradas" onClick={() => setMensOpen(a)}><Receipt className="h-4 w-4" /></Button>
@@ -716,3 +765,72 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
     </Dialog>
   );
 }
+
+function PendingDependentesSection({ list, onChange }: { list: PendingDep[]; onChange: (l: PendingDep[]) => void }) {
+  const [adding, setAdding] = useState(false);
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const editing = editIdx !== null ? list[editIdx] : null;
+  const form = editing || (adding ? { nome: "", parentesco: "", data_nascimento: "", cpf: "" } : null);
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">Os dependentes serão salvos junto com o associado.</p>
+      {!form && (
+        <Button type="button" variant="outline" size="sm" onClick={() => setAdding(true)}>
+          <Plus className="mr-2 h-4 w-4" />Adicionar dependente
+        </Button>
+      )}
+      {form && (
+        <div
+          className="space-y-3 rounded-md border border-border p-4"
+          onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+        >
+          <div className="text-sm font-medium">{editing ? "Editar dependente" : "Novo dependente"}</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2 col-span-2"><Label>Nome</Label><Input id="pd_nome" defaultValue={form.nome} /></div>
+            <div className="space-y-2"><Label>Parentesco</Label><Input id="pd_par" defaultValue={form.parentesco} placeholder="Cônjuge, Filho(a)..." /></div>
+            <div className="space-y-2"><Label>Data de nascimento</Label><Input id="pd_nasc" type="date" defaultValue={form.data_nascimento} /></div>
+            <div className="space-y-2 col-span-2"><Label>CPF</Label><Input id="pd_cpf" defaultValue={form.cpf} /></div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => { setAdding(false); setEditIdx(null); }}>Cancelar</Button>
+            <Button type="button" onClick={() => {
+              const nome = (document.getElementById("pd_nome") as HTMLInputElement)?.value.trim();
+              const parentesco = (document.getElementById("pd_par") as HTMLInputElement)?.value.trim();
+              const data_nascimento = (document.getElementById("pd_nasc") as HTMLInputElement)?.value || "";
+              const cpf = (document.getElementById("pd_cpf") as HTMLInputElement)?.value || "";
+              if (!nome || !parentesco) { toast.error("Informe nome e parentesco."); return; }
+              const novo: PendingDep = { nome, parentesco, data_nascimento, cpf };
+              if (editIdx !== null) {
+                const cp = [...list]; cp[editIdx] = novo; onChange(cp);
+              } else {
+                onChange([...list, novo]);
+              }
+              setAdding(false); setEditIdx(null);
+            }}>Adicionar</Button>
+          </div>
+        </div>
+      )}
+      <div className="divide-y divide-border rounded-md border border-border">
+        {list.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Nenhum dependente.</p>}
+        {list.map((d, i) => (
+          <div key={i} className="flex items-center justify-between px-3 py-2">
+            <div>
+              <p className="font-medium text-sm">{d.nome}</p>
+              <p className="text-xs text-muted-foreground">{d.parentesco}{d.data_nascimento ? ` · ${fmtDate(d.data_nascimento)}` : ""}{d.cpf ? ` · CPF ${d.cpf}` : ""}</p>
+            </div>
+            <div className="flex gap-1">
+              <Button type="button" size="icon" variant="ghost" onClick={() => { setEditIdx(i); setAdding(false); }}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button type="button" size="icon" variant="ghost" onClick={() => onChange(list.filter((_, j) => j !== i))}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+

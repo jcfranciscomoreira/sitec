@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/planos")({
 
 type Plano = {
   id: string; nome: string; descricao: string | null; valor_mensal: number;
-  cobertura: string | null; ativo: boolean;
+  taxa_adesao: number; cobertura: string | null; ativo: boolean;
 };
 
 function PlanosPage() {
@@ -75,6 +75,7 @@ function PlanosPage() {
       nome: String(fd.get("nome")),
       descricao: String(fd.get("descricao") || ""),
       valor_mensal: Number(fd.get("valor_mensal")),
+      taxa_adesao: Number(fd.get("taxa_adesao") || 0),
       cobertura: String(fd.get("cobertura") || ""),
       ativo: fd.get("ativo") === "on",
     });
@@ -93,7 +94,10 @@ function PlanosPage() {
             <DialogHeader><DialogTitle className="font-serif">{editing ? "Editar plano" : "Novo plano"}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2"><Label>Nome</Label><Input name="nome" defaultValue={editing?.nome} required /></div>
-              <div className="space-y-2"><Label>Valor mensal (R$)</Label><Input name="valor_mensal" type="number" step="0.01" defaultValue={editing?.valor_mensal ?? ""} required /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2"><Label>Valor mensal (R$)</Label><Input name="valor_mensal" type="number" step="0.01" defaultValue={editing?.valor_mensal ?? ""} required /></div>
+                <div className="space-y-2"><Label>Taxa de adesão (R$)</Label><Input name="taxa_adesao" type="number" step="0.01" defaultValue={editing?.taxa_adesao ?? 0} /></div>
+              </div>
               <div className="space-y-2"><Label>Descrição</Label><Textarea name="descricao" defaultValue={editing?.descricao ?? ""} rows={2} /></div>
               <div className="space-y-2"><Label>Cobertura</Label><Textarea name="cobertura" defaultValue={editing?.cobertura ?? ""} rows={3} placeholder="Ex.: Urna, transporte, sala de velório, paramentação..." /></div>
               <div className="flex items-center justify-between rounded-md border border-border p-3">
@@ -116,13 +120,14 @@ function PlanosPage() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Mensalidade</TableHead>
+                <TableHead>Taxa adesão</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
-              {!isLoading && planos.length === 0 && <TableRow><TableCell colSpan={4} className="py-8 text-center text-muted-foreground">Nenhum plano cadastrado.</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+              {!isLoading && planos.length === 0 && <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Nenhum plano cadastrado.</TableCell></TableRow>}
               {planos.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
@@ -130,6 +135,7 @@ function PlanosPage() {
                     {p.descricao && <div className="text-xs text-muted-foreground">{p.descricao}</div>}
                   </TableCell>
                   <TableCell className="font-medium">{brl(p.valor_mensal)}</TableCell>
+                  <TableCell>{brl(p.taxa_adesao)}</TableCell>
                   <TableCell>
                     {p.ativo
                       ? <Badge className="bg-success/15 text-success border-success/30" variant="outline">Ativo</Badge>

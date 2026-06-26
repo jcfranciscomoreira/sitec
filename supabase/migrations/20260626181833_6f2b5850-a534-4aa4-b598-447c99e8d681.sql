@@ -1,0 +1,1 @@
+ALTER TABLE public.planos ADD COLUMN IF NOT EXISTS taxa_adesao numeric(10,2) NOT NULL DEFAULT 0;
