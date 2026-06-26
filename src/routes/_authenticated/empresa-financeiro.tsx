@@ -113,9 +113,9 @@ function PainelFinanceiroPage() {
       {isLoading && <p className="text-muted-foreground">Carregando...</p>}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <KPI label="Recebido no mês" value={brl(stats.recebidoMes)} icon={<TrendingUp className="h-5 w-5 text-success" />} tone="success" />
+        <KPI label="Recebido no mês" value={brl(stats.recebidoMes + planoStats.totalMesGeral)} icon={<TrendingUp className="h-5 w-5 text-success" />} tone="success" />
         <KPI label="Pago no mês" value={brl(stats.pagoMes)} icon={<TrendingDown className="h-5 w-5 text-destructive" />} tone="destructive" />
-        <KPI label="Saldo do mês" value={brl(stats.saldoMes)} icon={<Wallet className="h-5 w-5 text-gold" />} tone={stats.saldoMes >= 0 ? "success" : "destructive"} />
+        <KPI label="Saldo do mês" value={brl(stats.recebidoMes + planoStats.totalMesGeral - stats.pagoMes)} icon={<Wallet className="h-5 w-5 text-gold" />} tone={(stats.recebidoMes + planoStats.totalMesGeral - stats.pagoMes) >= 0 ? "success" : "destructive"} />
         <KPI label="Vencidas em aberto" value={String(stats.atrasadas.length)} icon={<AlertTriangle className="h-5 w-5 text-destructive" />} tone="destructive" />
       </div>
 
