@@ -94,7 +94,10 @@ function PlanosPage() {
             <DialogHeader><DialogTitle className="font-serif">{editing ? "Editar plano" : "Novo plano"}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2"><Label>Nome</Label><Input name="nome" defaultValue={editing?.nome} required /></div>
-              <div className="space-y-2"><Label>Valor mensal (R$)</Label><Input name="valor_mensal" type="number" step="0.01" defaultValue={editing?.valor_mensal ?? ""} required /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2"><Label>Valor mensal (R$)</Label><Input name="valor_mensal" type="number" step="0.01" defaultValue={editing?.valor_mensal ?? ""} required /></div>
+                <div className="space-y-2"><Label>Taxa de adesão (R$)</Label><Input name="taxa_adesao" type="number" step="0.01" defaultValue={editing?.taxa_adesao ?? 0} /></div>
+              </div>
               <div className="space-y-2"><Label>Descrição</Label><Textarea name="descricao" defaultValue={editing?.descricao ?? ""} rows={2} /></div>
               <div className="space-y-2"><Label>Cobertura</Label><Textarea name="cobertura" defaultValue={editing?.cobertura ?? ""} rows={3} placeholder="Ex.: Urna, transporte, sala de velório, paramentação..." /></div>
               <div className="flex items-center justify-between rounded-md border border-border p-3">
