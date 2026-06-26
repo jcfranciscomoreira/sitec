@@ -342,7 +342,7 @@ function imprimirRelatorio(session: Session, items: RecebItem[]) {
       body{font-family:Georgia,serif;color:#111;margin:24px}
       h1{font-size:18px;color:#1e3a5f;margin:0 0 4px}
       .brand{letter-spacing:3px;text-transform:uppercase;color:#1e3a5f;font-weight:bold;font-size:12px}
-      .meta{margin:12px 0;padding:10px;background:#f5f3ec;border:1px solid #ddd;border-radius:6px;font-size:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+      .meta{margin:12px 0;padding:10px;background:#f5f3ec;border:1px solid #ddd;border-radius:6px;font-size:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
       .meta div span{color:#666;display:block;font-size:10px}
       table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px}
       th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;vertical-align:top}
@@ -359,7 +359,6 @@ function imprimirRelatorio(session: Session, items: RecebItem[]) {
     <div class="meta">
       <div><span>Agente</span><b>${session.agente}</b></div>
       <div><span>Data</span><b>${fmtDate(session.data)}</b></div>
-      <div><span>Forma de pagamento</span><b style="text-transform:capitalize">${session.forma}</b></div>
       <div><span>Responsável pela baixa</span><b>${session.responsavel || "—"}</b></div>
     </div>
     <table>
