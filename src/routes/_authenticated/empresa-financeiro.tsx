@@ -119,6 +119,36 @@ function PainelFinanceiroPage() {
         <KPI label="Vencidas em aberto" value={String(stats.atrasadas.length)} icon={<AlertTriangle className="h-5 w-5 text-destructive" />} tone="destructive" />
       </div>
 
+      <Card className="mt-6 border-border/60 shadow-soft">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="font-serif">Receitas por plano (mensalidades pagas)</CardTitle>
+          <div className="text-sm text-muted-foreground">
+            Total do mês: <span className="font-semibold text-success">{brl(planoStats.totalMesGeral)}</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {planoStats.lista.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma mensalidade paga ainda.</p>}
+          <div className="space-y-3">
+            {planoStats.lista.map((p) => (
+              <div key={p.nome}>
+                <div className="mb-1 flex items-center justify-between text-sm">
+                  <span className="font-medium">{p.nome}</span>
+                  <span className="text-muted-foreground">
+                    <span className="mr-3">{p.qtdMes} pgto(s) no mês</span>
+                    <span className="font-semibold text-success">{brl(p.totalMes)}</span>
+                    <span className="ml-3 text-xs">acum: {brl(p.totalGeral)}</span>
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded bg-muted">
+                  <div className="h-full bg-success" style={{ width: `${(p.totalMes / planoStats.maxMes) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <Card className="border-border/60 shadow-soft">
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total a receber</CardTitle></CardHeader>
