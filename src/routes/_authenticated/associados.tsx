@@ -360,6 +360,7 @@ function AssociadosPage() {
                   <TableCell><StatusBadge status={a.status} /></TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button size="icon" variant="ghost" title="Gerar contrato" onClick={() => gerarContrato(a)}><FileSignature className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Imprimir relatório" onClick={() => imprimirRelatorio(a)}><Printer className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Mensalidades geradas" onClick={() => setMensOpen(a)}><Receipt className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Dependentes" onClick={() => setDepOpen(a)}><Users className="h-4 w-4" /></Button>
