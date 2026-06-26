@@ -120,13 +120,14 @@ function PlanosPage() {
               <TableRow>
                 <TableHead>Nome</TableHead>
                 <TableHead>Mensalidade</TableHead>
+                <TableHead>Taxa adesão</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
-              {!isLoading && planos.length === 0 && <TableRow><TableCell colSpan={4} className="py-8 text-center text-muted-foreground">Nenhum plano cadastrado.</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+              {!isLoading && planos.length === 0 && <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Nenhum plano cadastrado.</TableCell></TableRow>}
               {planos.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell>
@@ -134,6 +135,7 @@ function PlanosPage() {
                     {p.descricao && <div className="text-xs text-muted-foreground">{p.descricao}</div>}
                   </TableCell>
                   <TableCell className="font-medium">{brl(p.valor_mensal)}</TableCell>
+                  <TableCell>{brl(p.taxa_adesao)}</TableCell>
                   <TableCell>
                     {p.ativo
                       ? <Badge className="bg-success/15 text-success border-success/30" variant="outline">Ativo</Badge>
