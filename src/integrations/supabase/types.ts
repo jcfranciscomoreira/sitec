@@ -229,6 +229,7 @@ export type Database = {
       }
       mensalidades: {
         Row: {
+          agente_recebimento: string | null
           associado_id: string
           competencia: string
           created_at: string
@@ -242,6 +243,7 @@ export type Database = {
           vencimento: string
         }
         Insert: {
+          agente_recebimento?: string | null
           associado_id: string
           competencia: string
           created_at?: string
@@ -255,6 +257,7 @@ export type Database = {
           vencimento: string
         }
         Update: {
+          agente_recebimento?: string | null
           associado_id?: string
           competencia?: string
           created_at?: string
