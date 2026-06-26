@@ -39,10 +39,10 @@ function RecebimentoPage() {
 
 // ============= Baixa Wizard =============
 
-type Session = { agente: string; data: string; forma: string; responsavel: string };
+type Session = { agente: string; data: string; responsavel: string };
 type RecebItem = {
   mensalidadeId: string;
-  codigo: string;
+  codigo: number;
   associado: string;
   codAssoc: number;
   competencia: string;
@@ -81,29 +81,15 @@ function BaixaWizard() {
               const fd = new FormData(e.currentTarget);
               const agente = String(fd.get("agente") || "").trim();
               const data = String(fd.get("data") || "");
-              const forma = String(fd.get("forma") || "dinheiro");
               if (!agente || !data) { toast.error("Preencha agente e data."); return; }
-              setSession({ agente, data, forma, responsavel });
+              setSession({ agente, data, responsavel });
               setItems([]);
               setStep(2);
             }}
           >
             <div className="space-y-2"><Label>Agente de recebimento</Label><Input name="agente" placeholder="Nome do cobrador" required /></div>
             <div className="space-y-2"><Label>Data do recebimento</Label><Input name="data" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
-            <div className="space-y-2">
-              <Label>Forma de pagamento</Label>
-              <Select name="forma" defaultValue="dinheiro">
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="cartao">Cartão</SelectItem>
-                  <SelectItem value="boleto">Boleto</SelectItem>
-                  <SelectItem value="transferencia">Transferência</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2"><Label>Responsável pela baixa</Label><Input value={responsavel} disabled /></div>
+            <div className="space-y-2 md:col-span-2"><Label>Responsável pela baixa</Label><Input value={responsavel} disabled /></div>
             <div className="md:col-span-2"><Button type="submit"><Plus className="mr-2 h-4 w-4" />Iniciar baixa</Button></div>
           </form>
         </CardContent>
@@ -142,49 +128,69 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
   const [codigo, setCodigo] = useState("");
   const [valor, setValor] = useState("");
   const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState<any | null>(null);
+  const [previewErr, setPreviewErr] = useState<string>("");
 
   const totais = useMemo(() => ({
     qtd: items.length,
     valor: items.reduce((s, i) => s + i.valorRecebido, 0),
   }), [items]);
 
+  // Busca em tempo real (debounce) pelo código numérico
+  useEffect(() => {
+    const cod = Number(codigo.trim());
+    if (!cod || !Number.isFinite(cod)) { setPreview(null); setPreviewErr(""); return; }
+    let cancel = false;
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("id, codigo, competencia, vencimento, valor, status, associado_id, associados!inner(nome, codigo)")
+        .eq("codigo", cod)
+        .maybeSingle();
+      if (cancel) return;
+      if (error || !data) { setPreview(null); setPreviewErr("Parcela não encontrada"); return; }
+      setPreview(data);
+      setPreviewErr("");
+      // pré-preenche valor sugerido apenas se vazio
+      setValor((cur) => cur || String(Number((data as any).valor)));
+    }, 250);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [codigo]);
+
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    const cod = codigo.trim().toLowerCase();
+    const cod = Number(codigo.trim());
     const v = Number(String(valor).replace(",", "."));
-    if (!cod || cod.length < 4) { toast.error("Informe o código da parcela (mín. 4 caracteres)."); return; }
+    if (!cod) { toast.error("Informe o código numérico da parcela."); return; }
     if (!v || v <= 0) { toast.error("Informe o valor recebido."); return; }
     setBusy(true);
     try {
-      const { data: matches, error } = await supabase
+      const { data: m, error } = await supabase
         .from("mensalidades")
         .select("*, associados!inner(id, nome, codigo, planos(nome, valor_mensal))")
-        .ilike("id", `${cod}%`)
-        .limit(2);
+        .eq("codigo", cod)
+        .maybeSingle();
       if (error) throw error;
-      if (!matches || matches.length === 0) { toast.error("Parcela não encontrada."); return; }
-      if (matches.length > 1) { toast.error("Código ambíguo, informe mais caracteres."); return; }
-      const m: any = matches[0];
-      if (m.status === "pago") { toast.error("Parcela já está paga."); return; }
-      if (items.some((i) => i.mensalidadeId === m.id)) { toast.error("Parcela já adicionada nesta baixa."); return; }
+      if (!m) { toast.error("Parcela não encontrada."); return; }
+      if ((m as any).status === "pago") { toast.error("Parcela já está paga."); return; }
+      if (items.some((i) => i.mensalidadeId === (m as any).id)) { toast.error("Parcela já adicionada nesta baixa."); return; }
 
-      const valorOriginal = Number(m.valor);
+      const valorOriginal = Number((m as any).valor);
       const updates: Array<PromiseLike<any>> = [];
       let acao: RecebItem["acao"] = "Quitada";
-      const baseUpd = { status: "pago" as const, data_pagamento: session.data, forma_pagamento: session.forma, agente_recebimento: session.agente };
+      const baseUpd = { status: "pago" as const, data_pagamento: session.data, agente_recebimento: session.agente };
 
       if (v === valorOriginal) {
-        updates.push(supabase.from("mensalidades").update(baseUpd).eq("id", m.id));
+        updates.push(supabase.from("mensalidades").update(baseUpd).eq("id", (m as any).id));
       } else if (v > valorOriginal) {
         const excesso = v - valorOriginal;
-        updates.push(supabase.from("mensalidades").update(baseUpd).eq("id", m.id));
-        // próxima parcela em aberto do mesmo associado
+        updates.push(supabase.from("mensalidades").update(baseUpd).eq("id", (m as any).id));
         const { data: nx } = await supabase.from("mensalidades")
           .select("id, valor, vencimento")
-          .eq("associado_id", m.associado_id)
+          .eq("associado_id", (m as any).associado_id)
           .in("status", ["pendente", "atrasado"])
-          .gt("vencimento", m.vencimento)
+          .gt("vencimento", (m as any).vencimento)
           .order("vencimento", { ascending: true }).limit(1);
         const next: any = nx?.[0];
         if (next) {
@@ -196,26 +202,25 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
           }
           acao = "Quitada + abate na próxima";
         } else {
-          acao = "Quitada"; // sem próxima parcela para abater
+          acao = "Quitada";
         }
       } else {
-        // recebido < valor: marca pago com valor recebido e gera nova parcela
         const diff = valorOriginal - v;
-        updates.push(supabase.from("mensalidades").update({ ...baseUpd, valor: v, observacoes: `Pagamento parcial. Diferença de ${brl(diff)} gerada em nova parcela.` }).eq("id", m.id));
+        updates.push(supabase.from("mensalidades").update({ ...baseUpd, valor: v, observacoes: `Pagamento parcial. Diferença de ${brl(diff)} gerada em nova parcela.` }).eq("id", (m as any).id));
         const { data: nx } = await supabase.from("mensalidades")
-          .select("vencimento").eq("associado_id", m.associado_id)
+          .select("vencimento").eq("associado_id", (m as any).associado_id)
           .in("status", ["pendente", "atrasado"])
-          .gt("vencimento", m.vencimento)
+          .gt("vencimento", (m as any).vencimento)
           .order("vencimento", { ascending: true }).limit(1);
         let novoVenc = nx?.[0]?.vencimento as string | undefined;
         if (!novoVenc) {
-          const d = new Date(m.vencimento + "T00:00:00"); d.setMonth(d.getMonth() + 1);
+          const d = new Date((m as any).vencimento + "T00:00:00"); d.setMonth(d.getMonth() + 1);
           novoVenc = d.toISOString().slice(0, 10);
         }
         const comp = novoVenc.slice(0, 7) + "-01";
         updates.push(supabase.from("mensalidades").insert({
-          associado_id: m.associado_id, competencia: comp, vencimento: novoVenc, valor: diff,
-          status: "pendente", observacoes: `Diferença de pagamento parcial da parcela ${m.id.slice(0, 8).toUpperCase()}`,
+          associado_id: (m as any).associado_id, competencia: comp, vencimento: novoVenc, valor: diff,
+          status: "pendente", observacoes: `Diferença de pagamento parcial da parcela #${(m as any).codigo}`,
         }));
         acao = "Parcial + nova parcela gerada";
       }
@@ -225,19 +230,19 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
       if (errs?.error) throw errs.error;
 
       const item: RecebItem = {
-        mensalidadeId: m.id,
-        codigo: m.id.slice(0, 8).toUpperCase(),
-        associado: m.associados?.nome ?? "",
-        codAssoc: m.associados?.codigo ?? 0,
-        competencia: m.competencia,
-        vencimento: m.vencimento,
+        mensalidadeId: (m as any).id,
+        codigo: Number((m as any).codigo),
+        associado: (m as any).associados?.nome ?? "",
+        codAssoc: (m as any).associados?.codigo ?? 0,
+        competencia: (m as any).competencia,
+        vencimento: (m as any).vencimento,
         valorOriginal,
         valorRecebido: v,
         diferenca: v - valorOriginal,
         acao,
       };
       setItems((prev) => [...prev, item]);
-      setCodigo(""); setValor("");
+      setCodigo(""); setValor(""); setPreview(null); setPreviewErr("");
       toast.success("Parcela registrada", { description: `${item.associado} · ${brl(v)}` });
     } catch (e: any) {
       toast.error("Erro", { description: e.message });
@@ -251,20 +256,34 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
       <CardHeader>
         <CardTitle className="font-serif flex items-center justify-between">
           <span>Registrar parcelas — Agente: {session.agente}</span>
-          <span className="text-sm font-sans text-muted-foreground">{fmtDate(session.data)} · {session.forma}</span>
+          <span className="text-sm font-sans text-muted-foreground">{fmtDate(session.data)}</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleAdd} className="grid gap-3 md:grid-cols-[1fr_180px_auto]">
-          <div className="space-y-2"><Label>Código da parcela</Label><Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ex: A1B2C3D4" autoFocus /></div>
+          <div className="space-y-2"><Label>Código da parcela</Label><Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ex: 1024" autoFocus inputMode="numeric" /></div>
           <div className="space-y-2"><Label>Valor recebido (R$)</Label><Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" min="0" /></div>
-          <div className="flex items-end"><Button type="submit" disabled={busy}>{busy ? "..." : "OK"}</Button></div>
+          <div className="flex items-end"><Button type="submit" disabled={busy || !preview || (preview as any)?.status === "pago"}>{busy ? "..." : "OK"}</Button></div>
         </form>
+
+        {preview && (
+          <div className={`rounded border px-3 py-2 text-sm flex flex-wrap gap-x-6 gap-y-1 ${(preview as any).status === "pago" ? "border-destructive/40 bg-destructive/5" : "border-primary/40 bg-primary/5"}`}>
+            <span><span className="text-muted-foreground">Código:</span> <b>#{(preview as any).codigo}</b></span>
+            <span><span className="text-muted-foreground">Associado:</span> <b>{(preview as any).associados?.nome}</b> <span className="text-xs text-muted-foreground">#{String((preview as any).associados?.codigo ?? "").padStart(4, "0")}</span></span>
+            <span><span className="text-muted-foreground">Vencimento:</span> <b>{fmtDate((preview as any).vencimento)}</b></span>
+            <span><span className="text-muted-foreground">Valor:</span> <b>{brl(Number((preview as any).valor))}</b></span>
+            <span className="capitalize"><span className="text-muted-foreground">Status:</span> <b>{(preview as any).status}</b></span>
+          </div>
+        )}
+        {!preview && previewErr && codigo && (
+          <div className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">{previewErr}</div>
+        )}
 
         <div className="rounded border border-border px-3 py-2 text-sm flex flex-wrap gap-x-6 gap-y-1">
           <span><span className="text-muted-foreground">Parcelas recebidas:</span> <b>{totais.qtd}</b></span>
           <span><span className="text-muted-foreground">Total recebido:</span> <b className="text-success">{brl(totais.valor)}</b></span>
         </div>
+
 
         <Table>
           <TableHeader>
@@ -309,7 +328,7 @@ function imprimirRelatorio(session: Session, items: RecebItem[]) {
   const total = items.reduce((s, i) => s + i.valorRecebido, 0);
   const rows = items.map((i) => `
     <tr>
-      <td>${i.codigo}</td>
+      <td>#${i.codigo}</td>
       <td>${i.associado}<br><span class="muted">#${String(i.codAssoc).padStart(4, "0")}</span></td>
       <td>${competenciaLabel(i.competencia)}</td>
       <td>${fmtDate(i.vencimento)}</td>
@@ -323,7 +342,7 @@ function imprimirRelatorio(session: Session, items: RecebItem[]) {
       body{font-family:Georgia,serif;color:#111;margin:24px}
       h1{font-size:18px;color:#1e3a5f;margin:0 0 4px}
       .brand{letter-spacing:3px;text-transform:uppercase;color:#1e3a5f;font-weight:bold;font-size:12px}
-      .meta{margin:12px 0;padding:10px;background:#f5f3ec;border:1px solid #ddd;border-radius:6px;font-size:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+      .meta{margin:12px 0;padding:10px;background:#f5f3ec;border:1px solid #ddd;border-radius:6px;font-size:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
       .meta div span{color:#666;display:block;font-size:10px}
       table{width:100%;border-collapse:collapse;font-size:11px;margin-top:10px}
       th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;vertical-align:top}
@@ -340,7 +359,6 @@ function imprimirRelatorio(session: Session, items: RecebItem[]) {
     <div class="meta">
       <div><span>Agente</span><b>${session.agente}</b></div>
       <div><span>Data</span><b>${fmtDate(session.data)}</b></div>
-      <div><span>Forma de pagamento</span><b style="text-transform:capitalize">${session.forma}</b></div>
       <div><span>Responsável pela baixa</span><b>${session.responsavel || "—"}</b></div>
     </div>
     <table>
@@ -445,7 +463,7 @@ function imprimirCarnes(list: any[]) {
   const cards = list.map((m) => {
     const a = m.associados;
     const codigo = `#${String(a?.codigo ?? "").padStart(4, "0")}`;
-    const ident = `${codigo} ${String(m.id).slice(0, 8).toUpperCase()}`;
+    const ident = `PARCELA #${m.codigo ?? ""}`;
     return `
       <div class="carne">
         <div class="canhoto">
