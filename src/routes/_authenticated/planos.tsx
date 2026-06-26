@@ -75,7 +75,6 @@ function PlanosPage() {
       nome: String(fd.get("nome")),
       descricao: String(fd.get("descricao") || ""),
       valor_mensal: Number(fd.get("valor_mensal")),
-      max_dependentes: Number(fd.get("max_dependentes")),
       cobertura: String(fd.get("cobertura") || ""),
       ativo: fd.get("ativo") === "on",
     });
