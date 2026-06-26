@@ -765,3 +765,72 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
     </Dialog>
   );
 }
+
+function PendingDependentesSection({ list, onChange }: { list: PendingDep[]; onChange: (l: PendingDep[]) => void }) {
+  const [adding, setAdding] = useState(false);
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const editing = editIdx !== null ? list[editIdx] : null;
+  const form = editing || (adding ? { nome: "", parentesco: "", data_nascimento: "", cpf: "" } : null);
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">Os dependentes serão salvos junto com o associado.</p>
+      {!form && (
+        <Button type="button" variant="outline" size="sm" onClick={() => setAdding(true)}>
+          <Plus className="mr-2 h-4 w-4" />Adicionar dependente
+        </Button>
+      )}
+      {form && (
+        <div
+          className="space-y-3 rounded-md border border-border p-4"
+          onKeyDown={(e) => { if (e.key === "Enter") e.preventDefault(); }}
+        >
+          <div className="text-sm font-medium">{editing ? "Editar dependente" : "Novo dependente"}</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2 col-span-2"><Label>Nome</Label><Input id="pd_nome" defaultValue={form.nome} /></div>
+            <div className="space-y-2"><Label>Parentesco</Label><Input id="pd_par" defaultValue={form.parentesco} placeholder="Cônjuge, Filho(a)..." /></div>
+            <div className="space-y-2"><Label>Data de nascimento</Label><Input id="pd_nasc" type="date" defaultValue={form.data_nascimento} /></div>
+            <div className="space-y-2 col-span-2"><Label>CPF</Label><Input id="pd_cpf" defaultValue={form.cpf} /></div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => { setAdding(false); setEditIdx(null); }}>Cancelar</Button>
+            <Button type="button" onClick={() => {
+              const nome = (document.getElementById("pd_nome") as HTMLInputElement)?.value.trim();
+              const parentesco = (document.getElementById("pd_par") as HTMLInputElement)?.value.trim();
+              const data_nascimento = (document.getElementById("pd_nasc") as HTMLInputElement)?.value || "";
+              const cpf = (document.getElementById("pd_cpf") as HTMLInputElement)?.value || "";
+              if (!nome || !parentesco) { toast.error("Informe nome e parentesco."); return; }
+              const novo: PendingDep = { nome, parentesco, data_nascimento, cpf };
+              if (editIdx !== null) {
+                const cp = [...list]; cp[editIdx] = novo; onChange(cp);
+              } else {
+                onChange([...list, novo]);
+              }
+              setAdding(false); setEditIdx(null);
+            }}>Adicionar</Button>
+          </div>
+        </div>
+      )}
+      <div className="divide-y divide-border rounded-md border border-border">
+        {list.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Nenhum dependente.</p>}
+        {list.map((d, i) => (
+          <div key={i} className="flex items-center justify-between px-3 py-2">
+            <div>
+              <p className="font-medium text-sm">{d.nome}</p>
+              <p className="text-xs text-muted-foreground">{d.parentesco}{d.data_nascimento ? ` · ${fmtDate(d.data_nascimento)}` : ""}{d.cpf ? ` · CPF ${d.cpf}` : ""}</p>
+            </div>
+            <div className="flex gap-1">
+              <Button type="button" size="icon" variant="ghost" onClick={() => { setEditIdx(i); setAdding(false); }}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button type="button" size="icon" variant="ghost" onClick={() => onChange(list.filter((_, j) => j !== i))}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
