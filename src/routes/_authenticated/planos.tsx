@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_authenticated/planos")({
 
 type Plano = {
   id: string; nome: string; descricao: string | null; valor_mensal: number;
-  max_dependentes: number; cobertura: string | null; ativo: boolean;
+  cobertura: string | null; ativo: boolean;
 };
 
 function PlanosPage() {
