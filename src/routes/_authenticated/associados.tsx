@@ -94,60 +94,6 @@ function AssociadosPage() {
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
 
-  const darBaixa = useMutation({
-    mutationFn: async (a: Associado) => {
-      const { data: pend, error } = await supabase
-        .from("mensalidades")
-        .select("id, competencia, valor")
-        .eq("associado_id", a.id)
-        .neq("status", "pago")
-        .neq("status", "cancelado")
-        .order("vencimento", { ascending: true })
-        .limit(1);
-      if (error) throw error;
-      if (!pend || pend.length === 0) throw new Error("Nenhuma mensalidade pendente para este associado.");
-      const m = pend[0];
-      const { error: e2 } = await supabase.from("mensalidades").update({
-        status: "pago",
-        data_pagamento: new Date().toISOString().slice(0, 10),
-        forma_pagamento: "dinheiro",
-      }).eq("id", m.id);
-      if (e2) throw e2;
-      return m;
-    },
-    onSuccess: (m) => {
-      qc.invalidateQueries({ queryKey: ["mensalidades"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Baixa registrada", { description: `${competenciaLabel(m.competencia)} — ${brl(m.valor)}` });
-    },
-    onError: (e: any) => toast.error("Erro", { description: e.message }),
-  });
-
-  const gerarMens = useMutation({
-    mutationFn: async (a: Associado) => {
-      if (!a.plano_id || !a.planos) throw new Error("Associado sem plano vinculado.");
-      const hoje = new Date();
-      const competencia = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}-01`;
-      const venc = new Date(hoje.getFullYear(), hoje.getMonth(), Math.min(a.dia_vencimento, 28))
-        .toISOString().slice(0, 10);
-      const { error, count } = await supabase.from("mensalidades").upsert([{
-        associado_id: a.id,
-        competencia,
-        valor: a.planos.valor_mensal,
-        vencimento: venc,
-        status: "pendente" as const,
-      }] as any, { onConflict: "associado_id,competencia", ignoreDuplicates: true, count: "exact" });
-      if (error) throw error;
-      return { count: count ?? 0, competencia };
-    },
-    onSuccess: (r) => {
-      qc.invalidateQueries({ queryKey: ["mensalidades"] });
-      qc.invalidateQueries({ queryKey: ["dashboard"] });
-      if (r.count === 0) toast.info("Mensalidade já existia para este mês.");
-      else toast.success("Mensalidade gerada", { description: competenciaLabel(r.competencia) });
-    },
-    onError: (e: any) => toast.error("Erro", { description: e.message }),
-  });
 
   async function imprimirRelatorio(a: Associado) {
     const [{ data: deps }, { data: mens }] = await Promise.all([
