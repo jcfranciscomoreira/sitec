@@ -170,7 +170,7 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
       if (items.some((i) => i.mensalidadeId === m.id)) { toast.error("Parcela já adicionada nesta baixa."); return; }
 
       const valorOriginal = Number(m.valor);
-      const updates: Array<Promise<any>> = [];
+      const updates: Array<PromiseLike<any>> = [];
       let acao: RecebItem["acao"] = "Quitada";
       const baseUpd = { status: "pago" as const, data_pagamento: session.data, forma_pagamento: session.forma, agente_recebimento: session.agente };
 
