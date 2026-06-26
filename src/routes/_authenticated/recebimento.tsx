@@ -463,7 +463,7 @@ function imprimirCarnes(list: any[]) {
   const cards = list.map((m) => {
     const a = m.associados;
     const codigo = `#${String(a?.codigo ?? "").padStart(4, "0")}`;
-    const ident = `${codigo} ${String(m.id).slice(0, 8).toUpperCase()}`;
+    const ident = `PARCELA #${m.codigo ?? ""}`;
     return `
       <div class="carne">
         <div class="canhoto">
