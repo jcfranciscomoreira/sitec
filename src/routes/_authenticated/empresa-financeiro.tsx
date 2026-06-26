@@ -83,6 +83,31 @@ function PainelFinanceiroPage() {
     return { recebidoMes, pagoMes, aReceber, aPagar, atrasadas, centros, maxCentro, serie, maxSerie, saldoMes: recebidoMes - pagoMes };
   }, [rows]);
 
+  const planoStats = useMemo(() => {
+    const hoje = new Date().toISOString().slice(0, 10);
+    const mes = hoje.slice(0, 7);
+    const porPlano = new Map<string, { totalGeral: number; totalMes: number; qtdMes: number }>();
+    let totalMesGeral = 0;
+    for (const m of planosRev) {
+      const nome = m.associados?.planos?.nome ?? "Sem plano";
+      const v = Number(m.valor);
+      const cur = porPlano.get(nome) ?? { totalGeral: 0, totalMes: 0, qtdMes: 0 };
+      cur.totalGeral += v;
+      if (m.data_pagamento && m.data_pagamento.slice(0, 7) === mes) {
+        cur.totalMes += v;
+        cur.qtdMes += 1;
+        totalMesGeral += v;
+      }
+      porPlano.set(nome, cur);
+    }
+    const lista = Array.from(porPlano.entries())
+      .map(([nome, v]) => ({ nome, ...v }))
+      .sort((a, b) => b.totalMes - a.totalMes);
+    const maxMes = Math.max(1, ...lista.map((l) => l.totalMes));
+    return { lista, maxMes, totalMesGeral };
+  }, [planosRev]);
+
+
   return (
     <AppShell title="Painel Financeiro" subtitle="Resultados consolidados da empresa">
       {isLoading && <p className="text-muted-foreground">Carregando...</p>}
