@@ -41,7 +41,6 @@ function AssociadosPage() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Associado | null>(null);
-  const [depOpen, setDepOpen] = useState<Associado | null>(null);
   const [mensOpen, setMensOpen] = useState<Associado | null>(null);
 
   const { data: associados = [], isLoading } = useQuery({
