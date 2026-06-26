@@ -319,7 +319,7 @@ function AssociadosPage() {
       title="Associados"
       subtitle="Cadastro de titulares e dependentes"
       actions={
-        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setEditing(null); setPendingDeps([]); } }}>
           <DialogTrigger asChild>
             <Button><Plus className="mr-2 h-4 w-4" />Novo associado</Button>
           </DialogTrigger>
