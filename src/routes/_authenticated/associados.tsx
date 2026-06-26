@@ -749,6 +749,11 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
                 <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
+                    {m.status === "pago" && (
+                      <Button size="icon" variant="ghost" title="Gerar comprovante" onClick={() => gerarComprovante(associado, m)}>
+                        <Receipt className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button size="icon" variant="ghost" title="Editar parcela" onClick={() => { setCreating(false); setEditing(m); }}>
                       <Pencil className="h-4 w-4" />
                     </Button>
