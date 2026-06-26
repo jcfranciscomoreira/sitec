@@ -545,6 +545,52 @@ function DependentesSection({ associadoId }: { associadoId: string }) {
   );
 }
 
+function gerarComprovante(a: Associado, m: any) {
+  const w = window.open("", "_blank", "width=700,height=500");
+  if (!w) { toast.error("Permita pop-ups para imprimir."); return; }
+  const codigo = `#${String(a.codigo).padStart(4, "0")}`;
+  const recibo = `REC-${String(m.id).slice(0, 8).toUpperCase()}`;
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Comprovante — ${a.nome}</title>
+    <style>
+      body{font-family:Georgia,serif;color:#111;padding:32px;max-width:680px;margin:0 auto}
+      .box{border:2px solid #1e3a5f;border-radius:10px;padding:24px}
+      h1{margin:0;font-size:18px;color:#1e3a5f;text-align:center;letter-spacing:2px;text-transform:uppercase}
+      .sub{text-align:center;font-size:11px;color:#666;margin-bottom:16px}
+      .valor{text-align:center;font-size:30px;color:#1e3a5f;font-weight:bold;margin:12px 0;padding:10px;background:#f5f3ec;border-radius:6px}
+      table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+      td{padding:6px 4px;border-bottom:1px dotted #ccc}
+      td:first-child{color:#666;width:160px}
+      .ass{margin-top:50px;text-align:center;font-size:12px}
+      .linha{border-top:1px solid #111;width:60%;margin:50px auto 4px}
+      @media print{body{padding:0}}
+    </style></head><body>
+    <div class="box">
+      <h1>Comprovante de Pagamento</h1>
+      <div class="sub">Memorial · Recibo ${recibo}</div>
+      <div class="valor">${brl(m.valor)}</div>
+      <table>
+        <tr><td>Associado</td><td><b>${a.nome}</b> &nbsp;${codigo}</td></tr>
+        <tr><td>CPF</td><td>${a.cpf ?? "—"}</td></tr>
+        <tr><td>Plano</td><td>${a.planos?.nome ?? "—"}</td></tr>
+        <tr><td>Competência</td><td style="text-transform:capitalize">${competenciaLabel(m.competencia)}</td></tr>
+        <tr><td>Vencimento</td><td>${fmtDate(m.vencimento)}</td></tr>
+        <tr><td>Data do pagamento</td><td>${m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</td></tr>
+        <tr><td>Forma de pagamento</td><td style="text-transform:capitalize">${m.forma_pagamento ?? "—"}</td></tr>
+        ${m.agente_recebimento ? `<tr><td>Agente</td><td>${m.agente_recebimento}</td></tr>` : ""}
+      </table>
+      <p style="margin-top:18px;font-size:12px;text-align:justify">Declaramos para os devidos fins que recebemos do(a) associado(a) acima identificado(a) a importância correspondente à mensalidade do plano funerário, referente à competência indicada, dando plena, geral e irrevogável quitação.</p>
+      <div class="ass">
+        <div class="linha"></div>
+        Memorial — Plano Funerário
+      </div>
+    </div>
+    <script>window.onload=()=>{window.print();}</script>
+    </body></html>`);
+  w.document.close();
+}
+
+
+
 function MensalidadesDialog({ associado, onClose }: { associado: Associado; onClose: () => void }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any | null>(null);
@@ -749,6 +795,11 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
                 <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
+                    {m.status === "pago" && (
+                      <Button size="icon" variant="ghost" title="Gerar comprovante" onClick={() => gerarComprovante(associado, m)}>
+                        <Receipt className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button size="icon" variant="ghost" title="Editar parcela" onClick={() => { setCreating(false); setEditing(m); }}>
                       <Pencil className="h-4 w-4" />
                     </Button>

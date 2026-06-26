@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRecebimentoRouteImport } from './routes/_authenticated/recebimento'
 import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated/planos'
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
 import { Route as AuthenticatedEmpresaFinanceiroRouteImport } from './routes/_authenticated/empresa-financeiro'
@@ -34,6 +35,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRecebimentoRoute =
+  AuthenticatedRecebimentoRouteImport.update({
+    id: '/recebimento',
+    path: '/recebimento',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPlanosRoute = AuthenticatedPlanosRouteImport.update({
   id: '/planos',
   path: '/planos',
@@ -82,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/planos': typeof AuthenticatedPlanosRoute
+  '/recebimento': typeof AuthenticatedRecebimentoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -93,6 +101,7 @@ export interface FileRoutesByTo {
   '/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
   '/planos': typeof AuthenticatedPlanosRoute
+  '/recebimento': typeof AuthenticatedRecebimentoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -106,6 +115,7 @@ export interface FileRoutesById {
   '/_authenticated/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
   '/_authenticated/planos': typeof AuthenticatedPlanosRoute
+  '/_authenticated/recebimento': typeof AuthenticatedRecebimentoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -119,6 +129,7 @@ export interface FileRouteTypes {
     | '/empresa-financeiro'
     | '/financeiro'
     | '/planos'
+    | '/recebimento'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -130,6 +141,7 @@ export interface FileRouteTypes {
     | '/empresa-financeiro'
     | '/financeiro'
     | '/planos'
+    | '/recebimento'
   id:
     | '__root__'
     | '/'
@@ -142,6 +154,7 @@ export interface FileRouteTypes {
     | '/_authenticated/empresa-financeiro'
     | '/_authenticated/financeiro'
     | '/_authenticated/planos'
+    | '/_authenticated/recebimento'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -172,6 +185,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/recebimento': {
+      id: '/_authenticated/recebimento'
+      path: '/recebimento'
+      fullPath: '/recebimento'
+      preLoaderRoute: typeof AuthenticatedRecebimentoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/planos': {
       id: '/_authenticated/planos'
@@ -233,6 +253,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedEmpresaFinanceiroRoute: typeof AuthenticatedEmpresaFinanceiroRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
   AuthenticatedPlanosRoute: typeof AuthenticatedPlanosRoute
+  AuthenticatedRecebimentoRoute: typeof AuthenticatedRecebimentoRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -243,6 +264,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedEmpresaFinanceiroRoute: AuthenticatedEmpresaFinanceiroRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
   AuthenticatedPlanosRoute: AuthenticatedPlanosRoute,
+  AuthenticatedRecebimentoRoute: AuthenticatedRecebimentoRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

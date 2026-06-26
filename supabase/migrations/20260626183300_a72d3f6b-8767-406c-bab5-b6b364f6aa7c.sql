@@ -1,0 +1,1 @@
+ALTER TABLE public.mensalidades ADD COLUMN IF NOT EXISTS agente_recebimento text;
