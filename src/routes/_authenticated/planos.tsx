@@ -75,6 +75,7 @@ function PlanosPage() {
       nome: String(fd.get("nome")),
       descricao: String(fd.get("descricao") || ""),
       valor_mensal: Number(fd.get("valor_mensal")),
+      taxa_adesao: Number(fd.get("taxa_adesao") || 0),
       cobertura: String(fd.get("cobertura") || ""),
       ativo: fd.get("ativo") === "on",
     });
