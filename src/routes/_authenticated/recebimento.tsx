@@ -39,10 +39,10 @@ function RecebimentoPage() {
 
 // ============= Baixa Wizard =============
 
-type Session = { agente: string; data: string; forma: string; responsavel: string };
+type Session = { agente: string; data: string; responsavel: string };
 type RecebItem = {
   mensalidadeId: string;
-  codigo: string;
+  codigo: number;
   associado: string;
   codAssoc: number;
   competencia: string;
