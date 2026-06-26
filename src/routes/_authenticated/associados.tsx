@@ -148,6 +148,94 @@ function AssociadosPage() {
     w.document.close();
   }
 
+  async function gerarContrato(a: Associado) {
+    if (!a.plano_id) { toast.error("Associado sem plano vinculado."); return; }
+    const [{ data: plano }, { data: deps }] = await Promise.all([
+      supabase.from("planos").select("*").eq("id", a.plano_id).maybeSingle(),
+      supabase.from("dependentes").select("*").eq("associado_id", a.id).order("nome"),
+    ]);
+    if (!plano) { toast.error("Plano não encontrado."); return; }
+    const w = window.open("", "_blank", "width=900,height=800");
+    if (!w) { toast.error("Permita pop-ups para gerar o contrato."); return; }
+    const hoje = new Date();
+    const depsRows = (deps ?? []).length
+      ? `<table><thead><tr><th>Nome</th><th>Parentesco</th><th>Nascimento</th><th>CPF</th></tr></thead><tbody>${(deps ?? []).map((d: any) => `<tr><td>${d.nome}</td><td>${d.parentesco}</td><td>${d.data_nascimento ? fmtDate(d.data_nascimento) : "—"}</td><td>${d.cpf ?? "—"}</td></tr>`).join("")}</tbody></table>`
+      : `<p class="muted">Nenhum dependente cadastrado.</p>`;
+    const cobertura = (plano.cobertura ?? "").trim()
+      ? `<ul>${(plano.cobertura as string).split(/\r?\n|;|•/).map((s) => s.trim()).filter(Boolean).map((s) => `<li>${s}</li>`).join("")}</ul>`
+      : `<p class="muted">Cobertura conforme descrição do plano.</p>`;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Contrato — ${a.nome}</title>
+      <style>
+        body{font-family:Georgia,serif;color:#111;padding:40px;max-width:820px;margin:0 auto;line-height:1.55}
+        h1{font-size:20px;text-align:center;margin:0 0 4px;color:#1e3a5f;letter-spacing:1px;text-transform:uppercase}
+        h2{font-size:13px;margin:22px 0 8px;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #1e3a5f;padding-bottom:4px}
+        p{margin:6px 0;text-align:justify;font-size:13px}
+        table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+        th,td{border:1px solid #ccc;padding:5px 7px;text-align:left}
+        th{background:#f4f4f4}
+        ul{font-size:13px;margin:4px 0 4px 20px}
+        .meta{text-align:center;font-size:11px;color:#666;margin-bottom:18px}
+        .muted{color:#888;font-size:12px;font-style:italic}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:13px;margin-top:6px}
+        .grid div b{color:#1e3a5f}
+        .assinaturas{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;gap:60px;font-size:12px;text-align:center}
+        .linha{border-top:1px solid #111;padding-top:4px;margin-top:60px}
+        @media print{body{padding:24px}}
+      </style></head><body>
+      <h1>Contrato de Adesão — Plano Funerário</h1>
+      <div class="meta">Memorial · Emitido em ${hoje.toLocaleDateString("pt-BR")}</div>
+
+      <p>Pelo presente instrumento particular, de um lado a <b>MEMORIAL</b>, doravante denominada <b>CONTRATADA</b>, e de outro lado o(a) associado(a) abaixo qualificado, doravante denominado(a) <b>CONTRATANTE</b>, têm entre si justo e contratado o seguinte:</p>
+
+      <h2>I. Identificação do Contratante</h2>
+      <div class="grid">
+        <div><b>Código:</b> #${String(a.codigo).padStart(4, "0")}</div>
+        <div><b>Nome:</b> ${a.nome}</div>
+        <div><b>CPF:</b> ${a.cpf ?? "—"}</div>
+        <div><b>RG:</b> ${a.rg ?? "—"}</div>
+        <div><b>Nascimento:</b> ${a.data_nascimento ? fmtDate(a.data_nascimento) : "—"}</div>
+        <div><b>Telefone:</b> ${a.telefone ?? "—"}</div>
+        <div style="grid-column:span 2"><b>E-mail:</b> ${a.email ?? "—"}</div>
+        <div style="grid-column:span 2"><b>Endereço:</b> ${a.endereco ?? "—"} — ${a.cidade ?? ""}/${a.estado ?? ""} ${a.cep ?? ""}</div>
+      </div>
+
+      <h2>II. Plano Contratado</h2>
+      <div class="grid">
+        <div><b>Plano:</b> ${plano.nome}</div>
+        <div><b>Mensalidade:</b> ${brl(plano.valor_mensal)}</div>
+        <div><b>Adesão:</b> ${fmtDate(a.data_adesao)}</div>
+        <div><b>Vencimento mensal:</b> dia ${a.dia_vencimento}</div>
+        <div><b>Máx. dependentes:</b> ${plano.max_dependentes}</div>
+        <div><b>Status:</b> ${a.status}</div>
+      </div>
+      ${plano.descricao ? `<p style="margin-top:8px"><b>Descrição:</b> ${plano.descricao}</p>` : ""}
+
+      <h2>III. Serviços e Coberturas</h2>
+      ${cobertura}
+
+      <h2>IV. Dependentes Inclusos</h2>
+      ${depsRows}
+
+      <h2>V. Condições Gerais</h2>
+      <p><b>1.</b> O CONTRATANTE compromete-se a efetuar o pagamento da mensalidade no valor de <b>${brl(plano.valor_mensal)}</b> até o dia <b>${a.dia_vencimento}</b> de cada mês, sob pena de suspensão dos serviços contratados.</p>
+      <p><b>2.</b> O atraso superior a 60 (sessenta) dias acarretará a suspensão automática da cobertura, sendo necessária a regularização integral dos débitos para reativação.</p>
+      <p><b>3.</b> O presente contrato vigora por prazo indeterminado, podendo ser rescindido por qualquer das partes mediante comunicação prévia por escrito.</p>
+      <p><b>4.</b> A inclusão de novos dependentes está limitada ao número máximo previsto no plano contratado e deverá ser solicitada formalmente à CONTRATADA.</p>
+      <p><b>5.</b> Os serviços abrangidos por este contrato são exclusivamente aqueles descritos na cláusula III, ficando excluídos quaisquer serviços não relacionados.</p>
+      <p><b>6.</b> Fica eleito o foro da comarca do CONTRATANTE para dirimir quaisquer questões oriundas deste contrato.</p>
+
+      <p style="margin-top:24px">E por estarem assim justos e contratados, firmam o presente em duas vias de igual teor.</p>
+      <p style="text-align:right">${a.cidade ? `${a.cidade}${a.estado ? "/" + a.estado : ""}, ` : ""}${hoje.toLocaleDateString("pt-BR")}</p>
+
+      <div class="assinaturas">
+        <div><div class="linha">CONTRATANTE<br/>${a.nome}<br/>CPF: ${a.cpf ?? "—"}</div></div>
+        <div><div class="linha">CONTRATADA<br/>Memorial</div></div>
+      </div>
+
+      <script>window.onload=()=>{window.print();}</script>
+      </body></html>`);
+    w.document.close();
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
