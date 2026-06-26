@@ -340,6 +340,7 @@ function AssociadosPage() {
       </Card>
 
       {depOpen && <DependentesDialog associado={depOpen} onClose={() => setDepOpen(null)} />}
+      {mensOpen && <MensalidadesDialog associado={mensOpen} onClose={() => setMensOpen(null)} />}
     </AppShell>
   );
 }
