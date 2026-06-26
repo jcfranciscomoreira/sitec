@@ -1,0 +1,1 @@
+ALTER TABLE public.planos DROP COLUMN IF EXISTS max_dependentes;

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Users, Search, Printer, Receipt, FileSignature } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,7 +41,6 @@ function AssociadosPage() {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Associado | null>(null);
-  const [depOpen, setDepOpen] = useState<Associado | null>(null);
   const [mensOpen, setMensOpen] = useState<Associado | null>(null);
 
   const { data: associados = [], isLoading } = useQuery({
@@ -205,7 +204,6 @@ function AssociadosPage() {
         <div><b>Mensalidade:</b> ${brl(plano.valor_mensal)}</div>
         <div><b>Adesão:</b> ${fmtDate(a.data_adesao)}</div>
         <div><b>Vencimento mensal:</b> dia ${a.dia_vencimento}</div>
-        <div><b>Máx. dependentes:</b> ${plano.max_dependentes}</div>
         <div><b>Status:</b> ${a.status}</div>
       </div>
       ${plano.descricao ? `<p style="margin-top:8px"><b>Descrição:</b> ${plano.descricao}</p>` : ""}
@@ -319,6 +317,14 @@ function AssociadosPage() {
                 <Button type="submit" disabled={upsert.isPending}>{upsert.isPending ? "Salvando..." : "Salvar"}</Button>
               </DialogFooter>
             </form>
+            <div className="mt-4 border-t border-border pt-4">
+              <h3 className="font-serif text-base mb-2">Dependentes</h3>
+              {editing?.id ? (
+                <DependentesSection associadoId={editing.id} />
+              ) : (
+                <p className="text-sm text-muted-foreground">Salve o associado para incluir dependentes.</p>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
       }
@@ -363,7 +369,6 @@ function AssociadosPage() {
                       <Button size="icon" variant="ghost" title="Gerar contrato" onClick={() => gerarContrato(a)}><FileSignature className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Imprimir relatório" onClick={() => imprimirRelatorio(a)}><Printer className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Mensalidades geradas" onClick={() => setMensOpen(a)}><Receipt className="h-4 w-4" /></Button>
-                      <Button size="icon" variant="ghost" title="Dependentes" onClick={() => setDepOpen(a)}><Users className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Editar" onClick={() => { setEditing(a); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Excluir" onClick={() => { if (confirm(`Excluir ${a.nome}?`)) del.mutate(a.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
@@ -375,7 +380,7 @@ function AssociadosPage() {
         </CardContent>
       </Card>
 
-      {depOpen && <DependentesDialog associado={depOpen} onClose={() => setDepOpen(null)} />}
+      
       {mensOpen && <MensalidadesDialog associado={mensOpen} onClose={() => setMensOpen(null)} />}
     </AppShell>
   );
@@ -390,24 +395,34 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge variant="outline" className={map[status] ?? ""}>{status}</Badge>;
 }
 
-function DependentesDialog({ associado, onClose }: { associado: any; onClose: () => void }) {
+function DependentesSection({ associadoId }: { associadoId: string }) {
   const qc = useQueryClient();
+  const [editingDep, setEditingDep] = useState<Dependente | null>(null);
   const [adding, setAdding] = useState(false);
   const { data: deps = [], isLoading } = useQuery({
-    queryKey: ["dependentes", associado.id],
+    queryKey: ["dependentes", associadoId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("dependentes").select("*").eq("associado_id", associado.id).order("nome");
+      const { data, error } = await supabase.from("dependentes").select("*").eq("associado_id", associadoId).order("nome");
       if (error) throw error;
       return data as Dependente[];
     },
   });
 
-  const add = useMutation({
+  const upsert = useMutation({
     mutationFn: async (d: Partial<Dependente>) => {
-      const { error } = await supabase.from("dependentes").insert({ ...d, associado_id: associado.id } as any);
-      if (error) throw error;
+      if (d.id) {
+        const { error } = await supabase.from("dependentes").update(d).eq("id", d.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("dependentes").insert({ ...d, associado_id: associadoId } as any);
+        if (error) throw error;
+      }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dependentes", associado.id] }); setAdding(false); toast.success("Dependente adicionado"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["dependentes", associadoId] });
+      setAdding(false); setEditingDep(null);
+      toast.success("Dependente salvo");
+    },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
 
@@ -416,59 +431,68 @@ function DependentesDialog({ associado, onClose }: { associado: any; onClose: ()
       const { error } = await supabase.from("dependentes").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dependentes", associado.id] }); toast.success("Removido"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["dependentes", associadoId] }); toast.success("Removido"); },
   });
 
+  const form = editingDep || (adding ? { nome: "", parentesco: "", data_nascimento: "", cpf: "" } : null);
+
   return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader><DialogTitle className="font-serif">Dependentes de {associado.nome}</DialogTitle></DialogHeader>
-        {!adding && (
-          <Button variant="outline" size="sm" onClick={() => setAdding(true)}><Plus className="mr-2 h-4 w-4" />Adicionar dependente</Button>
-        )}
-        {adding && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const fd = new FormData(e.currentTarget);
-              add.mutate({
-                nome: String(fd.get("nome")),
-                parentesco: String(fd.get("parentesco")),
-                data_nascimento: String(fd.get("data_nascimento") || "") || null,
-                cpf: String(fd.get("cpf") || "") || null,
-              });
-            }}
-            className="space-y-3 rounded-md border border-border p-4"
-          >
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2 col-span-2"><Label>Nome</Label><Input name="nome" required /></div>
-              <div className="space-y-2"><Label>Parentesco</Label><Input name="parentesco" placeholder="Cônjuge, Filho(a)..." required /></div>
-              <div className="space-y-2"><Label>Data de nascimento</Label><Input name="data_nascimento" type="date" /></div>
-              <div className="space-y-2 col-span-2"><Label>CPF</Label><Input name="cpf" /></div>
+    <div className="space-y-3">
+      {!form && (
+        <Button type="button" variant="outline" size="sm" onClick={() => setAdding(true)}>
+          <Plus className="mr-2 h-4 w-4" />Adicionar dependente
+        </Button>
+      )}
+      {form && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const fd = new FormData(e.currentTarget);
+            upsert.mutate({
+              id: editingDep?.id,
+              nome: String(fd.get("nome")),
+              parentesco: String(fd.get("parentesco")),
+              data_nascimento: String(fd.get("data_nascimento") || "") || null,
+              cpf: String(fd.get("cpf") || "") || null,
+            });
+          }}
+          className="space-y-3 rounded-md border border-border p-4"
+        >
+          <div className="text-sm font-medium">{editingDep ? "Editar dependente" : "Novo dependente"}</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2 col-span-2"><Label>Nome</Label><Input name="nome" defaultValue={form.nome ?? ""} required /></div>
+            <div className="space-y-2"><Label>Parentesco</Label><Input name="parentesco" defaultValue={form.parentesco ?? ""} placeholder="Cônjuge, Filho(a)..." required /></div>
+            <div className="space-y-2"><Label>Data de nascimento</Label><Input name="data_nascimento" type="date" defaultValue={form.data_nascimento ?? ""} /></div>
+            <div className="space-y-2 col-span-2"><Label>CPF</Label><Input name="cpf" defaultValue={form.cpf ?? ""} /></div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => { setAdding(false); setEditingDep(null); }}>Cancelar</Button>
+            <Button type="submit" disabled={upsert.isPending}>{upsert.isPending ? "Salvando..." : "Salvar"}</Button>
+          </div>
+        </form>
+      )}
+      <div className="divide-y divide-border rounded-md border border-border">
+        {isLoading && <p className="p-3 text-sm text-muted-foreground">Carregando...</p>}
+        {!isLoading && deps.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Nenhum dependente cadastrado.</p>}
+        {deps.map((d) => (
+          <div key={d.id} className="flex items-center justify-between px-3 py-2">
+            <div>
+              <p className="font-medium text-sm">{d.nome}</p>
+              <p className="text-xs text-muted-foreground">{d.parentesco}{d.data_nascimento ? ` · ${fmtDate(d.data_nascimento)}` : ""}{d.cpf ? ` · CPF ${d.cpf}` : ""}</p>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setAdding(false)}>Cancelar</Button>
-              <Button type="submit" disabled={add.isPending}>Salvar</Button>
-            </div>
-          </form>
-        )}
-        <div className="divide-y divide-border">
-          {isLoading && <p className="text-sm text-muted-foreground">Carregando...</p>}
-          {!isLoading && deps.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Nenhum dependente cadastrado.</p>}
-          {deps.map((d) => (
-            <div key={d.id} className="flex items-center justify-between py-3">
-              <div>
-                <p className="font-medium">{d.nome}</p>
-                <p className="text-xs text-muted-foreground">{d.parentesco}{d.data_nascimento ? ` · ${fmtDate(d.data_nascimento)}` : ""}</p>
-              </div>
-              <Button size="icon" variant="ghost" onClick={() => { if (confirm(`Remover ${d.nome}?`)) del.mutate(d.id); }}>
+            <div className="flex gap-1">
+              <Button type="button" size="icon" variant="ghost" onClick={() => { setEditingDep(d); setAdding(false); }}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button type="button" size="icon" variant="ghost" onClick={() => { if (confirm(`Remover ${d.nome}?`)) del.mutate(d.id); }}>
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

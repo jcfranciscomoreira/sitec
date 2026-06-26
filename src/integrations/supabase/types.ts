@@ -284,7 +284,6 @@ export type Database = {
           created_at: string
           descricao: string | null
           id: string
-          max_dependentes: number
           nome: string
           updated_at: string
           valor_mensal: number
@@ -295,7 +294,6 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
-          max_dependentes?: number
           nome: string
           updated_at?: string
           valor_mensal: number
@@ -306,7 +304,6 @@ export type Database = {
           created_at?: string
           descricao?: string | null
           id?: string
-          max_dependentes?: number
           nome?: string
           updated_at?: string
           valor_mensal?: number
