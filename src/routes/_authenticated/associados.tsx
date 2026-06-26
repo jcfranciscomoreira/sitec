@@ -305,6 +305,7 @@ function AssociadosPage() {
       dia_vencimento: Number(fd.get("dia_vencimento") || 10),
       status: (fd.get("status") as any) || "ativo",
       observacoes: get("observacoes"),
+      _pendingDeps: editing?.id ? undefined : pendingDeps,
     });
   }
 
