@@ -370,7 +370,7 @@ function AssociadosPage() {
               {editing?.id ? (
                 <DependentesSection associadoId={editing.id} />
               ) : (
-                <p className="text-sm text-muted-foreground">Salve o associado para incluir dependentes.</p>
+                <PendingDependentesSection list={pendingDeps} onChange={setPendingDeps} />
               )}
             </div>
           </DialogContent>
