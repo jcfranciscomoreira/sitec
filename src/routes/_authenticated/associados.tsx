@@ -36,12 +36,15 @@ type Dependente = {
   data_nascimento: string | null; parentesco: string; observacoes: string | null;
 };
 
+type PendingDep = { nome: string; parentesco: string; data_nascimento: string; cpf: string };
+
 function AssociadosPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Associado | null>(null);
   const [mensOpen, setMensOpen] = useState<Associado | null>(null);
+  const [pendingDeps, setPendingDeps] = useState<PendingDep[]>([]);
 
   const { data: associados = [], isLoading } = useQuery({
     queryKey: ["associados"],
@@ -65,20 +68,33 @@ function AssociadosPage() {
   });
 
   const upsert = useMutation({
-    mutationFn: async (a: Partial<Associado> & { plano_id_form?: string }) => {
+    mutationFn: async (a: Partial<Associado> & { plano_id_form?: string; _pendingDeps?: PendingDep[] }) => {
+      const pendings = a._pendingDeps ?? [];
       const payload: any = { ...a };
+      delete payload._pendingDeps;
       if (a.plano_id_form !== undefined) { payload.plano_id = a.plano_id_form || null; delete payload.plano_id_form; }
       if (a.id) {
         const { error } = await supabase.from("associados").update(payload).eq("id", a.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("associados").insert(payload);
+        const { data: inserted, error } = await supabase.from("associados").insert(payload).select("id").single();
         if (error) throw error;
+        if (pendings.length && inserted?.id) {
+          const rows = pendings.map((d) => ({
+            associado_id: inserted.id,
+            nome: d.nome,
+            parentesco: d.parentesco,
+            data_nascimento: d.data_nascimento || null,
+            cpf: d.cpf || null,
+          }));
+          const { error: depErr } = await supabase.from("dependentes").insert(rows);
+          if (depErr) throw depErr;
+        }
       }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["associados"] });
-      setOpen(false); setEditing(null);
+      setOpen(false); setEditing(null); setPendingDeps([]);
       toast.success("Associado salvo");
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
@@ -92,6 +108,37 @@ function AssociadosPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["associados"] }); toast.success("Associado excluído"); },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
+
+  async function imprimirCarteirinha(a: Associado) {
+    const w = window.open("", "_blank", "width=600,height=400");
+    if (!w) { toast.error("Permita pop-ups para imprimir."); return; }
+    const codigo = `#${String(a.codigo).padStart(4, "0")}`;
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Carteirinha — ${a.nome}</title>
+      <style>
+        body{font-family:Georgia,serif;margin:0;padding:24px;background:#eee}
+        .card{width:340px;height:210px;margin:20px auto;background:linear-gradient(135deg,#1e3a5f 0%,#2c5282 100%);color:#fff;border-radius:14px;padding:18px 22px;box-shadow:0 8px 24px rgba(0,0,0,.2);position:relative;font-family:Georgia,serif}
+        .brand{font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85}
+        .title{font-size:14px;margin-top:2px;color:#d4af37;letter-spacing:1px}
+        .label{font-size:9px;text-transform:uppercase;letter-spacing:2px;opacity:.7;margin-top:18px}
+        .value{font-size:18px;font-weight:bold;margin-top:2px}
+        .codigo{position:absolute;bottom:18px;right:22px;font-family:monospace;font-size:14px;background:#d4af37;color:#1e3a5f;padding:4px 10px;border-radius:6px;font-weight:bold}
+        .plano{position:absolute;bottom:18px;left:22px;font-size:11px;opacity:.85}
+        @media print{body{background:#fff;padding:0}.card{box-shadow:none;margin:0}}
+      </style></head><body>
+      <div class="card">
+        <div class="brand">Memorial</div>
+        <div class="title">Carteirinha do Associado</div>
+        <div class="label">Nome</div>
+        <div class="value">${a.nome}</div>
+        <div class="plano">${a.planos?.nome ?? "Plano não vinculado"}</div>
+        <div class="codigo">${codigo}</div>
+      </div>
+      <script>window.onload=()=>{window.print();}</script>
+      </body></html>`);
+    w.document.close();
+  }
+
+
 
 
   async function imprimirRelatorio(a: Associado) {
