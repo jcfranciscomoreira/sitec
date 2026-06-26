@@ -436,6 +436,9 @@ function DependentesDialog({ associado, onClose }: { associado: any; onClose: ()
 
 function MensalidadesDialog({ associado, onClose }: { associado: Associado; onClose: () => void }) {
   const qc = useQueryClient();
+  const [editing, setEditing] = useState<any | null>(null);
+  const [creating, setCreating] = useState(false);
+
   const { data: mens = [], isLoading } = useQuery({
     queryKey: ["mensalidades-associado", associado.id],
     queryFn: async () => {
@@ -449,19 +452,31 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
     },
   });
 
-  const baixar = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("mensalidades").update({
-        status: "pago",
-        data_pagamento: new Date().toISOString().slice(0, 10),
-        forma_pagamento: "dinheiro",
-      }).eq("id", id);
-      if (error) throw error;
+  const upsertParcela = useMutation({
+    mutationFn: async (p: any) => {
+      const payload: any = {
+        competencia: p.competencia,
+        vencimento: p.vencimento,
+        valor: Number(p.valor),
+        status: p.status,
+        data_pagamento: p.status === "pago" ? (p.data_pagamento || new Date().toISOString().slice(0, 10)) : null,
+        forma_pagamento: p.forma_pagamento || null,
+        observacoes: p.observacoes || null,
+      };
+      if (p.id) {
+        const { error } = await supabase.from("mensalidades").update(payload).eq("id", p.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("mensalidades").insert({ ...payload, associado_id: associado.id });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mensalidades-associado", associado.id] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Baixa registrada");
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      setEditing(null); setCreating(false);
+      toast.success("Parcela salva");
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
@@ -473,7 +488,7 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mensalidades-associado", associado.id] });
-      toast.success("Mensalidade removida");
+      toast.success("Parcela removida");
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
@@ -481,22 +496,125 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
   const totalPago = mens.filter((m) => m.status === "pago").reduce((s, m) => s + Number(m.valor), 0);
   const totalAberto = mens.filter((m) => m.status !== "pago" && m.status !== "cancelado").reduce((s, m) => s + Number(m.valor), 0);
 
+  function novaParcelaDefaults() {
+    const hoje = new Date();
+    // próximo mês a partir da última competência, ou mês corrente
+    let ano = hoje.getFullYear(), mes = hoje.getMonth() + 1;
+    if (mens.length > 0) {
+      const [y, m] = mens[0].competencia.split("-").map(Number);
+      const d = new Date(y, m, 1); ano = d.getFullYear(); mes = d.getMonth() + 1;
+    }
+    const competencia = `${ano}-${String(mes).padStart(2, "0")}-01`;
+    const venc = new Date(ano, mes - 1, Math.min(associado.dia_vencimento, 28)).toISOString().slice(0, 10);
+    return {
+      competencia,
+      vencimento: venc,
+      valor: associado.planos?.valor_mensal ?? 0,
+      status: "pendente",
+      data_pagamento: "",
+      forma_pagamento: "",
+      observacoes: "",
+    };
+  }
+
+  const form = editing || (creating ? novaParcelaDefaults() : null);
+
   return (
     <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif">Mensalidades de {associado.nome}</DialogTitle>
         </DialogHeader>
-        <div className="flex gap-4 text-sm">
-          <div className="rounded border border-border px-3 py-2">
-            <div className="text-xs text-muted-foreground">Total pago</div>
-            <div className="font-semibold text-success">{brl(totalPago)}</div>
+
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex gap-4 text-sm">
+            <div className="rounded border border-border px-3 py-2">
+              <div className="text-xs text-muted-foreground">Total pago</div>
+              <div className="font-semibold text-success">{brl(totalPago)}</div>
+            </div>
+            <div className="rounded border border-border px-3 py-2">
+              <div className="text-xs text-muted-foreground">Em aberto</div>
+              <div className="font-semibold text-gold">{brl(totalAberto)}</div>
+            </div>
           </div>
-          <div className="rounded border border-border px-3 py-2">
-            <div className="text-xs text-muted-foreground">Em aberto</div>
-            <div className="font-semibold text-gold">{brl(totalAberto)}</div>
-          </div>
+          {!form && (
+            <Button onClick={() => setCreating(true)}><Plus className="mr-2 h-4 w-4" />Nova parcela</Button>
+          )}
         </div>
+
+        {form && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const fd = new FormData(e.currentTarget);
+              upsertParcela.mutate({
+                id: editing?.id,
+                competencia: String(fd.get("competencia")),
+                vencimento: String(fd.get("vencimento")),
+                valor: String(fd.get("valor")),
+                status: String(fd.get("status")),
+                data_pagamento: String(fd.get("data_pagamento") || ""),
+                forma_pagamento: String(fd.get("forma_pagamento") || ""),
+                observacoes: String(fd.get("observacoes") || ""),
+              });
+            }}
+            className="space-y-3 rounded-md border border-border p-4"
+          >
+            <div className="text-sm font-medium">{editing ? "Editar parcela" : "Nova parcela"}</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>Competência (1º dia do mês)</Label>
+                <Input name="competencia" type="date" defaultValue={form.competencia} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Vencimento</Label>
+                <Input name="vencimento" type="date" defaultValue={form.vencimento} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Valor</Label>
+                <Input name="valor" type="number" step="0.01" min="0" defaultValue={form.valor} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select name="status" defaultValue={form.status}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="pago">Pago</SelectItem>
+                    <SelectItem value="atrasado">Atrasado</SelectItem>
+                    <SelectItem value="cancelado">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Data de pagamento</Label>
+                <Input name="data_pagamento" type="date" defaultValue={form.data_pagamento ?? ""} />
+              </div>
+              <div className="space-y-2">
+                <Label>Forma de pagamento</Label>
+                <Select name="forma_pagamento" defaultValue={form.forma_pagamento ?? ""}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                    <SelectItem value="pix">PIX</SelectItem>
+                    <SelectItem value="cartao">Cartão</SelectItem>
+                    <SelectItem value="boleto">Boleto</SelectItem>
+                    <SelectItem value="transferencia">Transferência</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 col-span-2">
+                <Label>Observações</Label>
+                <Textarea name="observacoes" rows={2} defaultValue={form.observacoes ?? ""} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => { setEditing(null); setCreating(false); }}>Cancelar</Button>
+              <Button type="submit" disabled={upsertParcela.isPending}>{upsertParcela.isPending ? "Salvando..." : "Salvar"}</Button>
+            </div>
+          </form>
+        )}
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -510,7 +628,7 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
           </TableHeader>
           <TableBody>
             {isLoading && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
-            {!isLoading && mens.length === 0 && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Nenhuma mensalidade gerada.</TableCell></TableRow>}
+            {!isLoading && mens.length === 0 && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Nenhuma parcela gerada.</TableCell></TableRow>}
             {mens.map((m) => (
               <TableRow key={m.id}>
                 <TableCell>{competenciaLabel(m.competencia)}</TableCell>
@@ -520,12 +638,10 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
                 <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
-                    {m.status !== "pago" && m.status !== "cancelado" && (
-                      <Button size="icon" variant="ghost" title="Dar baixa" onClick={() => baixar.mutate(m.id)} disabled={baixar.isPending}>
-                        <CheckCircle2 className="h-4 w-4 text-success" />
-                      </Button>
-                    )}
-                    <Button size="icon" variant="ghost" title="Excluir" onClick={() => { if (confirm("Excluir mensalidade?")) cancelar.mutate(m.id); }}>
+                    <Button size="icon" variant="ghost" title="Editar parcela" onClick={() => { setCreating(false); setEditing(m); }}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="ghost" title="Excluir" onClick={() => { if (confirm("Excluir parcela?")) cancelar.mutate(m.id); }}>
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
