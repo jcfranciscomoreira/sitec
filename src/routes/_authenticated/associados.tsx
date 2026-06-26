@@ -235,6 +235,9 @@ function AssociadosPage() {
       <script>window.onload=()=>{window.print();}</script>
       </body></html>`);
     w.document.close();
+  }
+
+
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
