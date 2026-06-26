@@ -17,6 +17,7 @@ const groups: { label: string; items: { title: string; url: string; icon: any }[
       { title: "Associados", url: "/associados", icon: Users },
       { title: "Planos", url: "/planos", icon: FileText },
       { title: "Mensalidades", url: "/financeiro", icon: Wallet },
+      { title: "Recebimento", url: "/recebimento", icon: HandCoins },
     ],
   },
   {
