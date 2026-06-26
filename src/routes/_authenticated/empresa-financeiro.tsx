@@ -34,6 +34,18 @@ function PainelFinanceiroPage() {
     },
   });
 
+  const { data: planosRev = [] } = useQuery({
+    queryKey: ["receitas-por-plano"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("valor, status, data_pagamento, competencia, associados(planos(nome))")
+        .eq("status", "pago");
+      if (error) throw error;
+      return (data ?? []) as any[];
+    },
+  });
+
   const stats = useMemo(() => {
     const hoje = new Date().toISOString().slice(0, 10);
     const mes = hoje.slice(0, 7);
