@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, BookOpen, Filter, Plus, Printer, X, ArrowLeft } from "lucide-react";
+import { CheckCircle2, BookOpen, Plus, Printer, ArrowLeft, History, Eye } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
@@ -19,37 +20,43 @@ export const Route = createFileRoute("/_authenticated/recebimento")({
 });
 
 function RecebimentoPage() {
-  const [tab, setTab] = useState<"baixa" | "carne">("baixa");
+  const [tab, setTab] = useState<"baixa" | "carne" | "historico">("baixa");
 
   return (
-    <AppShell title="Recebimento" subtitle="Baixa em massa de mensalidades e geração de carnês">
-      <div className="mb-4 flex gap-2">
+    <AppShell title="Recebimento" subtitle="Baixa em massa de mensalidades, histórico e geração de carnês">
+      <div className="mb-4 flex flex-wrap gap-2">
         <Button variant={tab === "baixa" ? "default" : "outline"} onClick={() => setTab("baixa")}>
           <CheckCircle2 className="mr-2 h-4 w-4" />Baixa por agente
+        </Button>
+        <Button variant={tab === "historico" ? "default" : "outline"} onClick={() => setTab("historico")}>
+          <History className="mr-2 h-4 w-4" />Histórico de baixas
         </Button>
         <Button variant={tab === "carne" ? "default" : "outline"} onClick={() => setTab("carne")}>
           <BookOpen className="mr-2 h-4 w-4" />Gerar carnês em massa
         </Button>
       </div>
 
-      {tab === "baixa" ? <BaixaWizard /> : <CarneSection />}
+      {tab === "baixa" && <BaixaWizard />}
+      {tab === "historico" && <HistoricoSection />}
+      {tab === "carne" && <CarneSection />}
     </AppShell>
   );
 }
 
 // ============= Baixa Wizard =============
 
-type Session = { agente: string; data: string; responsavel: string };
+type Session = { agente: string; data: string; responsavel: string; responsavelId?: string };
 type RecebItem = {
   mensalidadeId: string;
   codigo: number;
+  associadoId: string;
   associado: string;
   codAssoc: number;
   competencia: string;
   vencimento: string;
   valorOriginal: number;
   valorRecebido: number;
-  diferenca: number; // positivo = excesso, negativo = falta
+  diferenca: number;
   acao: "Quitada" | "Quitada + abate na próxima" | "Parcial + nova parcela gerada";
 };
 
@@ -57,17 +64,95 @@ function BaixaWizard() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [session, setSession] = useState<Session | null>(null);
   const [items, setItems] = useState<RecebItem[]>([]);
+  const [finalizing, setFinalizing] = useState(false);
+  const qc = useQueryClient();
 
-  // Buscar nome do responsável (usuário logado)
   const [responsavel, setResponsavel] = useState("");
+  const [responsavelId, setResponsavelId] = useState<string | undefined>();
   useEffect(() => {
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
+      setResponsavelId(u.user.id);
       const { data: p } = await supabase.from("profiles").select("nome,email").eq("id", u.user.id).maybeSingle();
       setResponsavel(p?.nome || p?.email || u.user.email || "");
     })();
   }, []);
+
+  async function finalize() {
+    if (!session || items.length === 0) { toast.error("Nenhuma parcela registrada."); return; }
+    setFinalizing(true);
+    try {
+      // Aplica todas as baixas no banco agora
+      for (const i of items) {
+        const baseUpd = { status: "pago" as const, data_pagamento: session.data, agente_recebimento: session.agente };
+        if (i.diferenca === 0) {
+          const { error } = await supabase.from("mensalidades").update(baseUpd).eq("id", i.mensalidadeId);
+          if (error) throw error;
+        } else if (i.diferenca > 0) {
+          // Excesso: quita esta e abate na próxima
+          const { error } = await supabase.from("mensalidades").update(baseUpd).eq("id", i.mensalidadeId);
+          if (error) throw error;
+          const excesso = i.diferenca;
+          const { data: nx } = await supabase.from("mensalidades")
+            .select("id, valor").eq("associado_id", i.associadoId)
+            .in("status", ["pendente", "atrasado"])
+            .gt("vencimento", i.vencimento)
+            .order("vencimento", { ascending: true }).limit(1);
+          const next: any = nx?.[0];
+          if (next) {
+            const novo = Math.max(0, Number(next.valor) - excesso);
+            if (novo === 0) {
+              await supabase.from("mensalidades").update({ ...baseUpd, observacoes: `Quitada por excedente de ${brl(excesso)}` }).eq("id", next.id);
+            } else {
+              await supabase.from("mensalidades").update({ valor: novo, observacoes: `Abatido ${brl(excesso)} de excedente da parcela anterior` }).eq("id", next.id);
+            }
+          }
+        } else {
+          // Parcial: quita com valor parcial e gera nova
+          const diff = -i.diferenca;
+          const { error } = await supabase.from("mensalidades").update({ ...baseUpd, valor: i.valorRecebido, observacoes: `Pagamento parcial. Diferença de ${brl(diff)} gerada em nova parcela.` }).eq("id", i.mensalidadeId);
+          if (error) throw error;
+          const { data: nx } = await supabase.from("mensalidades")
+            .select("vencimento").eq("associado_id", i.associadoId)
+            .in("status", ["pendente", "atrasado"])
+            .gt("vencimento", i.vencimento)
+            .order("vencimento", { ascending: true }).limit(1);
+          let novoVenc = nx?.[0]?.vencimento as string | undefined;
+          if (!novoVenc) {
+            const d = new Date(i.vencimento + "T00:00:00"); d.setMonth(d.getMonth() + 1);
+            novoVenc = d.toISOString().slice(0, 10);
+          }
+          const comp = novoVenc.slice(0, 7) + "-01";
+          await supabase.from("mensalidades").insert({
+            associado_id: i.associadoId, competencia: comp, vencimento: novoVenc, valor: diff,
+            status: "pendente", observacoes: `Diferença de pagamento parcial da parcela #${i.codigo}`,
+          });
+        }
+      }
+
+      // Registra sessão de baixa no histórico
+      const total = items.reduce((s, x) => s + x.valorRecebido, 0);
+      await supabase.from("baixa_sessoes").insert({
+        agente: session.agente,
+        data_recebimento: session.data,
+        responsavel_id: session.responsavelId ?? null,
+        responsavel_nome: session.responsavel,
+        total_qtd: items.length,
+        total_valor: total,
+        itens: items as any,
+      });
+
+      qc.invalidateQueries({ queryKey: ["baixa-sessoes"] });
+      imprimirRelatorio(session, items);
+      setStep(3);
+      toast.success("Baixa concluída", { description: `${items.length} parcela(s) — ${brl(total)}` });
+    } catch (e: any) {
+      toast.error("Erro ao finalizar", { description: e.message });
+    } finally {
+      setFinalizing(false);
+    }
+  }
 
   if (step === 1) {
     return (
@@ -82,7 +167,7 @@ function BaixaWizard() {
               const agente = String(fd.get("agente") || "").trim();
               const data = String(fd.get("data") || "");
               if (!agente || !data) { toast.error("Preencha agente e data."); return; }
-              setSession({ agente, data, responsavel });
+              setSession({ agente, data, responsavel, responsavelId });
               setItems([]);
               setStep(2);
             }}
@@ -104,12 +189,12 @@ function BaixaWizard() {
         items={items}
         setItems={setItems}
         onCancel={() => { setStep(1); setItems([]); setSession(null); }}
-        onFinalize={() => { if (items.length === 0) { toast.error("Nenhuma parcela registrada."); return; } imprimirRelatorio(session, items); setStep(3); }}
+        onFinalize={finalize}
+        finalizing={finalizing}
       />
     );
   }
 
-  // step 3
   return (
     <Card className="border-border/60 shadow-soft">
       <CardHeader><CardTitle className="font-serif">Baixa concluída</CardTitle></CardHeader>
@@ -121,9 +206,9 @@ function BaixaWizard() {
   );
 }
 
-function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
+function BaixaEntrada({ session, items, setItems, onCancel, onFinalize, finalizing }: {
   session: Session; items: RecebItem[]; setItems: (f: (x: RecebItem[]) => RecebItem[]) => void;
-  onCancel: () => void; onFinalize: () => void;
+  onCancel: () => void; onFinalize: () => void; finalizing: boolean;
 }) {
   const [codigo, setCodigo] = useState("");
   const [valor, setValor] = useState("");
@@ -136,7 +221,6 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
     valor: items.reduce((s, i) => s + i.valorRecebido, 0),
   }), [items]);
 
-  // Busca em tempo real (debounce) pelo código numérico
   useEffect(() => {
     const cod = Number(codigo.trim());
     if (!cod || !Number.isFinite(cod)) { setPreview(null); setPreviewErr(""); return; }
@@ -151,104 +235,54 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
       if (error || !data) { setPreview(null); setPreviewErr("Parcela não encontrada"); return; }
       setPreview(data);
       setPreviewErr("");
-      // pré-preenche valor sugerido apenas se vazio
       setValor((cur) => cur || String(Number((data as any).valor)));
     }, 250);
     return () => { cancel = true; clearTimeout(t); };
   }, [codigo]);
 
-  async function handleAdd(e: React.FormEvent) {
+  function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
     const cod = Number(codigo.trim());
     const v = Number(String(valor).replace(",", "."));
     if (!cod) { toast.error("Informe o código numérico da parcela."); return; }
     if (!v || v <= 0) { toast.error("Informe o valor recebido."); return; }
+    if (!preview) { toast.error("Parcela não encontrada."); return; }
+    if ((preview as any).status === "pago") { toast.error("Parcela já está paga."); return; }
+    if (items.some((i) => i.mensalidadeId === (preview as any).id)) { toast.error("Parcela já adicionada nesta baixa."); return; }
+
     setBusy(true);
     try {
-      const { data: m, error } = await supabase
-        .from("mensalidades")
-        .select("*, associados!inner(id, nome, codigo, planos(nome, valor_mensal))")
-        .eq("codigo", cod)
-        .maybeSingle();
-      if (error) throw error;
-      if (!m) { toast.error("Parcela não encontrada."); return; }
-      if ((m as any).status === "pago") { toast.error("Parcela já está paga."); return; }
-      if (items.some((i) => i.mensalidadeId === (m as any).id)) { toast.error("Parcela já adicionada nesta baixa."); return; }
-
-      const valorOriginal = Number((m as any).valor);
-      const updates: Array<PromiseLike<any>> = [];
+      const m: any = preview;
+      const valorOriginal = Number(m.valor);
+      const diferenca = v - valorOriginal;
       let acao: RecebItem["acao"] = "Quitada";
-      const baseUpd = { status: "pago" as const, data_pagamento: session.data, agente_recebimento: session.agente };
-
-      if (v === valorOriginal) {
-        updates.push(supabase.from("mensalidades").update(baseUpd).eq("id", (m as any).id));
-      } else if (v > valorOriginal) {
-        const excesso = v - valorOriginal;
-        updates.push(supabase.from("mensalidades").update(baseUpd).eq("id", (m as any).id));
-        const { data: nx } = await supabase.from("mensalidades")
-          .select("id, valor, vencimento")
-          .eq("associado_id", (m as any).associado_id)
-          .in("status", ["pendente", "atrasado"])
-          .gt("vencimento", (m as any).vencimento)
-          .order("vencimento", { ascending: true }).limit(1);
-        const next: any = nx?.[0];
-        if (next) {
-          const novo = Math.max(0, Number(next.valor) - excesso);
-          if (novo === 0) {
-            updates.push(supabase.from("mensalidades").update({ ...baseUpd, observacoes: `Quitada por excedente de ${brl(excesso)}` }).eq("id", next.id));
-          } else {
-            updates.push(supabase.from("mensalidades").update({ valor: novo, observacoes: `Abatido ${brl(excesso)} de excedente da parcela anterior` }).eq("id", next.id));
-          }
-          acao = "Quitada + abate na próxima";
-        } else {
-          acao = "Quitada";
-        }
-      } else {
-        const diff = valorOriginal - v;
-        updates.push(supabase.from("mensalidades").update({ ...baseUpd, valor: v, observacoes: `Pagamento parcial. Diferença de ${brl(diff)} gerada em nova parcela.` }).eq("id", (m as any).id));
-        const { data: nx } = await supabase.from("mensalidades")
-          .select("vencimento").eq("associado_id", (m as any).associado_id)
-          .in("status", ["pendente", "atrasado"])
-          .gt("vencimento", (m as any).vencimento)
-          .order("vencimento", { ascending: true }).limit(1);
-        let novoVenc = nx?.[0]?.vencimento as string | undefined;
-        if (!novoVenc) {
-          const d = new Date((m as any).vencimento + "T00:00:00"); d.setMonth(d.getMonth() + 1);
-          novoVenc = d.toISOString().slice(0, 10);
-        }
-        const comp = novoVenc.slice(0, 7) + "-01";
-        updates.push(supabase.from("mensalidades").insert({
-          associado_id: (m as any).associado_id, competencia: comp, vencimento: novoVenc, valor: diff,
-          status: "pendente", observacoes: `Diferença de pagamento parcial da parcela #${(m as any).codigo}`,
-        }));
-        acao = "Parcial + nova parcela gerada";
-      }
-
-      const results = await Promise.all(updates);
-      const errs = results.find((r: any) => r?.error);
-      if (errs?.error) throw errs.error;
+      if (diferenca > 0) acao = "Quitada + abate na próxima";
+      else if (diferenca < 0) acao = "Parcial + nova parcela gerada";
 
       const item: RecebItem = {
-        mensalidadeId: (m as any).id,
-        codigo: Number((m as any).codigo),
-        associado: (m as any).associados?.nome ?? "",
-        codAssoc: (m as any).associados?.codigo ?? 0,
-        competencia: (m as any).competencia,
-        vencimento: (m as any).vencimento,
+        mensalidadeId: m.id,
+        codigo: Number(m.codigo),
+        associadoId: m.associado_id,
+        associado: m.associados?.nome ?? "",
+        codAssoc: m.associados?.codigo ?? 0,
+        competencia: m.competencia,
+        vencimento: m.vencimento,
         valorOriginal,
         valorRecebido: v,
-        diferenca: v - valorOriginal,
+        diferenca,
         acao,
       };
       setItems((prev) => [...prev, item]);
       setCodigo(""); setValor(""); setPreview(null); setPreviewErr("");
-      toast.success("Parcela registrada", { description: `${item.associado} · ${brl(v)}` });
-    } catch (e: any) {
-      toast.error("Erro", { description: e.message });
+      toast.success("Parcela listada", { description: `${item.associado} · ${brl(v)} — baixa apenas ao concluir` });
     } finally {
       setBusy(false);
     }
+  }
+
+  function removeItem(id: string) {
+    setItems((prev) => prev.filter((i) => i.mensalidadeId !== id));
   }
 
   return (
@@ -260,6 +294,10 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded border border-gold/40 bg-gold/5 px-3 py-2 text-xs text-muted-foreground">
+          Ao clicar em <b>OK</b> a parcela é apenas <b>listada</b> abaixo. A baixa só é efetivada quando você clicar em <b>Concluir e imprimir relatório</b>.
+        </div>
+
         <form onSubmit={handleAdd} className="grid gap-3 md:grid-cols-[1fr_180px_auto]">
           <div className="space-y-2"><Label>Código da parcela</Label><Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ex: 1024" autoFocus inputMode="numeric" /></div>
           <div className="space-y-2"><Label>Valor recebido (R$)</Label><Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" min="0" /></div>
@@ -280,10 +318,9 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
         )}
 
         <div className="rounded border border-border px-3 py-2 text-sm flex flex-wrap gap-x-6 gap-y-1">
-          <span><span className="text-muted-foreground">Parcelas recebidas:</span> <b>{totais.qtd}</b></span>
-          <span><span className="text-muted-foreground">Total recebido:</span> <b className="text-success">{brl(totais.valor)}</b></span>
+          <span><span className="text-muted-foreground">Parcelas listadas:</span> <b>{totais.qtd}</b></span>
+          <span><span className="text-muted-foreground">Total a receber:</span> <b className="text-success">{brl(totais.valor)}</b></span>
         </div>
-
 
         <Table>
           <TableHeader>
@@ -295,10 +332,11 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
               <TableHead className="text-right">Recebido</TableHead>
               <TableHead className="text-right">Diferença</TableHead>
               <TableHead>Ação</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.length === 0 && <TableRow><TableCell colSpan={7} className="py-6 text-center text-muted-foreground">Nenhuma parcela registrada ainda.</TableCell></TableRow>}
+            {items.length === 0 && <TableRow><TableCell colSpan={8} className="py-6 text-center text-muted-foreground">Nenhuma parcela listada ainda.</TableCell></TableRow>}
             {items.map((i) => (
               <TableRow key={i.mensalidadeId}>
                 <TableCell className="font-mono text-xs">{i.codigo}</TableCell>
@@ -308,14 +346,15 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize }: {
                 <TableCell className="text-right font-medium text-success">{brl(i.valorRecebido)}</TableCell>
                 <TableCell className={`text-right ${i.diferenca === 0 ? "" : i.diferenca > 0 ? "text-primary" : "text-destructive"}`}>{i.diferenca === 0 ? "—" : brl(i.diferenca)}</TableCell>
                 <TableCell className="text-xs">{i.acao}</TableCell>
+                <TableCell><Button size="sm" variant="ghost" onClick={() => removeItem(i.mensalidadeId)}>Remover</Button></TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
 
         <div className="flex justify-between pt-2">
-          <Button variant="outline" onClick={onCancel}><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Button>
-          <Button onClick={onFinalize} disabled={items.length === 0}><Printer className="mr-2 h-4 w-4" />Concluir e imprimir relatório</Button>
+          <Button variant="outline" onClick={onCancel} disabled={finalizing}><ArrowLeft className="mr-2 h-4 w-4" />Voltar</Button>
+          <Button onClick={onFinalize} disabled={items.length === 0 || finalizing}><Printer className="mr-2 h-4 w-4" />{finalizing ? "Processando..." : "Concluir e imprimir relatório"}</Button>
         </div>
       </CardContent>
     </Card>
@@ -375,7 +414,113 @@ function imprimirRelatorio(session: Session, items: RecebItem[]) {
   w.document.close();
 }
 
-// ============= Carnê Section (inalterada) =============
+// ============= Histórico =============
+
+function HistoricoSection() {
+  const [view, setView] = useState<any | null>(null);
+  const { data: sessoes = [], isLoading } = useQuery({
+    queryKey: ["baixa-sessoes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("baixa_sessoes")
+        .select("*")
+        .order("data_recebimento", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  return (
+    <Card className="border-border/60 shadow-soft">
+      <CardHeader><CardTitle className="font-serif flex items-center gap-2"><History className="h-4 w-4" />Histórico de baixas</CardTitle></CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Data</TableHead>
+              <TableHead>Agente</TableHead>
+              <TableHead>Responsável</TableHead>
+              <TableHead className="text-right">Parcelas</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {!isLoading && sessoes.length === 0 && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Nenhuma baixa registrada.</TableCell></TableRow>}
+            {sessoes.map((s: any) => (
+              <TableRow key={s.id}>
+                <TableCell>{fmtDate(s.data_recebimento)}</TableCell>
+                <TableCell className="font-medium">{s.agente}</TableCell>
+                <TableCell>{s.responsavel_nome || "—"}</TableCell>
+                <TableCell className="text-right">{s.total_qtd}</TableCell>
+                <TableCell className="text-right text-success font-medium">{brl(Number(s.total_valor))}</TableCell>
+                <TableCell className="text-right">
+                  <Button size="sm" variant="outline" onClick={() => setView(s)}><Eye className="mr-1 h-4 w-4" />Visualizar</Button>
+                  <Button size="sm" variant="ghost" className="ml-1" onClick={() => {
+                    const sess: Session = { agente: s.agente, data: s.data_recebimento, responsavel: s.responsavel_nome || "" };
+                    imprimirRelatorio(sess, s.itens as RecebItem[]);
+                  }}><Printer className="mr-1 h-4 w-4" />Imprimir</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+
+      {view && (
+        <Dialog open onOpenChange={(v) => !v && setView(null)}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader><DialogTitle className="font-serif">Baixa de {fmtDate(view.data_recebimento)} — {view.agente}</DialogTitle></DialogHeader>
+            <div className="rounded border border-border bg-muted/30 px-3 py-2 text-sm flex flex-wrap gap-x-6 gap-y-1">
+              <span><span className="text-muted-foreground">Responsável:</span> <b>{view.responsavel_nome || "—"}</b></span>
+              <span><span className="text-muted-foreground">Parcelas:</span> <b>{view.total_qtd}</b></span>
+              <span><span className="text-muted-foreground">Total:</span> <b className="text-success">{brl(Number(view.total_valor))}</b></span>
+            </div>
+            <div className="max-h-[60vh] overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Código</TableHead>
+                    <TableHead>Associado</TableHead>
+                    <TableHead>Competência</TableHead>
+                    <TableHead className="text-right">Parcela</TableHead>
+                    <TableHead className="text-right">Recebido</TableHead>
+                    <TableHead className="text-right">Diferença</TableHead>
+                    <TableHead>Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(view.itens as RecebItem[]).map((i) => (
+                    <TableRow key={i.mensalidadeId}>
+                      <TableCell className="font-mono text-xs">{i.codigo}</TableCell>
+                      <TableCell>{i.associado} <span className="text-xs text-muted-foreground">#{String(i.codAssoc).padStart(4, "0")}</span></TableCell>
+                      <TableCell className="capitalize">{competenciaLabel(i.competencia)}</TableCell>
+                      <TableCell className="text-right">{brl(i.valorOriginal)}</TableCell>
+                      <TableCell className="text-right text-success">{brl(i.valorRecebido)}</TableCell>
+                      <TableCell className={`text-right ${i.diferenca === 0 ? "" : i.diferenca > 0 ? "text-primary" : "text-destructive"}`}>{i.diferenca === 0 ? "—" : brl(i.diferenca)}</TableCell>
+                      <TableCell className="text-xs">{i.acao}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => {
+                const sess: Session = { agente: view.agente, data: view.data_recebimento, responsavel: view.responsavel_nome || "" };
+                imprimirRelatorio(sess, view.itens as RecebItem[]);
+              }}><Printer className="mr-2 h-4 w-4" />Imprimir relatório</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </Card>
+  );
+}
+
+// ============= Carnê Section =============
 
 function CarneSection() {
   const [cidade, setCidade] = useState<string>("todas");

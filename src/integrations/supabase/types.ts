@@ -91,6 +91,42 @@ export type Database = {
           },
         ]
       }
+      baixa_sessoes: {
+        Row: {
+          agente: string
+          created_at: string
+          data_recebimento: string
+          id: string
+          itens: Json
+          responsavel_id: string | null
+          responsavel_nome: string | null
+          total_qtd: number
+          total_valor: number
+        }
+        Insert: {
+          agente: string
+          created_at?: string
+          data_recebimento: string
+          id?: string
+          itens?: Json
+          responsavel_id?: string | null
+          responsavel_nome?: string | null
+          total_qtd?: number
+          total_valor?: number
+        }
+        Update: {
+          agente?: string
+          created_at?: string
+          data_recebimento?: string
+          id?: string
+          itens?: Json
+          responsavel_id?: string | null
+          responsavel_nome?: string | null
+          total_qtd?: number
+          total_valor?: number
+        }
+        Relationships: []
+      }
       centros_custo: {
         Row: {
           ativo: boolean
