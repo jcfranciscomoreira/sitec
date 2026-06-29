@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, BookOpen, Plus, Printer, ArrowLeft, History, Eye } from "lucide-react";
+import { CheckCircle2, BookOpen, Plus, Printer, ArrowLeft, History, Eye, Users, Pencil, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,10 +23,10 @@ export const Route = createFileRoute("/_authenticated/recebimento")({
 });
 
 function RecebimentoPage() {
-  const [tab, setTab] = useState<"baixa" | "carne" | "historico">("baixa");
+  const [tab, setTab] = useState<"baixa" | "carne" | "historico" | "cobradores">("baixa");
 
   return (
-    <AppShell title="Recebimento" subtitle="Baixa em massa de mensalidades, histórico e geração de carnês">
+    <AppShell title="Recebimento" subtitle="Baixa em massa de mensalidades, histórico, carnês e cobradores">
       <div className="mb-4 flex flex-wrap gap-2">
         <Button variant={tab === "baixa" ? "default" : "outline"} onClick={() => setTab("baixa")}>
           <CheckCircle2 className="mr-2 h-4 w-4" />Baixa por agente
@@ -34,12 +37,129 @@ function RecebimentoPage() {
         <Button variant={tab === "carne" ? "default" : "outline"} onClick={() => setTab("carne")}>
           <BookOpen className="mr-2 h-4 w-4" />Gerar carnês em massa
         </Button>
+        <Button variant={tab === "cobradores" ? "default" : "outline"} onClick={() => setTab("cobradores")}>
+          <Users className="mr-2 h-4 w-4" />Cadastro de cobradores
+        </Button>
       </div>
 
       {tab === "baixa" && <BaixaWizard />}
       {tab === "historico" && <HistoricoSection />}
       {tab === "carne" && <CarneSection />}
+      {tab === "cobradores" && <CobradoresSection />}
     </AppShell>
+  );
+}
+
+type Cobrador = { id: string; nome: string; telefone: string | null; documento: string | null; observacoes: string | null; ativo: boolean };
+
+function CobradoresSection() {
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Cobrador | null>(null);
+
+  const { data: lista = [], isLoading } = useQuery({
+    queryKey: ["cobradores"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cobradores").select("*").order("nome");
+      if (error) throw error;
+      return data as Cobrador[];
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: async (payload: any) => {
+      if (editing) {
+        const { error } = await supabase.from("cobradores").update(payload).eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("cobradores").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["cobradores"] });
+      setOpen(false); setEditing(null);
+      toast.success("Cobrador salvo");
+    },
+    onError: (e: any) => toast.error("Erro", { description: e.message }),
+  });
+
+  const del = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("cobradores").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["cobradores"] }); toast.success("Excluído"); },
+    onError: (e: any) => toast.error("Erro", { description: e.message }),
+  });
+
+  return (
+    <Card className="border-border/60 shadow-soft">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="font-serif">Cobradores</CardTitle>
+        <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setEditing(null); }}>
+          <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" />Novo cobrador</Button></DialogTrigger>
+          <DialogContent>
+            <DialogHeader><DialogTitle className="font-serif">{editing ? "Editar" : "Novo"} cobrador</DialogTitle></DialogHeader>
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget);
+                save.mutate({
+                  nome: String(fd.get("nome") || "").trim(),
+                  telefone: String(fd.get("telefone") || "") || null,
+                  documento: String(fd.get("documento") || "") || null,
+                  observacoes: String(fd.get("observacoes") || "") || null,
+                  ativo: fd.get("ativo") === "on",
+                });
+              }}
+            >
+              <div className="space-y-2"><Label>Nome</Label><Input name="nome" required defaultValue={editing?.nome ?? ""} /></div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2"><Label>Telefone</Label><Input name="telefone" defaultValue={editing?.telefone ?? ""} /></div>
+                <div className="space-y-2"><Label>Documento (CPF/RG)</Label><Input name="documento" defaultValue={editing?.documento ?? ""} /></div>
+              </div>
+              <div className="space-y-2"><Label>Observações</Label><Textarea name="observacoes" rows={2} defaultValue={editing?.observacoes ?? ""} /></div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" name="ativo" id="ativo" defaultChecked={editing ? editing.ativo : true} className="h-4 w-4" />
+                <Label htmlFor="ativo">Ativo</Label>
+              </div>
+              <DialogFooter><Button type="submit" disabled={save.isPending}>{save.isPending ? "Salvando..." : "Salvar"}</Button></DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Telefone</TableHead>
+              <TableHead>Documento</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {!isLoading && lista.length === 0 && <TableRow><TableCell colSpan={5} className="py-10 text-center text-muted-foreground">Nenhum cobrador cadastrado.</TableCell></TableRow>}
+            {lista.map((c) => (
+              <TableRow key={c.id}>
+                <TableCell className="font-medium">{c.nome}</TableCell>
+                <TableCell>{c.telefone ?? "—"}</TableCell>
+                <TableCell>{c.documento ?? "—"}</TableCell>
+                <TableCell>{c.ativo ? <Badge className="bg-success/15 text-success border-success/30" variant="outline">Ativo</Badge> : <Badge variant="outline">Inativo</Badge>}</TableCell>
+                <TableCell className="text-right">
+                  <Button size="icon" variant="ghost" onClick={() => { setEditing(c); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir cobrador?")) del.mutate(c.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
 
