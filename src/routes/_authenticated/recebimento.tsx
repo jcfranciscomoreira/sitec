@@ -1253,6 +1253,9 @@ function imprimirRotaCobrador(cobrador: string, parcelas: any[]) {
     <script>window.print();</script>
     </body></html>`);
   w.document.close();
+}
+
+
 
 function imprimirComprovante(c: {
   id: string; cobrador: string; data: string; codigoParcela: number;
