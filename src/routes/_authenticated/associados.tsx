@@ -390,7 +390,7 @@ function AssociadosPage() {
             <div className="mt-4 border-t border-border pt-4">
               <h3 className="font-serif text-base mb-2">Dependentes</h3>
               {editing?.id ? (
-                <DependentesSection associadoId={editing.id} />
+                <DependentesSection associado={editing} />
               ) : (
                 <PendingDependentesSection list={pendingDeps} onChange={setPendingDeps} />
               )}
