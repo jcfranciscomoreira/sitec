@@ -105,10 +105,19 @@ function VendasPage() {
         await loadData();
         if (cancelled || !mapDivRef.current) return;
         const google = (window as any).google;
-        const initial = { lat: -15.7801, lng: -47.9292 };
+        const initialFix = await new Promise<{ lat: number; lng: number; accuracy?: number } | null>((resolve) => {
+          if (!navigator.geolocation) return resolve(null);
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
+            () => resolve(null),
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
+          );
+        });
+        if (cancelled) return;
+        const initial = initialFix ?? { lat: -15.7801, lng: -47.9292 };
         mapRef.current = new google.maps.Map(mapDivRef.current, {
-          center: initial,
-          zoom: 13,
+          center: { lat: initial.lat, lng: initial.lng },
+          zoom: initialFix ? 15 : 13,
           mapTypeControl: true,
           mapTypeControlOptions: {
             style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
@@ -117,6 +126,14 @@ function VendasPage() {
           streetViewControl: false,
           fullscreenControl: false,
         });
+        if (initialFix) {
+          updateMeMarker({ lat: initialFix.lat, lng: initialFix.lng }, initialFix.accuracy);
+          try {
+            const geo = await reverseGeocode({ data: { lat: initialFix.lat, lng: initialFix.lng } });
+            if (!cancelled && geo.municipio) setMeMunicipio(geo.municipio);
+          } catch {}
+        }
+
         mapRef.current.addListener("click", async (e: any) => {
           const lat = e.latLng.lat();
           const lng = e.latLng.lng();
