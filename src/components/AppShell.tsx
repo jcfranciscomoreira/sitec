@@ -55,14 +55,30 @@ function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
+function AppSidebar() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const { config } = useConfiguracoes();
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
+
+  return (
+    <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gold text-gold-foreground">
-            <Cross className="h-5 w-5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-gold text-gold-foreground overflow-hidden">
+            {config.logo_url
+              ? <img src={config.logo_url} alt="logo" className="h-full w-full object-contain" />
+              : <Cross className="h-5 w-5" />}
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="font-serif text-base font-semibold text-sidebar-foreground">Memorial</span>
-            <span className="text-[11px] uppercase tracking-wider text-sidebar-foreground/60">Gestão de Planos</span>
+            <span className="font-serif text-base font-semibold text-sidebar-foreground">{config.nome_sistema}</span>
+            {config.subtitulo && (
+              <span className="text-[11px] uppercase tracking-wider text-sidebar-foreground/60">{config.subtitulo}</span>
+            )}
           </div>
         </div>
       </SidebarHeader>
