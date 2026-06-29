@@ -302,3 +302,90 @@ function ResetPwDialog({ user, onClose, onReset }: { user: Usuario | null; onClo
     </Dialog>
   );
 }
+
+function PermissoesTab() {
+  const listFn = useServerFn(listRolePermissions);
+  const updateFn = useServerFn(updateRolePermission);
+  const [perms, setPerms] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const data = await listFn();
+      const map: Record<string, boolean> = {};
+      (data as any[]).forEach((p) => { map[`${p.role}:${p.module}`] = !!p.allowed; });
+      setPerms(map);
+    } finally { setLoading(false); }
+  }
+  useEffect(() => { load(); }, []);
+
+  async function toggle(role: Role, module: string, allowed: boolean) {
+    const key = `${role}:${module}`;
+    setPerms((p) => ({ ...p, [key]: allowed }));
+    try {
+      await updateFn({ data: { role, module, allowed } });
+      toast.success("Permissão atualizada");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro");
+      setPerms((p) => ({ ...p, [key]: !allowed }));
+    }
+  }
+
+  const groups = Array.from(new Set(MODULES.map((m) => m.group)));
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        {loading ? (
+          <div className="flex items-center justify-center p-10 text-muted-foreground">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              Defina quais módulos cada nível de acesso pode visualizar. Administradores sempre têm acesso total.
+            </p>
+            {groups.map((group) => (
+              <div key={group}>
+                <h3 className="mb-2 font-serif text-sm font-semibold uppercase tracking-wider text-muted-foreground">{group}</h3>
+                <div className="overflow-x-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Módulo</TableHead>
+                        {ALL_ROLES.map((r) => (
+                          <TableHead key={r} className="text-center">{ROLE_LABEL[r]}</TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {MODULES.filter((m) => m.group === group).map((m) => (
+                        <TableRow key={m.key}>
+                          <TableCell className="font-medium">{m.label}</TableCell>
+                          {ALL_ROLES.map((r) => {
+                            const isAdmin = r === "admin";
+                            const checked = isAdmin ? true : !!perms[`${r}:${m.key}`];
+                            return (
+                              <TableCell key={r} className="text-center">
+                                <Switch
+                                  checked={checked}
+                                  disabled={isAdmin}
+                                  onCheckedChange={(v) => toggle(r, m.key, v)}
+                                />
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
