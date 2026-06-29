@@ -408,6 +408,32 @@ function AssociadosPage() {
                 </div>
                 <div className="space-y-2"><Label>Data de adesão</Label><Input name="data_adesao" type="date" defaultValue={editing?.data_adesao ?? new Date().toISOString().slice(0, 10)} /></div>
                 <div className="space-y-2"><Label>Dia de vencimento</Label><Input name="dia_vencimento" type="number" min={1} max={28} defaultValue={editing?.dia_vencimento ?? 10} /></div>
+                <div className="space-y-2">
+                  <Label>Forma de pagamento</Label>
+                  <Select value={formaPag} onValueChange={(v) => { setFormaPag(v); if (v !== "cobrador") setCobradorId(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="boleto">Boleto</SelectItem>
+                      <SelectItem value="carne">Carnê</SelectItem>
+                      <SelectItem value="escritorio">No escritório</SelectItem>
+                      <SelectItem value="cobrador">Cobrador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {formaPag === "cobrador" && (
+                  <div className="space-y-2 col-span-2">
+                    <Label>Cobrador responsável</Label>
+                    <Select value={cobradorId} onValueChange={setCobradorId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o cobrador" /></SelectTrigger>
+                      <SelectContent>
+                        {cobradores.length === 0 && <SelectItem value="__none" disabled>Nenhum cobrador cadastrado</SelectItem>}
+                        {cobradores.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2 col-span-2"><Label>Observações</Label><Textarea name="observacoes" rows={2} defaultValue={editing?.observacoes ?? ""} /></div>
               </div>
               <DialogFooter>
