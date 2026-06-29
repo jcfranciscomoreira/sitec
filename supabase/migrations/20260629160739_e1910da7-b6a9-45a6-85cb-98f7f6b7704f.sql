@@ -1,0 +1,1 @@
+ALTER TABLE public.vendas_pins ADD COLUMN IF NOT EXISTS municipio text, ADD COLUMN IF NOT EXISTS uf text;

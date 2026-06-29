@@ -1,5 +1,5 @@
 import { createFileRoute, ErrorComponent, useRouter } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MapPin, Trash2, Loader2, Crosshair } from "lucide-react";
+import { reverseGeocode } from "@/lib/geocode.functions";
 
 export const Route = createFileRoute("/_authenticated/vendas")({
   component: VendasPage,
@@ -35,6 +36,8 @@ type Pin = {
   nome: string;
   telefone: string | null;
   endereco: string | null;
+  municipio: string | null;
+  uf: string | null;
   status: string;
   observacoes: string | null;
   latitude: number;
@@ -44,7 +47,6 @@ type Pin = {
 type Plano = { id: string; nome: string };
 type Associado = { id: string; nome: string; codigo: number };
 
-// Load Google Maps JS API with callback
 let mapsLoading: Promise<void> | null = null;
 function loadGoogleMaps(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject();
@@ -78,6 +80,8 @@ function VendasPage() {
   const [associados, setAssociados] = useState<Associado[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ open: boolean; pin: Partial<Pin> | null }>({ open: false, pin: null });
+  const [municipioFiltro, setMunicipioFiltro] = useState<string>("__auto__");
+  const [meMunicipio, setMeMunicipio] = useState<string | null>(null);
 
   async function loadData() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -109,23 +113,44 @@ function VendasPage() {
           streetViewControl: false,
           fullscreenControl: false,
         });
-        mapRef.current.addListener("click", (e: any) => {
+        mapRef.current.addListener("click", async (e: any) => {
+          const lat = e.latLng.lat();
+          const lng = e.latLng.lng();
           setDialog({
             open: true,
-            pin: { latitude: e.latLng.lat(), longitude: e.latLng.lng(), status: "prospect", nome: "" },
+            pin: { latitude: lat, longitude: lng, status: "prospect", nome: "" },
           });
+          try {
+            const geo = await reverseGeocode({ data: { lat, lng } });
+            setDialog((d) =>
+              d.open && d.pin && d.pin.latitude === lat && d.pin.longitude === lng
+                ? {
+                    open: true,
+                    pin: {
+                      ...d.pin,
+                      municipio: geo.municipio,
+                      uf: geo.uf,
+                      endereco: d.pin.endereco || geo.endereco,
+                    },
+                  }
+                : d,
+            );
+          } catch {}
         });
-        // watch user position and render a "you are here" marker
         if (navigator.geolocation) {
           let firstFix = true;
           geoWatchRef.current = navigator.geolocation.watchPosition(
-            (pos) => {
+            async (pos) => {
               const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
               updateMeMarker(here, pos.coords.accuracy);
               if (firstFix) {
                 firstFix = false;
                 mapRef.current?.setCenter(here);
                 mapRef.current?.setZoom(15);
+                try {
+                  const geo = await reverseGeocode({ data: here });
+                  if (!cancelled && geo.municipio) setMeMunicipio(geo.municipio);
+                } catch {}
               }
             },
             () => {},
@@ -138,7 +163,7 @@ function VendasPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-  return () => {
+    return () => {
       cancelled = true;
       if (geoWatchRef.current != null && navigator.geolocation) {
         navigator.geolocation.clearWatch(geoWatchRef.current);
@@ -192,13 +217,28 @@ function VendasPage() {
     }
   }
 
-  // Sync markers
+  const municipios = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of pins) if (p.municipio) set.add(p.municipio);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [pins]);
+
+  const filteredPins = useMemo(() => {
+    if (municipioFiltro === "__all__") return pins;
+    if (municipioFiltro === "__auto__") {
+      if (!meMunicipio) return pins;
+      return pins.filter((p) => p.municipio === meMunicipio);
+    }
+    return pins.filter((p) => p.municipio === municipioFiltro);
+  }, [pins, municipioFiltro, meMunicipio]);
+
+  // Sync markers (only filtered)
   useEffect(() => {
     if (!mapRef.current) return;
     const google = (window as any).google;
     if (!google) return;
     const seen = new Set<string>();
-    for (const pin of pins) {
+    for (const pin of filteredPins) {
       seen.add(pin.id);
       const existing = markersRef.current.get(pin.id);
       const statusDef = STATUS_OPTIONS.find((s) => s.value === pin.status) ?? STATUS_OPTIONS[0];
@@ -219,6 +259,7 @@ function VendasPage() {
         existing.setPosition({ lat: pin.latitude, lng: pin.longitude });
         existing.setIcon(icon);
         existing.setTitle(`${pin.nome} — ${statusDef.label}`);
+        existing.setMap(mapRef.current);
       } else {
         const m = new google.maps.Marker({
           position: { lat: pin.latitude, lng: pin.longitude },
@@ -233,17 +274,28 @@ function VendasPage() {
     for (const [id, m] of markersRef.current) {
       if (!seen.has(id)) { m.setMap(null); markersRef.current.delete(id); }
     }
-  }, [pins]);
+  }, [filteredPins]);
 
   async function savePin(form: Partial<Pin>) {
     if (!form.nome || form.latitude == null || form.longitude == null) {
       toast.error("Informe nome e localização");
       return;
     }
+    let municipio = form.municipio ?? null;
+    let uf = form.uf ?? null;
+    if (!municipio) {
+      try {
+        const geo = await reverseGeocode({ data: { lat: form.latitude, lng: form.longitude } });
+        municipio = geo.municipio;
+        uf = uf ?? geo.uf;
+      } catch {}
+    }
     const payload = {
       nome: form.nome,
       telefone: form.telefone || null,
       endereco: form.endereco || null,
+      municipio,
+      uf,
       status: form.status || "prospect",
       observacoes: form.observacoes || null,
       latitude: form.latitude,
@@ -309,8 +361,23 @@ function VendasPage() {
 
         <Card>
           <CardContent className="space-y-3 p-4">
+            <div>
+              <Label className="text-xs">Filtrar por município</Label>
+              <Select value={municipioFiltro} onValueChange={setMunicipioFiltro}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__auto__">
+                    Minha região{meMunicipio ? ` (${meMunicipio})` : ""}
+                  </SelectItem>
+                  <SelectItem value="__all__">Todos os municípios</SelectItem>
+                  {municipios.map((m) => (
+                    <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Pontos ({pins.length})</h3>
+              <h3 className="font-semibold">Pontos ({filteredPins.length})</h3>
             </div>
             <div className="flex flex-wrap gap-1 text-xs">
               {STATUS_OPTIONS.map((s) => (
@@ -320,8 +387,8 @@ function VendasPage() {
                 </span>
               ))}
             </div>
-            <div className="max-h-[60vh] space-y-2 overflow-y-auto">
-              {pins.map((p) => {
+            <div className="max-h-[55vh] space-y-2 overflow-y-auto">
+              {filteredPins.map((p) => {
                 const st = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
                 const plano = planos.find((pl) => pl.id === p.plano_id);
                 return (
@@ -337,6 +404,11 @@ function VendasPage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{p.nome}</p>
+                        {p.municipio && (
+                          <p className="truncate text-xs text-muted-foreground">
+                            {p.municipio}{p.uf ? ` - ${p.uf}` : ""}
+                          </p>
+                        )}
                         {p.endereco && <p className="truncate text-xs text-muted-foreground">{p.endereco}</p>}
                         {plano && <p className="text-xs text-muted-foreground">Plano: {plano.nome}</p>}
                       </div>
@@ -348,9 +420,9 @@ function VendasPage() {
                   </button>
                 );
               })}
-              {pins.length === 0 && !loading && (
+              {filteredPins.length === 0 && !loading && (
                 <p className="py-6 text-center text-sm text-muted-foreground">
-                  Nenhum ponto. Toque no mapa para criar.
+                  Nenhum ponto neste filtro.
                 </p>
               )}
             </div>
@@ -418,6 +490,24 @@ function PinDialog({
           <div>
             <Label>Endereço</Label>
             <Input value={form.endereco ?? ""} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-[1fr_100px]">
+            <div>
+              <Label>Município</Label>
+              <Input
+                value={form.municipio ?? ""}
+                placeholder="Detectado automaticamente"
+                onChange={(e) => setForm({ ...form, municipio: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>UF</Label>
+              <Input
+                value={form.uf ?? ""}
+                maxLength={2}
+                onChange={(e) => setForm({ ...form, uf: e.target.value.toUpperCase() })}
+              />
+            </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
