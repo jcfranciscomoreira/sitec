@@ -99,10 +99,21 @@ function UsuariosPage() {
   function defaultsFor(role: Role): Record<string, boolean> {
     const d: Record<string, boolean> = {};
     if (role === "admin") {
-      MODULES.forEach((m) => { d[m.key] = true; });
+      MODULES.forEach((m) => {
+        d[m.key] = true;
+        m.tabs?.forEach((t) => { d[`${m.key}.${t.key}`] = true; });
+      });
       return d;
     }
-    MODULES.forEach((m) => { d[m.key] = !!rolePerms[`${role}:${m.key}`]; });
+    MODULES.forEach((m) => {
+      d[m.key] = !!rolePerms[`${role}:${m.key}`];
+      m.tabs?.forEach((t) => {
+        const k = `${m.key}.${t.key}`;
+        // padrão: se não houver registro de aba, herdar o do módulo
+        const stored = rolePerms[`${role}:${k}`];
+        d[k] = stored === undefined ? d[m.key] : !!stored;
+      });
+    });
     return d;
   }
 
@@ -325,11 +336,28 @@ function CreateDialog({
                     <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g}</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
                       {MODULES.filter((m) => m.group === g).map((m) => (
-                        <label key={m.key} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
-                          <span>{m.label}</span>
-                          <Switch checked={!!perms[m.key]}
-                            onCheckedChange={(v) => setPerms((p) => ({ ...p, [m.key]: v }))} />
-                        </label>
+                        <div key={m.key} className="rounded border p-2 text-sm">
+                          <label className="flex items-center justify-between">
+                            <span className="font-medium">{m.label}</span>
+                            <Switch checked={!!perms[m.key]}
+                              onCheckedChange={(v) => setPerms((p) => {
+                                const np = { ...p, [m.key]: v };
+                                m.tabs?.forEach((t) => { np[`${m.key}.${t.key}`] = v; });
+                                return np;
+                              })} />
+                          </label>
+                          {m.tabs && perms[m.key] && (
+                            <div className="mt-2 space-y-1 border-t pt-2 pl-2">
+                              {m.tabs.map((t) => (
+                                <label key={t.key} className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">↳ {t.label}</span>
+                                  <Switch checked={!!perms[`${m.key}.${t.key}`]}
+                                    onCheckedChange={(v) => setPerms((p) => ({ ...p, [`${m.key}.${t.key}`]: v }))} />
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -442,14 +470,38 @@ function UserPermsDialog({
                   {MODULES.filter((m) => m.group === g).map((m) => {
                     const overridden = !!perms[m.key] !== !!defaults[m.key];
                     return (
-                      <label key={m.key} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
-                        <span className="flex items-center gap-2">
-                          {m.label}
-                          {overridden && <Badge variant="outline" className="text-[10px]">personalizado</Badge>}
-                        </span>
-                        <Switch checked={!!perms[m.key]}
-                          onCheckedChange={(v) => setPerms((p) => ({ ...p, [m.key]: v }))} />
-                      </label>
+                      <div key={m.key} className="rounded border p-2 text-sm">
+                        <label className="flex items-center justify-between">
+                          <span className="flex items-center gap-2 font-medium">
+                            {m.label}
+                            {overridden && <Badge variant="outline" className="text-[10px]">personalizado</Badge>}
+                          </span>
+                          <Switch checked={!!perms[m.key]}
+                            onCheckedChange={(v) => setPerms((p) => {
+                              const np = { ...p, [m.key]: v };
+                              m.tabs?.forEach((t) => { np[`${m.key}.${t.key}`] = v; });
+                              return np;
+                            })} />
+                        </label>
+                        {m.tabs && perms[m.key] && (
+                          <div className="mt-2 space-y-1 border-t pt-2 pl-2">
+                            {m.tabs.map((t) => {
+                              const tk = `${m.key}.${t.key}`;
+                              const tOver = !!perms[tk] !== !!defaults[tk];
+                              return (
+                                <label key={t.key} className="flex items-center justify-between text-xs">
+                                  <span className="flex items-center gap-1 text-muted-foreground">
+                                    ↳ {t.label}
+                                    {tOver && <Badge variant="outline" className="text-[9px]">personalizado</Badge>}
+                                  </span>
+                                  <Switch checked={!!perms[tk]}
+                                    onCheckedChange={(v) => setPerms((p) => ({ ...p, [tk]: v }))} />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -527,7 +579,7 @@ function PermissoesTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {MODULES.filter((m) => m.group === group).map((m) => (
+                      {MODULES.filter((m) => m.group === group).flatMap((m) => [
                         <TableRow key={m.key}>
                           <TableCell className="font-medium">{m.label}</TableCell>
                           {ALL_ROLES.map((r) => {
@@ -543,8 +595,29 @@ function PermissoesTab() {
                               </TableCell>
                             );
                           })}
-                        </TableRow>
-                      ))}
+                        </TableRow>,
+                        ...(m.tabs?.map((t) => (
+                          <TableRow key={`${m.key}.${t.key}`} className="bg-muted/30">
+                            <TableCell className="pl-8 text-sm text-muted-foreground">↳ {t.label}</TableCell>
+                            {ALL_ROLES.map((r) => {
+                              const isAdmin = r === "admin";
+                              const moduleOn = isAdmin || !!perms[`${r}:${m.key}`];
+                              const tk = `${m.key}.${t.key}`;
+                              const stored = perms[`${r}:${tk}`];
+                              const checked = isAdmin ? true : (stored === undefined ? moduleOn : !!stored);
+                              return (
+                                <TableCell key={r} className="text-center">
+                                  <Switch
+                                    checked={checked}
+                                    disabled={isAdmin || !moduleOn}
+                                    onCheckedChange={(v) => toggle(r, tk, v)}
+                                  />
+                                </TableCell>
+                              );
+                            })}
+                          </TableRow>
+                        )) ?? []),
+                      ])}
                     </TableBody>
                   </Table>
                 </div>

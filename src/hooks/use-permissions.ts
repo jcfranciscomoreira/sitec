@@ -41,5 +41,16 @@ export function usePermissions() {
     return allowedModules.has(module);
   }
 
-  return { roles, can, loading, isAdmin: roles.includes("admin") };
+  function canTab(module: string, tab: string) {
+    if (!can(module)) return false;
+    if (!allowedModules || allowedModules.has("*")) return true;
+    const key = `${module}.${tab}`;
+    if (allowedModules.has(key)) return true;
+    // Compatibilidade: se nenhuma permissão por aba foi definida para este módulo,
+    // liberar todas as abas (módulo simplesmente ativo).
+    for (const k of allowedModules) if (k.startsWith(`${module}.`)) return false;
+    return true;
+  }
+
+  return { roles, can, canTab, loading, isAdmin: roles.includes("admin") };
 }

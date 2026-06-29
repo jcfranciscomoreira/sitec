@@ -3,12 +3,15 @@ import {
   Building2, Receipt, Layers, MapPin, BarChart3, Shield, Settings,
 } from "lucide-react";
 
+export type AppModuleTab = { key: string; label: string };
+
 export type AppModule = {
   key: string;
   label: string;
   group: string;
   url: string;
   icon: any;
+  tabs?: AppModuleTab[];
 };
 
 /**
@@ -25,7 +28,14 @@ export const MODULES: AppModule[] = [
   { group: "Associados", key: "associados", label: "Associados", url: "/associados", icon: Users },
   { group: "Associados", key: "planos", label: "Planos", url: "/planos", icon: FileText },
   { group: "Associados", key: "financeiro", label: "Mensalidades", url: "/financeiro", icon: Wallet },
-  { group: "Associados", key: "recebimento", label: "Recebimento", url: "/recebimento", icon: HandCoins },
+  { group: "Associados", key: "recebimento", label: "Recebimento", url: "/recebimento", icon: HandCoins, tabs: [
+    { key: "mobile", label: "Recebimento mobile" },
+    { key: "conciliar", label: "Conciliação (supervisor)" },
+    { key: "baixa", label: "Baixa por agente" },
+    { key: "historico", label: "Histórico de baixas" },
+    { key: "carne", label: "Gerar carnês em massa" },
+    { key: "cobradores", label: "Cadastro de cobradores" },
+  ] },
   { group: "Gestão Financeira", key: "empresa-financeiro", label: "Painel Financeiro", url: "/empresa-financeiro", icon: Building2 },
   { group: "Gestão Financeira", key: "contas", label: "Contas a Pagar/Receber", url: "/contas", icon: Receipt },
   { group: "Gestão Financeira", key: "centros-custo", label: "Centros de Custo", url: "/centros-custo", icon: Layers },
