@@ -579,7 +579,7 @@ function PermissoesTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {MODULES.filter((m) => m.group === group).map((m) => (
+                      {MODULES.filter((m) => m.group === group).flatMap((m) => [
                         <TableRow key={m.key}>
                           <TableCell className="font-medium">{m.label}</TableCell>
                           {ALL_ROLES.map((r) => {
@@ -595,8 +595,29 @@ function PermissoesTab() {
                               </TableCell>
                             );
                           })}
-                        </TableRow>
-                      ))}
+                        </TableRow>,
+                        ...(m.tabs?.map((t) => (
+                          <TableRow key={`${m.key}.${t.key}`} className="bg-muted/30">
+                            <TableCell className="pl-8 text-sm text-muted-foreground">↳ {t.label}</TableCell>
+                            {ALL_ROLES.map((r) => {
+                              const isAdmin = r === "admin";
+                              const moduleOn = isAdmin || !!perms[`${r}:${m.key}`];
+                              const tk = `${m.key}.${t.key}`;
+                              const stored = perms[`${r}:${tk}`];
+                              const checked = isAdmin ? true : (stored === undefined ? moduleOn : !!stored);
+                              return (
+                                <TableCell key={r} className="text-center">
+                                  <Switch
+                                    checked={checked}
+                                    disabled={isAdmin || !moduleOn}
+                                    onCheckedChange={(v) => toggle(r, tk, v)}
+                                  />
+                                </TableCell>
+                              );
+                            })}
+                          </TableRow>
+                        )) ?? []),
+                      ])}
                     </TableBody>
                   </Table>
                 </div>
