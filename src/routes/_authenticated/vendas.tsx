@@ -28,6 +28,12 @@ const STATUS_OPTIONS = [
   { value: "retornar", label: "Retornar", color: "bg-purple-500" },
 ];
 
+const TIPO_VENDA_OPTIONS = [
+  { value: "nova_venda", label: "Nova venda (novo associado)" },
+  { value: "troca_plano", label: "Troca de plano" },
+  { value: "cancelamento", label: "Cancelamento" },
+];
+
 type Pin = {
   id: string;
   vendedor_id: string;
@@ -39,6 +45,8 @@ type Pin = {
   municipio: string | null;
   uf: string | null;
   status: string;
+  tipo_venda: string | null;
+  data_retorno: string | null;
   observacoes: string | null;
   latitude: number;
   longitude: number;
