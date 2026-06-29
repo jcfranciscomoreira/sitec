@@ -518,6 +518,32 @@ function PinDialog({
               </Select>
             </div>
           </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Tipo de negociação</Label>
+              <Select
+                value={form.tipo_venda ?? "none"}
+                onValueChange={(v) => setForm({ ...form, tipo_venda: v === "none" ? null : v })}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Não definido</SelectItem>
+                  {TIPO_VENDA_OPTIONS.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {form.status === "retornar" && (
+              <div>
+                <Label>Data de retorno</Label>
+                <Input
+                  type="date"
+                  value={form.data_retorno ?? ""}
+                  onChange={(e) => setForm({ ...form, data_retorno: e.target.value })}
+                />
+              </div>
+            )}
           <div>
             <Label>Endereço</Label>
             <Input value={form.endereco ?? ""} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
