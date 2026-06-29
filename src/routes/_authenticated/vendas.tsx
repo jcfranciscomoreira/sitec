@@ -254,13 +254,17 @@ function VendasPage() {
   }, [pins]);
 
   const filteredPins = useMemo(() => {
-    if (municipioFiltro === "__all__") return pins;
+    let list = pins;
     if (municipioFiltro === "__auto__") {
-      if (!meMunicipio) return pins;
-      return pins.filter((p) => p.municipio === meMunicipio);
+      if (meMunicipio) list = list.filter((p) => p.municipio === meMunicipio);
+    } else if (municipioFiltro !== "__all__") {
+      list = list.filter((p) => p.municipio === municipioFiltro);
     }
-    return pins.filter((p) => p.municipio === municipioFiltro);
-  }, [pins, municipioFiltro, meMunicipio]);
+    if (statusFiltro !== "__all__") {
+      list = list.filter((p) => p.status === statusFiltro);
+    }
+    return list;
+  }, [pins, municipioFiltro, statusFiltro, meMunicipio]);
 
   // Sync markers (only filtered)
   useEffect(() => {
