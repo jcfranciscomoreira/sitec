@@ -77,6 +77,8 @@ function AssociadosPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Associado | null>(null);
   const [mensOpen, setMensOpen] = useState<Associado | null>(null);
@@ -337,6 +339,9 @@ function AssociadosPage() {
       (a.cpf ?? "").includes(search) || String(a.codigo).includes(search)) &&
     (statusFilter === "todos" || a.status === statusFilter)
   );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <AppShell
@@ -405,7 +410,7 @@ function AssociadosPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="font-serif">Lista de associados</CardTitle>
           <div className="flex items-center gap-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
               <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os status</SelectItem>
@@ -416,7 +421,7 @@ function AssociadosPage() {
             </Select>
             <div className="relative w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-8" placeholder="Buscar por nome, CPF, código..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <Input className="pl-8" placeholder="Buscar por nome, CPF, código..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
             </div>
           </div>
         </CardHeader>
@@ -436,7 +441,7 @@ function AssociadosPage() {
             <TableBody>
               {isLoading && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
               {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={7} className="py-8 text-center text-muted-foreground">Nenhum associado encontrado.</TableCell></TableRow>}
-              {filtered.map((a) => (
+              {paged.map((a) => (
                 <TableRow key={a.id}>
                   <TableCell className="font-mono text-xs text-muted-foreground">#{String(a.codigo).padStart(4, "0")}</TableCell>
                   <TableCell>
@@ -461,6 +466,18 @@ function AssociadosPage() {
               ))}
             </TableBody>
           </Table>
+          {filtered.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between border-t px-4 py-3 text-sm">
+              <span className="text-muted-foreground">
+                Mostrando {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} de {filtered.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Anterior</Button>
+                <span className="text-muted-foreground">Página {currentPage} de {totalPages}</span>
+                <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>Próxima</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
