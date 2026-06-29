@@ -1219,6 +1219,41 @@ function MobileRecebimentoSection() {
   );
 }
 
+function imprimirRotaCobrador(cobrador: string, parcelas: any[]) {
+  const w = window.open("", "_blank", "width=800,height=900");
+  if (!w) { toast.error("Permita pop-ups."); return; }
+  const total = parcelas.reduce((s, m) => s + Number(m.valor), 0);
+  const rows = parcelas.map((m) => `
+    <tr>
+      <td>#${m.codigo}</td>
+      <td>${m.associados?.nome ?? ""}</td>
+      <td>${m.associados?.endereco ?? ""}${m.associados?.cidade ? " — " + m.associados.cidade : ""}</td>
+      <td>${m.associados?.telefone ?? ""}</td>
+      <td>${new Date(m.vencimento + "T00:00:00").toLocaleDateString("pt-BR")}</td>
+      <td style="text-align:right">R$ ${Number(m.valor).toFixed(2).replace(".", ",")}</td>
+      <td style="width:80px;border-bottom:1px solid #000">&nbsp;</td>
+    </tr>`).join("");
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Rota do cobrador</title>
+    <style>
+      body{font-family:Georgia,serif;color:#111;margin:18px}
+      h1{font-size:16px;color:#1e3a5f;margin:0 0 4px}
+      .sub{font-size:12px;color:#555;margin-bottom:10px}
+      table{width:100%;border-collapse:collapse;font-size:11px}
+      th,td{border:1px solid #999;padding:5px 6px;text-align:left;vertical-align:top}
+      th{background:#f5f3ec}
+      tfoot td{font-weight:bold;background:#fafafa}
+    </style></head><body>
+    <h1>Rota de recebimento — ${cobrador}</h1>
+    <div class="sub">Emitido em ${new Date().toLocaleString("pt-BR")} · ${parcelas.length} parcela(s)</div>
+    <table>
+      <thead><tr><th>Cód.</th><th>Associado</th><th>Endereço</th><th>Telefone</th><th>Vencimento</th><th style="text-align:right">Valor</th><th>Recebido</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="5" style="text-align:right">Total</td><td style="text-align:right">R$ ${total.toFixed(2).replace(".", ",")}</td><td></td></tr></tfoot>
+    </table>
+    <script>window.print();</script>
+    </body></html>`);
+  w.document.close();
+
 function imprimirComprovante(c: {
   id: string; cobrador: string; data: string; codigoParcela: number;
   associado: string; codAssoc: number; competencia: string; vencimento: string;
