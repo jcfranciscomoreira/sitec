@@ -76,8 +76,9 @@ function Dashboard() {
     queryFn: async () => {
       const hojeIso = todayIso();
 
-      const [assocAtivos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer] = await Promise.all([
+      const [assocAtivos, assocInativos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer] = await Promise.all([
         supabase.from("associados").select("*", { count: "exact", head: true }).eq("status", "ativo"),
+        supabase.from("associados").select("*", { count: "exact", head: true }).neq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }),
         supabase.from("mensalidades").select("valor").eq("status", "pago").gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).eq("status", "pendente"),
@@ -90,6 +91,7 @@ function Dashboard() {
 
       return {
         ativos: assocAtivos.count ?? 0,
+        inativos: assocInativos.count ?? 0,
         total: assocTotal.count ?? 0,
         receitaPlanos,
         outrasReceitas,
