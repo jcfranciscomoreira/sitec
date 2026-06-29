@@ -138,8 +138,59 @@ function VendasPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+  return () => {
+      cancelled = true;
+      if (geoWatchRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(geoWatchRef.current);
+        geoWatchRef.current = null;
+      }
+      meMarkerRef.current?.setMap?.(null);
+      meAccuracyRef.current?.setMap?.(null);
+      meMarkerRef.current = null;
+      meAccuracyRef.current = null;
+    };
   }, []);
+
+  function updateMeMarker(pos: { lat: number; lng: number }, accuracy?: number) {
+    const google = (window as any).google;
+    if (!google || !mapRef.current) return;
+    if (!meMarkerRef.current) {
+      meMarkerRef.current = new google.maps.Marker({
+        position: pos,
+        map: mapRef.current,
+        title: "Você está aqui",
+        zIndex: 9999,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: "#1d4ed8",
+          fillOpacity: 1,
+          strokeColor: "#fff",
+          strokeWeight: 3,
+          scale: 8,
+        },
+      });
+    } else {
+      meMarkerRef.current.setPosition(pos);
+    }
+    if (accuracy && accuracy > 0) {
+      if (!meAccuracyRef.current) {
+        meAccuracyRef.current = new google.maps.Circle({
+          map: mapRef.current,
+          center: pos,
+          radius: accuracy,
+          fillColor: "#1d4ed8",
+          fillOpacity: 0.12,
+          strokeColor: "#1d4ed8",
+          strokeOpacity: 0.35,
+          strokeWeight: 1,
+          clickable: false,
+        });
+      } else {
+        meAccuracyRef.current.setCenter(pos);
+        meAccuracyRef.current.setRadius(accuracy);
+      }
+    }
+  }
 
   // Sync markers
   useEffect(() => {
