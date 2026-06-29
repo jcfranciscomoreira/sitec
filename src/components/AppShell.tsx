@@ -1,5 +1,5 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LogOut, Cross } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { Settings, Cross } from "lucide-react";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import { usePermissions } from "@/hooks/use-permissions";
 import { MODULES, MODULE_GROUPS } from "@/lib/modules";
@@ -9,8 +9,6 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger,
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/UserMenu";
 
 const groups = MODULE_GROUPS.map((label) => ({
@@ -22,15 +20,8 @@ const groups = MODULE_GROUPS.map((label) => ({
 
 function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const navigate = useNavigate();
   const { config } = useConfiguracoes();
   const { can, loading: permsLoading } = usePermissions();
-
-
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
 
   return (
     <Sidebar collapsible="icon">
@@ -77,15 +68,16 @@ function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleSignOut}
-          className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          <LogOut className="h-4 w-4" />
-          <span className="group-data-[collapsible=icon]:hidden">Sair</span>
-        </Button>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname.startsWith("/configuracoes")}>
+              <Link to="/configuracoes" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <span>Configurações</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
   );
