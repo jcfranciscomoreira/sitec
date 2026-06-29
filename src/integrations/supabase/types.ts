@@ -471,11 +471,13 @@ export type Database = {
           id: string
           latitude: number
           longitude: number
+          municipio: string | null
           nome: string
           observacoes: string | null
           plano_id: string | null
           status: string
           telefone: string | null
+          uf: string | null
           updated_at: string
           vendedor_id: string
         }
@@ -486,11 +488,13 @@ export type Database = {
           id?: string
           latitude: number
           longitude: number
+          municipio?: string | null
           nome: string
           observacoes?: string | null
           plano_id?: string | null
           status?: string
           telefone?: string | null
+          uf?: string | null
           updated_at?: string
           vendedor_id: string
         }
@@ -501,11 +505,13 @@ export type Database = {
           id?: string
           latitude?: number
           longitude?: number
+          municipio?: string | null
           nome?: string
           observacoes?: string | null
           plano_id?: string | null
           status?: string
           telefone?: string | null
+          uf?: string | null
           updated_at?: string
           vendedor_id?: string
         }
