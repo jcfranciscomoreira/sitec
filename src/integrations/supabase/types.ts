@@ -224,33 +224,39 @@ export type Database = {
           associado_id: string
           cpf: string | null
           created_at: string
+          data_falecimento: string | null
           data_nascimento: string | null
           id: string
           nome: string
           observacoes: string | null
           parentesco: string
+          status: string
           updated_at: string
         }
         Insert: {
           associado_id: string
           cpf?: string | null
           created_at?: string
+          data_falecimento?: string | null
           data_nascimento?: string | null
           id?: string
           nome: string
           observacoes?: string | null
           parentesco: string
+          status?: string
           updated_at?: string
         }
         Update: {
           associado_id?: string
           cpf?: string | null
           created_at?: string
+          data_falecimento?: string | null
           data_nascimento?: string | null
           id?: string
           nome?: string
           observacoes?: string | null
           parentesco?: string
+          status?: string
           updated_at?: string
         }
         Relationships: [

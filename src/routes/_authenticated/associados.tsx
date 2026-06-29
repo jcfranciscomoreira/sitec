@@ -22,6 +22,40 @@ export const Route = createFileRoute("/_authenticated/associados")({
   component: AssociadosPage,
 });
 
+function renderCarteirinhaCard(c: { codigo: string; nome: string; plano: string; tipo: string }) {
+  return `<div class="card">
+    <div class="brand">Memorial</div>
+    <div class="title">${c.tipo}</div>
+    <div class="label">Nome</div>
+    <div class="value">${c.nome}</div>
+    <div class="plano">${c.plano}</div>
+    <div class="codigo">${c.codigo}</div>
+  </div>`;
+}
+
+function abrirJanelaCarteirinha(title: string, cardsHtml: string) {
+  const w = window.open("", "_blank", "width=720,height=600");
+  if (!w) { toast.error("Permita pop-ups para imprimir."); return; }
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>
+      body{font-family:Georgia,serif;margin:0;padding:24px;background:#eee}
+      .wrap{display:flex;flex-wrap:wrap;gap:18px;justify-content:center}
+      .card{width:340px;height:210px;background:linear-gradient(135deg,#1e3a5f 0%,#2c5282 100%);color:#fff;border-radius:14px;padding:18px 22px;box-shadow:0 8px 24px rgba(0,0,0,.2);position:relative;font-family:Georgia,serif;box-sizing:border-box}
+      .brand{font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85}
+      .title{font-size:14px;margin-top:2px;color:#d4af37;letter-spacing:1px}
+      .label{font-size:9px;text-transform:uppercase;letter-spacing:2px;opacity:.7;margin-top:18px}
+      .value{font-size:18px;font-weight:bold;margin-top:2px}
+      .codigo{position:absolute;bottom:18px;right:22px;font-family:monospace;font-size:14px;background:#d4af37;color:#1e3a5f;padding:4px 10px;border-radius:6px;font-weight:bold}
+      .plano{position:absolute;bottom:18px;left:22px;font-size:11px;opacity:.85}
+      @media print{body{background:#fff;padding:0}.card{box-shadow:none;page-break-inside:avoid}}
+    </style></head><body>
+    <div class="wrap">${cardsHtml}</div>
+    <script>window.onload=()=>{window.print();}</script>
+    </body></html>`);
+  w.document.close();
+}
+
+
 type Associado = {
   id: string; codigo: number; nome: string; cpf: string | null; rg: string | null;
   data_nascimento: string | null; telefone: string | null; email: string | null;
@@ -34,6 +68,7 @@ type Associado = {
 type Dependente = {
   id: string; associado_id: string; nome: string; cpf: string | null;
   data_nascimento: string | null; parentesco: string; observacoes: string | null;
+  status: "ativo" | "inativo" | "falecido"; data_falecimento: string | null;
 };
 
 type PendingDep = { nome: string; parentesco: string; data_nascimento: string; cpf: string };
@@ -110,33 +145,20 @@ function AssociadosPage() {
   });
 
   async function imprimirCarteirinha(a: Associado) {
-    const w = window.open("", "_blank", "width=600,height=400");
-    if (!w) { toast.error("Permita pop-ups para imprimir."); return; }
-    const codigo = `#${String(a.codigo).padStart(4, "0")}`;
-    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Carteirinha — ${a.nome}</title>
-      <style>
-        body{font-family:Georgia,serif;margin:0;padding:24px;background:#eee}
-        .card{width:340px;height:210px;margin:20px auto;background:linear-gradient(135deg,#1e3a5f 0%,#2c5282 100%);color:#fff;border-radius:14px;padding:18px 22px;box-shadow:0 8px 24px rgba(0,0,0,.2);position:relative;font-family:Georgia,serif}
-        .brand{font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85}
-        .title{font-size:14px;margin-top:2px;color:#d4af37;letter-spacing:1px}
-        .label{font-size:9px;text-transform:uppercase;letter-spacing:2px;opacity:.7;margin-top:18px}
-        .value{font-size:18px;font-weight:bold;margin-top:2px}
-        .codigo{position:absolute;bottom:18px;right:22px;font-family:monospace;font-size:14px;background:#d4af37;color:#1e3a5f;padding:4px 10px;border-radius:6px;font-weight:bold}
-        .plano{position:absolute;bottom:18px;left:22px;font-size:11px;opacity:.85}
-        @media print{body{background:#fff;padding:0}.card{box-shadow:none;margin:0}}
-      </style></head><body>
-      <div class="card">
-        <div class="brand">Memorial</div>
-        <div class="title">Carteirinha do Associado</div>
-        <div class="label">Nome</div>
-        <div class="value">${a.nome}</div>
-        <div class="plano">${a.planos?.nome ?? "Plano não vinculado"}</div>
-        <div class="codigo">${codigo}</div>
-      </div>
-      <script>window.onload=()=>{window.print();}</script>
-      </body></html>`);
-    w.document.close();
+    const { data: deps } = await supabase
+      .from("dependentes").select("*")
+      .eq("associado_id", a.id).eq("status", "ativo").order("nome");
+    const cards = [
+      renderCarteirinhaCard({ codigo: `#${String(a.codigo).padStart(4, "0")}`, nome: a.nome, plano: a.planos?.nome ?? "Plano não vinculado", tipo: "Titular" }),
+      ...(deps ?? []).map((d: any) => renderCarteirinhaCard({
+        codigo: `#${String(a.codigo).padStart(4, "0")}`,
+        nome: d.nome, plano: a.planos?.nome ?? "Plano não vinculado",
+        tipo: `Dependente · ${d.parentesco}`,
+      })),
+    ].join("");
+    abrirJanelaCarteirinha(`Carteirinhas — ${a.nome}`, cards);
   }
+
 
 
 
@@ -368,7 +390,7 @@ function AssociadosPage() {
             <div className="mt-4 border-t border-border pt-4">
               <h3 className="font-serif text-base mb-2">Dependentes</h3>
               {editing?.id ? (
-                <DependentesSection associadoId={editing.id} />
+                <DependentesSection associado={editing} />
               ) : (
                 <PendingDependentesSection list={pendingDeps} onChange={setPendingDeps} />
               )}
@@ -444,10 +466,12 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge variant="outline" className={map[status] ?? ""}>{status}</Badge>;
 }
 
-function DependentesSection({ associadoId }: { associadoId: string }) {
+function DependentesSection({ associado }: { associado: Associado }) {
+  const associadoId = associado.id;
   const qc = useQueryClient();
   const [editingDep, setEditingDep] = useState<Dependente | null>(null);
   const [adding, setAdding] = useState(false);
+  const [formStatus, setFormStatus] = useState<"ativo" | "inativo" | "falecido">("ativo");
   const { data: deps = [], isLoading } = useQuery({
     queryKey: ["dependentes", associadoId],
     queryFn: async () => {
@@ -483,12 +507,29 @@ function DependentesSection({ associadoId }: { associadoId: string }) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["dependentes", associadoId] }); toast.success("Removido"); },
   });
 
-  const form = editingDep || (adding ? { nome: "", parentesco: "", data_nascimento: "", cpf: "" } : null);
+  function startAdd() {
+    setAdding(true); setEditingDep(null); setFormStatus("ativo");
+  }
+  function startEdit(d: Dependente) {
+    setEditingDep(d); setAdding(false); setFormStatus(d.status ?? "ativo");
+  }
+
+  function imprimirDep(d: Dependente) {
+    const card = renderCarteirinhaCard({
+      codigo: `#${String(associado.codigo).padStart(4, "0")}`,
+      nome: d.nome,
+      plano: associado.planos?.nome ?? "Plano não vinculado",
+      tipo: `Dependente · ${d.parentesco}`,
+    });
+    abrirJanelaCarteirinha(`Carteirinha — ${d.nome}`, card);
+  }
+
+  const form = editingDep || (adding ? { nome: "", parentesco: "", data_nascimento: "", cpf: "", status: "ativo", data_falecimento: "" } as any : null);
 
   return (
     <div className="space-y-3">
       {!form && (
-        <Button type="button" variant="outline" size="sm" onClick={() => setAdding(true)}>
+        <Button type="button" variant="outline" size="sm" onClick={startAdd}>
           <Plus className="mr-2 h-4 w-4" />Adicionar dependente
         </Button>
       )}
@@ -504,6 +545,8 @@ function DependentesSection({ associadoId }: { associadoId: string }) {
               parentesco: String(fd.get("parentesco")),
               data_nascimento: String(fd.get("data_nascimento") || "") || null,
               cpf: String(fd.get("cpf") || "") || null,
+              status: formStatus,
+              data_falecimento: formStatus === "falecido" ? (String(fd.get("data_falecimento") || "") || null) : null,
             });
           }}
           className="space-y-3 rounded-md border border-border p-4"
@@ -513,7 +556,24 @@ function DependentesSection({ associadoId }: { associadoId: string }) {
             <div className="space-y-2 col-span-2"><Label>Nome</Label><Input name="nome" defaultValue={form.nome ?? ""} required /></div>
             <div className="space-y-2"><Label>Parentesco</Label><Input name="parentesco" defaultValue={form.parentesco ?? ""} placeholder="Cônjuge, Filho(a)..." required /></div>
             <div className="space-y-2"><Label>Data de nascimento</Label><Input name="data_nascimento" type="date" defaultValue={form.data_nascimento ?? ""} /></div>
-            <div className="space-y-2 col-span-2"><Label>CPF</Label><Input name="cpf" defaultValue={form.cpf ?? ""} /></div>
+            <div className="space-y-2"><Label>CPF</Label><Input name="cpf" defaultValue={form.cpf ?? ""} /></div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={formStatus} onValueChange={(v) => setFormStatus(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                  <SelectItem value="falecido">Falecido</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formStatus === "falecido" && (
+              <div className="space-y-2 col-span-2">
+                <Label>Data de falecimento</Label>
+                <Input name="data_falecimento" type="date" defaultValue={form.data_falecimento ?? ""} required />
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => { setAdding(false); setEditingDep(null); }}>Cancelar</Button>
@@ -524,26 +584,44 @@ function DependentesSection({ associadoId }: { associadoId: string }) {
       <div className="divide-y divide-border rounded-md border border-border">
         {isLoading && <p className="p-3 text-sm text-muted-foreground">Carregando...</p>}
         {!isLoading && deps.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Nenhum dependente cadastrado.</p>}
-        {deps.map((d) => (
-          <div key={d.id} className="flex items-center justify-between px-3 py-2">
-            <div>
-              <p className="font-medium text-sm">{d.nome}</p>
-              <p className="text-xs text-muted-foreground">{d.parentesco}{d.data_nascimento ? ` · ${fmtDate(d.data_nascimento)}` : ""}{d.cpf ? ` · CPF ${d.cpf}` : ""}</p>
+        {deps.map((d) => {
+          const status = d.status ?? "ativo";
+          const statusClass = status === "ativo" ? "bg-success/15 text-success border-success/30"
+            : status === "falecido" ? "bg-destructive/15 text-destructive border-destructive/30"
+            : "bg-muted text-muted-foreground";
+          return (
+            <div key={d.id} className="flex items-center justify-between px-3 py-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm">{d.nome}</p>
+                  <Badge variant="outline" className={statusClass}>{status}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {d.parentesco}
+                  {d.data_nascimento ? ` · ${fmtDate(d.data_nascimento)}` : ""}
+                  {d.cpf ? ` · CPF ${d.cpf}` : ""}
+                  {status === "falecido" && d.data_falecimento ? ` · Falecimento ${fmtDate(d.data_falecimento)}` : ""}
+                </p>
+              </div>
+              <div className="flex gap-1">
+                <Button type="button" size="icon" variant="ghost" title="Imprimir carteirinha" disabled={status !== "ativo"} onClick={() => imprimirDep(d)}>
+                  <CreditCard className="h-4 w-4" />
+                </Button>
+                <Button type="button" size="icon" variant="ghost" onClick={() => startEdit(d)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button type="button" size="icon" variant="ghost" onClick={() => { if (confirm(`Remover ${d.nome}?`)) del.mutate(d.id); }}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-1">
-              <Button type="button" size="icon" variant="ghost" onClick={() => { setEditingDep(d); setAdding(false); }}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button type="button" size="icon" variant="ghost" onClick={() => { if (confirm(`Remover ${d.nome}?`)) del.mutate(d.id); }}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 }
+
 
 function gerarComprovante(a: Associado, m: any) {
   const w = window.open("", "_blank", "width=700,height=500");
