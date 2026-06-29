@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, FileText, Wallet, HandCoins,
-  Building2, Receipt, Layers, MapPin, BarChart3, Shield, Settings,
+  Building2, Receipt, Layers, MapPin, BarChart3, Shield,
 } from "lucide-react";
 
 export type AppModuleTab = { key: string; label: string };
@@ -42,7 +42,6 @@ export const MODULES: AppModule[] = [
   { group: "Vendas", key: "vendas", label: "Mapa de Vendas", url: "/vendas", icon: MapPin },
   { group: "Vendas", key: "vendas-relatorio", label: "Relatório de Vendas", url: "/vendas-relatorio", icon: BarChart3 },
   { group: "Administração", key: "usuarios", label: "Usuários", url: "/usuarios", icon: Shield },
-  { group: "Administração", key: "configuracoes", label: "Configurações", url: "/configuracoes", icon: Settings },
 ];
 
 export const MODULE_GROUPS: string[] = Array.from(new Set(MODULES.map((m) => m.group)));
