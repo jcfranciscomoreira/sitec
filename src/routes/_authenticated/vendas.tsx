@@ -48,6 +48,7 @@ type Pin = {
   status: string;
   tipo_venda: string | null;
   data_retorno: string | null;
+  concorrente: string | null;
   observacoes: string | null;
   latitude: number;
   longitude: number;
