@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { Users, AlertTriangle, CircleDollarSign, TrendingUp, Wallet } from "lucide-react";
@@ -103,8 +103,8 @@ function Dashboard() {
   });
 
   const cards = [
-    { label: "Associados ativos", value: data?.ativos ?? 0, sub: `${data?.total ?? 0} no total`, icon: Users, tone: "text-primary" },
-    { label: "Associados inativos", value: data?.inativos ?? 0, sub: "Cancelados/suspensos", icon: Users, tone: "text-destructive" },
+    { label: "Associados ativos", value: data?.ativos ?? 0, sub: `${data?.total ?? 0} no total`, icon: Users, tone: "text-primary", linkStatus: "ativo" as const },
+    { label: "Associados inativos", value: data?.inativos ?? 0, sub: "Cancelados/suspensos", icon: Users, tone: "text-destructive", linkStatus: "inativos" as const },
     { label: "Receita de planos", value: brl(data?.receitaPlanos ?? 0), sub: "Mensalidades quitadas no período", icon: TrendingUp, tone: "text-success" },
     { label: "Outras receitas", value: brl(data?.outrasReceitas ?? 0), sub: "Entradas financeiras", icon: Wallet, tone: "text-gold" },
     { label: "Total recebido", value: brl(data?.totalRecebido ?? 0), sub: "Planos + outras entradas", icon: CircleDollarSign, tone: "text-primary" },
@@ -156,6 +156,11 @@ function Dashboard() {
                 {isLoading ? "—" : c.value}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
+              {c.linkStatus && (
+                <Button asChild size="sm" variant="outline" className="mt-3">
+                  <Link to="/associados-lista" search={{ status: c.linkStatus }}>Ver lista</Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}

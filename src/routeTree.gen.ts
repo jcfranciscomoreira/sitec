@@ -19,6 +19,7 @@ import { Route as AuthenticatedEmpresaFinanceiroRouteImport } from './routes/_au
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedContasRouteImport } from './routes/_authenticated/contas'
 import { Route as AuthenticatedCentrosCustoRouteImport } from './routes/_authenticated/centros-custo'
+import { Route as AuthenticatedAssociadosListaRouteImport } from './routes/_authenticated/associados-lista'
 import { Route as AuthenticatedAssociadosRouteImport } from './routes/_authenticated/associados'
 
 const AuthRoute = AuthRouteImport.update({
@@ -73,6 +74,12 @@ const AuthenticatedCentrosCustoRoute =
     path: '/centros-custo',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAssociadosListaRoute =
+  AuthenticatedAssociadosListaRouteImport.update({
+    id: '/associados-lista',
+    path: '/associados-lista',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAssociadosRoute = AuthenticatedAssociadosRouteImport.update({
   id: '/associados',
   path: '/associados',
@@ -83,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/associados': typeof AuthenticatedAssociadosRoute
+  '/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/centros-custo': typeof AuthenticatedCentrosCustoRoute
   '/contas': typeof AuthenticatedContasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -95,6 +103,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/associados': typeof AuthenticatedAssociadosRoute
+  '/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/centros-custo': typeof AuthenticatedCentrosCustoRoute
   '/contas': typeof AuthenticatedContasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -109,6 +118,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/associados': typeof AuthenticatedAssociadosRoute
+  '/_authenticated/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/_authenticated/centros-custo': typeof AuthenticatedCentrosCustoRoute
   '/_authenticated/contas': typeof AuthenticatedContasRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -123,6 +133,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/associados'
+    | '/associados-lista'
     | '/centros-custo'
     | '/contas'
     | '/dashboard'
@@ -135,6 +146,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/associados'
+    | '/associados-lista'
     | '/centros-custo'
     | '/contas'
     | '/dashboard'
@@ -148,6 +160,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/associados'
+    | '/_authenticated/associados-lista'
     | '/_authenticated/centros-custo'
     | '/_authenticated/contas'
     | '/_authenticated/dashboard'
@@ -235,6 +248,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCentrosCustoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/associados-lista': {
+      id: '/_authenticated/associados-lista'
+      path: '/associados-lista'
+      fullPath: '/associados-lista'
+      preLoaderRoute: typeof AuthenticatedAssociadosListaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/associados': {
       id: '/_authenticated/associados'
       path: '/associados'
@@ -247,6 +267,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssociadosRoute: typeof AuthenticatedAssociadosRoute
+  AuthenticatedAssociadosListaRoute: typeof AuthenticatedAssociadosListaRoute
   AuthenticatedCentrosCustoRoute: typeof AuthenticatedCentrosCustoRoute
   AuthenticatedContasRoute: typeof AuthenticatedContasRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -258,6 +279,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssociadosRoute: AuthenticatedAssociadosRoute,
+  AuthenticatedAssociadosListaRoute: AuthenticatedAssociadosListaRoute,
   AuthenticatedCentrosCustoRoute: AuthenticatedCentrosCustoRoute,
   AuthenticatedContasRoute: AuthenticatedContasRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
