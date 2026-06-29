@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers, HandCoins } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers, HandCoins, MapPin } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
