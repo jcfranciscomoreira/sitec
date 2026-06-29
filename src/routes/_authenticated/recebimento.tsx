@@ -986,19 +986,39 @@ function MobileRecebimentoSection() {
   });
 
   // Auto-seleciona o cobrador quando o usuário logado for um cobrador
+  const qcRoot = useQueryClient();
   useEffect(() => {
-    if (cobradorId || cobradores.length === 0) return;
+    if (cobradorId) return;
     (async () => {
       const { data: auth } = await supabase.auth.getUser();
       const uid = auth.user?.id;
       if (!uid) return;
+      const { data: roleRow } = await supabase
+        .from("user_roles").select("role").eq("user_id", uid).eq("role", "cobrador").maybeSingle();
+      if (!roleRow) return;
       const { data: prof } = await supabase.from("profiles").select("nome").eq("id", uid).maybeSingle();
       const nome = (prof as any)?.nome?.trim();
       if (!nome) return;
-      const match = cobradores.find((c) => c.nome.trim().toLowerCase() === nome.toLowerCase());
+      // tenta match em cobradores ativos já carregados
+      let match = cobradores.find((c) => c.nome.trim().toLowerCase() === nome.toLowerCase());
+      if (!match) {
+        // procura inativo, reativa; ou cria novo
+        const { data: any1 } = await supabase.from("cobradores").select("id,nome,ativo")
+          .ilike("nome", nome).maybeSingle();
+        if (any1) {
+          if (!(any1 as any).ativo) {
+            await supabase.from("cobradores").update({ ativo: true }).eq("id", (any1 as any).id);
+          }
+          match = { id: (any1 as any).id, nome: (any1 as any).nome };
+        } else {
+          const { data: ins } = await supabase.from("cobradores").insert({ nome, ativo: true }).select("id,nome").single();
+          if (ins) match = ins as { id: string; nome: string };
+        }
+        qcRoot.invalidateQueries({ queryKey: ["cobradores"] });
+      }
       if (match) { setCobradorId(match.id); setCobradorNome(match.nome); }
     })();
-  }, [cobradores, cobradorId]);
+  }, [cobradores, cobradorId, qcRoot]);
 
   const { data: meus = [] } = useQuery({
     queryKey: ["receb-pendentes-meus", cobradorId],
