@@ -274,6 +274,15 @@ function BaixaWizard() {
     }
   }
 
+  const { data: cobradores = [] } = useQuery({
+    queryKey: ["cobradores", "ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cobradores").select("id,nome").eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data as { id: string; nome: string }[];
+    },
+  });
+
   if (step === 1) {
     return (
       <Card className="border-border/60 shadow-soft">
@@ -286,16 +295,30 @@ function BaixaWizard() {
               const fd = new FormData(e.currentTarget);
               const agente = String(fd.get("agente") || "").trim();
               const data = String(fd.get("data") || "");
-              if (!agente || !data) { toast.error("Preencha agente e data."); return; }
+              if (!agente || !data) { toast.error("Selecione o cobrador e a data."); return; }
               setSession({ agente, data, responsavel, responsavelId });
               setItems([]);
               setStep(2);
             }}
           >
-            <div className="space-y-2"><Label>Agente de recebimento</Label><Input name="agente" placeholder="Nome do cobrador" required /></div>
+            <div className="space-y-2">
+              <Label>Agente de recebimento (cobrador)</Label>
+              {cobradores.length === 0 ? (
+                <div className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                  Nenhum cobrador ativo. Cadastre um na aba "Cadastro de cobradores".
+                </div>
+              ) : (
+                <Select name="agente" required>
+                  <SelectTrigger><SelectValue placeholder="Selecione o cobrador" /></SelectTrigger>
+                  <SelectContent>
+                    {cobradores.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
             <div className="space-y-2"><Label>Data do recebimento</Label><Input name="data" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
             <div className="space-y-2 md:col-span-2"><Label>Responsável pela baixa</Label><Input value={responsavel} disabled /></div>
-            <div className="md:col-span-2"><Button type="submit"><Plus className="mr-2 h-4 w-4" />Iniciar baixa</Button></div>
+            <div className="md:col-span-2"><Button type="submit" disabled={cobradores.length === 0}><Plus className="mr-2 h-4 w-4" />Iniciar baixa</Button></div>
           </form>
         </CardContent>
       </Card>
