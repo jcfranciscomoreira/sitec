@@ -468,7 +468,7 @@ function VendasPage() {
                     onClick={() => {
                       mapRef.current?.panTo({ lat: p.latitude, lng: p.longitude });
                       mapRef.current?.setZoom(17);
-                      setDialog({ open: true, pin: p });
+                      setViewPin(p);
                     }}
                     className="w-full rounded-md border p-2 text-left hover:bg-accent"
                   >
