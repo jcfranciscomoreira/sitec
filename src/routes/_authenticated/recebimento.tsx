@@ -317,9 +317,15 @@ function BaixaEntrada({ session, items, setItems, onCancel, onFinalize, finalizi
           <div className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">{previewErr}</div>
         )}
 
-        <div className="rounded border border-border px-3 py-2 text-sm flex flex-wrap gap-x-6 gap-y-1">
-          <span><span className="text-muted-foreground">Parcelas listadas:</span> <b>{totais.qtd}</b></span>
-          <span><span className="text-muted-foreground">Total a receber:</span> <b className="text-success">{brl(totais.valor)}</b></span>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Quantidade de parcelas</div>
+            <div className="text-2xl font-bold text-primary">{totais.qtd}</div>
+          </div>
+          <div className="rounded-lg border border-success/40 bg-success/5 px-4 py-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Total recebido</div>
+            <div className="text-2xl font-bold text-success">{brl(totais.valor)}</div>
+          </div>
         </div>
 
         <Table>
