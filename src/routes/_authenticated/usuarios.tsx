@@ -267,6 +267,7 @@ function CreateDialog({
                 <SelectItem value="admin">Administrador — acesso total</SelectItem>
                 <SelectItem value="operador">Operador — gestão diária</SelectItem>
                 <SelectItem value="vendedor">Vendedor — mapa de vendas</SelectItem>
+                <SelectItem value="cobrador">Cobrador — recebimento</SelectItem>
               </SelectContent>
             </Select>
           </div>
