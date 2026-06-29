@@ -47,7 +47,7 @@ function abrirJanelaCarteirinha(title: string, cardsHtml: string) {
       .value{font-size:18px;font-weight:bold;margin-top:2px}
       .codigo{position:absolute;bottom:18px;right:22px;font-family:monospace;font-size:14px;background:#d4af37;color:#1e3a5f;padding:4px 10px;border-radius:6px;font-weight:bold}
       .plano{position:absolute;bottom:18px;left:22px;font-size:11px;opacity:.85}
-      @media print{body{background:#fff;padding:0}.card{box-shadow:none;page-break-inside:avoid}}
+      @media print{body{background:#fff;padding:0}.wrap{display:block}.card{box-shadow:none;page-break-inside:avoid;page-break-after:always;margin:0 auto}.card:last-child{page-break-after:auto}}
     </style></head><body>
     <div class="wrap">${cardsHtml}</div>
     <script>window.onload=()=>{window.print();}</script>
