@@ -56,6 +56,8 @@ function CobradoresSection() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Cobrador | null>(null);
+  const [stats, setStats] = useState<Cobrador | null>(null);
+  const [statsMes, setStatsMes] = useState<string>(() => new Date().toISOString().slice(0, 7));
 
   const { data: lista = [], isLoading } = useQuery({
     queryKey: ["cobradores"],
