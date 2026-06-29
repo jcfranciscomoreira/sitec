@@ -466,6 +466,7 @@ export type Database = {
       vendas_pins: {
         Row: {
           associado_id: string | null
+          concorrente: string | null
           created_at: string
           data_retorno: string | null
           endereco: string | null
@@ -485,6 +486,7 @@ export type Database = {
         }
         Insert: {
           associado_id?: string | null
+          concorrente?: string | null
           created_at?: string
           data_retorno?: string | null
           endereco?: string | null
@@ -504,6 +506,7 @@ export type Database = {
         }
         Update: {
           associado_id?: string | null
+          concorrente?: string | null
           created_at?: string
           data_retorno?: string | null
           endereco?: string | null
