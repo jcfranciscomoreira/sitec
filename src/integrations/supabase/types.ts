@@ -187,6 +187,33 @@ export type Database = {
         }
         Relationships: []
       }
+      configuracoes: {
+        Row: {
+          created_at: string
+          id: number
+          logo_url: string | null
+          nome_sistema: string
+          subtitulo: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          logo_url?: string | null
+          nome_sistema?: string
+          subtitulo?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          logo_url?: string | null
+          nome_sistema?: string
+          subtitulo?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contas_financeiras: {
         Row: {
           categoria: string | null
