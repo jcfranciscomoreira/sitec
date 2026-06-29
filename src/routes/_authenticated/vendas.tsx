@@ -501,6 +501,14 @@ function VendasPage() {
         </Card>
       </div>
 
+      <PinViewDialog
+        pin={viewPin}
+        planos={planos}
+        associados={associados}
+        onClose={() => setViewPin(null)}
+        onEdit={(p) => { setViewPin(null); setDialog({ open: true, pin: p }); }}
+      />
+
       <PinDialog
         state={dialog}
         onClose={() => setDialog({ open: false, pin: null })}
@@ -510,6 +518,62 @@ function VendasPage() {
         associados={associados}
       />
     </AppShell>
+  );
+}
+
+function PinViewDialog({
+  pin, planos, associados, onClose, onEdit,
+}: {
+  pin: Pin | null;
+  planos: Plano[];
+  associados: Associado[];
+  onClose: () => void;
+  onEdit: (p: Pin) => void;
+}) {
+  if (!pin) return null;
+  const st = STATUS_OPTIONS.find((s) => s.value === pin.status) ?? STATUS_OPTIONS[0];
+  const tipo = TIPO_VENDA_OPTIONS.find((t) => t.value === pin.tipo_venda);
+  const plano = planos.find((p) => p.id === pin.plano_id);
+  const assoc = associados.find((a) => a.id === pin.associado_id);
+  const Row = ({ label, value }: { label: string; value: React.ReactNode }) =>
+    value ? (
+      <div className="grid grid-cols-[120px_1fr] gap-2 text-sm">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="break-words">{value}</span>
+      </div>
+    ) : null;
+
+  return (
+    <Dialog open={!!pin} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            {pin.nome}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2">
+          <Badge variant="secondary">
+            <span className={`mr-1 inline-block h-2 w-2 rounded-full ${st.color}`} />
+            {st.label}
+          </Badge>
+          <Row label="Telefone" value={pin.telefone} />
+          <Row label="Endereço" value={pin.endereco} />
+          <Row label="Município" value={pin.municipio ? `${pin.municipio}${pin.uf ? ` - ${pin.uf}` : ""}` : null} />
+          <Row label="Negociação" value={tipo?.label} />
+          {pin.status === "retornar" && <Row label="Data retorno" value={pin.data_retorno} />}
+          {pin.status === "concorrencia" && <Row label="Concorrente" value={pin.concorrente} />}
+          <Row label="Plano" value={plano?.nome} />
+          <Row label="Associado" value={assoc ? `#${assoc.codigo} — ${assoc.nome}` : null} />
+          <Row label="Observações" value={pin.observacoes ? <pre className="whitespace-pre-wrap font-sans text-sm">{pin.observacoes}</pre> : null} />
+          <Row label="Coordenadas" value={`${pin.latitude.toFixed(6)}, ${pin.longitude.toFixed(6)}`} />
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={onClose}>Fechar</Button>
+          <Button onClick={() => onEdit(pin)}>Editar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
