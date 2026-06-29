@@ -975,6 +975,11 @@ function MobileRecebimentoSection() {
   const [preview, setPreview] = useState<any | null>(null);
   const [previewErr, setPreviewErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [filtroModo, setFiltroModo] = useState<"hoje" | "dia" | "periodo" | "cidade">("hoje");
+  const [filtroDia, setFiltroDia] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [filtroDe, setFiltroDe] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [filtroAte, setFiltroAte] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [filtroCidade, setFiltroCidade] = useState<string>("");
 
   const { data: cobradores = [] } = useQuery({
     queryKey: ["cobradores", "ativos"],
