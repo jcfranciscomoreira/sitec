@@ -1043,26 +1043,46 @@ function MobileRecebimentoSection() {
 
   const hoje = new Date().toISOString().slice(0, 10);
   const { data: aReceber = [], isLoading: loadingAR } = useQuery({
-    queryKey: ["receb-mobile-areceber", cobradorId, hoje],
+    queryKey: ["receb-mobile-areceber", cobradorId, filtroModo, filtroDia, filtroDe, filtroAte, filtroCidade, hoje],
     enabled: !!cobradorId,
     queryFn: async () => {
-      const { data: assocs, error: e1 } = await supabase
+      let qAssoc = supabase
         .from("associados")
-        .select("id")
+        .select("id, cidade")
         .eq("cobrador_id", cobradorId)
         .eq("forma_pagamento", "cobrador");
+      if (filtroModo === "cidade" && filtroCidade) qAssoc = qAssoc.eq("cidade", filtroCidade);
+      const { data: assocs, error: e1 } = await qAssoc;
       if (e1) throw e1;
       const ids = (assocs ?? []).map((a: any) => a.id);
       if (ids.length === 0) return [] as any[];
-      const { data, error } = await supabase
+      let q = supabase
         .from("mensalidades")
         .select("id, codigo, competencia, vencimento, valor, status, associados!inner(nome, codigo, endereco, cidade, telefone)")
         .in("associado_id", ids)
         .in("status", ["pendente", "atrasado"])
-        .lte("vencimento", hoje)
         .order("vencimento", { ascending: true });
+      if (filtroModo === "hoje") q = q.lte("vencimento", hoje);
+      else if (filtroModo === "dia") q = q.eq("vencimento", filtroDia);
+      else if (filtroModo === "periodo") q = q.gte("vencimento", filtroDe).lte("vencimento", filtroAte);
+      else if (filtroModo === "cidade") q = q.lte("vencimento", hoje);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
+    },
+  });
+
+  const { data: cidades = [] } = useQuery({
+    queryKey: ["cidades-cobrador", cobradorId],
+    enabled: !!cobradorId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("associados").select("cidade")
+        .eq("cobrador_id", cobradorId).eq("forma_pagamento", "cobrador");
+      if (error) throw error;
+      const set = new Set<string>();
+      (data ?? []).forEach((a: any) => { if (a.cidade) set.add(a.cidade); });
+      return Array.from(set).sort();
     },
   });
 
