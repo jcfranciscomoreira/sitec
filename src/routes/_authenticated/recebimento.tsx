@@ -985,6 +985,31 @@ function MobileRecebimentoSection() {
     },
   });
 
+  const hoje = new Date().toISOString().slice(0, 10);
+  const { data: aReceber = [], isLoading: loadingAR } = useQuery({
+    queryKey: ["receb-mobile-areceber", cobradorId, hoje],
+    enabled: !!cobradorId,
+    queryFn: async () => {
+      const { data: assocs, error: e1 } = await supabase
+        .from("associados")
+        .select("id")
+        .eq("cobrador_id", cobradorId)
+        .eq("forma_pagamento", "cobrador");
+      if (e1) throw e1;
+      const ids = (assocs ?? []).map((a: any) => a.id);
+      if (ids.length === 0) return [] as any[];
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("id, codigo, competencia, vencimento, valor, status, associados!inner(nome, codigo, endereco, cidade, telefone)")
+        .in("associado_id", ids)
+        .in("status", ["pendente", "atrasado"])
+        .lte("vencimento", hoje)
+        .order("vencimento", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   useEffect(() => {
     const cod = Number(codigo.trim());
     if (!cod || !Number.isFinite(cod)) { setPreview(null); setPreviewErr(""); return; }
@@ -1077,6 +1102,55 @@ function MobileRecebimentoSection() {
           )}
         </div>
 
+        {cobradorId && (
+          <div className="rounded border border-border/60 bg-muted/20 p-3 space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="font-serif text-base">Parcelas a receber hoje</h3>
+              <div className="flex gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {(aReceber as any[]).length} parcela(s) — <b className="text-foreground">{brl((aReceber as any[]).reduce((s, m: any) => s + Number(m.valor), 0))}</b>
+                </span>
+                <Button size="sm" variant="outline" onClick={() => imprimirRotaCobrador(cobradorNome, aReceber as any[])} disabled={(aReceber as any[]).length === 0}>
+                  <Printer className="mr-2 h-3 w-3" />Imprimir rota
+                </Button>
+              </div>
+            </div>
+            {loadingAR && <div className="text-xs text-muted-foreground">Carregando...</div>}
+            {!loadingAR && (aReceber as any[]).length === 0 && (
+              <div className="text-xs text-muted-foreground">Nenhuma parcela em aberto vencida até hoje para este cobrador.</div>
+            )}
+            {(aReceber as any[]).length > 0 && (
+              <div className="max-h-64 overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cód.</TableHead>
+                      <TableHead>Associado</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(aReceber as any[]).map((m: any) => (
+                      <TableRow key={m.id} className="cursor-pointer" onClick={() => { setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>
+                        <TableCell className="font-mono text-xs">#{m.codigo}</TableCell>
+                        <TableCell>{m.associados?.nome}</TableCell>
+                        <TableCell>{fmtDate(m.vencimento)}</TableCell>
+                        <TableCell className="text-right">{brl(Number(m.valor))}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>Selecionar</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        )}
+
+
         <div className="grid gap-3 md:grid-cols-[1fr_180px]">
           <div className="space-y-2"><Label>Código da parcela</Label><Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ex: 1024" inputMode="numeric" /></div>
           <div className="space-y-2"><Label>Valor recebido (R$)</Label><Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" min="0" /></div>
@@ -1144,6 +1218,44 @@ function MobileRecebimentoSection() {
     </Card>
   );
 }
+
+function imprimirRotaCobrador(cobrador: string, parcelas: any[]) {
+  const w = window.open("", "_blank", "width=800,height=900");
+  if (!w) { toast.error("Permita pop-ups."); return; }
+  const total = parcelas.reduce((s, m) => s + Number(m.valor), 0);
+  const rows = parcelas.map((m) => `
+    <tr>
+      <td>#${m.codigo}</td>
+      <td>${m.associados?.nome ?? ""}</td>
+      <td>${m.associados?.endereco ?? ""}${m.associados?.cidade ? " — " + m.associados.cidade : ""}</td>
+      <td>${m.associados?.telefone ?? ""}</td>
+      <td>${new Date(m.vencimento + "T00:00:00").toLocaleDateString("pt-BR")}</td>
+      <td style="text-align:right">R$ ${Number(m.valor).toFixed(2).replace(".", ",")}</td>
+      <td style="width:80px;border-bottom:1px solid #000">&nbsp;</td>
+    </tr>`).join("");
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Rota do cobrador</title>
+    <style>
+      body{font-family:Georgia,serif;color:#111;margin:18px}
+      h1{font-size:16px;color:#1e3a5f;margin:0 0 4px}
+      .sub{font-size:12px;color:#555;margin-bottom:10px}
+      table{width:100%;border-collapse:collapse;font-size:11px}
+      th,td{border:1px solid #999;padding:5px 6px;text-align:left;vertical-align:top}
+      th{background:#f5f3ec}
+      tfoot td{font-weight:bold;background:#fafafa}
+    </style></head><body>
+    <h1>Rota de recebimento — ${cobrador}</h1>
+    <div class="sub">Emitido em ${new Date().toLocaleString("pt-BR")} · ${parcelas.length} parcela(s)</div>
+    <table>
+      <thead><tr><th>Cód.</th><th>Associado</th><th>Endereço</th><th>Telefone</th><th>Vencimento</th><th style="text-align:right">Valor</th><th>Recebido</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr><td colspan="5" style="text-align:right">Total</td><td style="text-align:right">R$ ${total.toFixed(2).replace(".", ",")}</td><td></td></tr></tfoot>
+    </table>
+    <script>window.print();</script>
+    </body></html>`);
+  w.document.close();
+}
+
+
 
 function imprimirComprovante(c: {
   id: string; cobrador: string; data: string; codigoParcela: number;
