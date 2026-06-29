@@ -633,9 +633,36 @@ function PinDialog({
             </div>
           </div>
           <div>
-            <Label>Observações</Label>
+            <div className="flex items-center justify-between">
+              <Label>Observações</Label>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  let nome = user?.email ?? "Usuário";
+                  if (user?.id) {
+                    const { data: prof } = await supabase
+                      .from("profiles").select("nome").eq("id", user.id).maybeSingle();
+                    if (prof?.nome) nome = prof.nome;
+                  }
+                  const now = new Date();
+                  const data = now.toLocaleDateString("pt-BR");
+                  const hora = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+                  const linha = `Visita: ${data} ${hora} - ${nome}`;
+                  setForm((f) => ({
+                    ...f,
+                    observacoes: f.observacoes ? `${linha}\n${f.observacoes}` : linha,
+                  }));
+                  toast.success("Visita registrada (lembre de salvar)");
+                }}
+              >
+                Registrar visita
+              </Button>
+            </div>
             <Textarea
-              rows={3}
+              rows={4}
               value={form.observacoes ?? ""}
               onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
             />
