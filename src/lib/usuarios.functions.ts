@@ -84,6 +84,17 @@ export const createUsuario = createServerFn({ method: "POST" })
       .update({ nome: data.nome, email: data.email })
       .eq("id", newId);
 
+    if (data.role === "cobrador") {
+      const { data: existing } = await supabaseAdmin
+        .from("cobradores")
+        .select("id")
+        .eq("nome", data.nome)
+        .maybeSingle();
+      if (!existing) {
+        await supabaseAdmin.from("cobradores").insert({ nome: data.nome, ativo: true });
+      }
+    }
+
     return { id: newId };
   });
 
