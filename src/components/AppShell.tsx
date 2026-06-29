@@ -34,6 +34,12 @@ const groups: { label: string; items: { title: string; url: string; icon: any }[
       { title: "Mapa de Vendas", url: "/vendas", icon: MapPin },
     ],
   },
+  {
+    label: "Administração",
+    items: [
+      { title: "Usuários", url: "/usuarios", icon: Shield },
+    ],
+  },
 ];
 
 function AppSidebar() {
