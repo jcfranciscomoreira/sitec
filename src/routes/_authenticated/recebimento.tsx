@@ -1102,6 +1102,55 @@ function MobileRecebimentoSection() {
           )}
         </div>
 
+        {cobradorId && (
+          <div className="rounded border border-border/60 bg-muted/20 p-3 space-y-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h3 className="font-serif text-base">Parcelas a receber hoje</h3>
+              <div className="flex gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {(aReceber as any[]).length} parcela(s) — <b className="text-foreground">{brl((aReceber as any[]).reduce((s, m: any) => s + Number(m.valor), 0))}</b>
+                </span>
+                <Button size="sm" variant="outline" onClick={() => imprimirRotaCobrador(cobradorNome, aReceber as any[])} disabled={(aReceber as any[]).length === 0}>
+                  <Printer className="mr-2 h-3 w-3" />Imprimir rota
+                </Button>
+              </div>
+            </div>
+            {loadingAR && <div className="text-xs text-muted-foreground">Carregando...</div>}
+            {!loadingAR && (aReceber as any[]).length === 0 && (
+              <div className="text-xs text-muted-foreground">Nenhuma parcela em aberto vencida até hoje para este cobrador.</div>
+            )}
+            {(aReceber as any[]).length > 0 && (
+              <div className="max-h-64 overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cód.</TableHead>
+                      <TableHead>Associado</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(aReceber as any[]).map((m: any) => (
+                      <TableRow key={m.id} className="cursor-pointer" onClick={() => { setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>
+                        <TableCell className="font-mono text-xs">#{m.codigo}</TableCell>
+                        <TableCell>{m.associados?.nome}</TableCell>
+                        <TableCell>{fmtDate(m.vencimento)}</TableCell>
+                        <TableCell className="text-right">{brl(Number(m.valor))}</TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>Selecionar</Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        )}
+
+
         <div className="grid gap-3 md:grid-cols-[1fr_180px]">
           <div className="space-y-2"><Label>Código da parcela</Label><Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ex: 1024" inputMode="numeric" /></div>
           <div className="space-y-2"><Label>Valor recebido (R$)</Label><Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" min="0" /></div>
