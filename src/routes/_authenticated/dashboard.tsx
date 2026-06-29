@@ -120,6 +120,17 @@ function Dashboard() {
           <Label className="text-xs text-muted-foreground">Fim</Label>
           <Input type="date" value={fim} onChange={(e) => setFim(e.target.value)} className="w-44" />
         </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Mês</Label>
+          <Select onValueChange={aplicarMes}>
+            <SelectTrigger className="w-52"><SelectValue placeholder="Selecionar mês" /></SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex flex-wrap gap-2">
           {presets.map((p) => (
             <Button key={p.days} type="button" variant="outline" size="sm" onClick={() => aplicarPreset(p.days)}>
@@ -127,6 +138,7 @@ function Dashboard() {
             </Button>
           ))}
         </div>
+
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
