@@ -336,11 +336,28 @@ function CreateDialog({
                     <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g}</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
                       {MODULES.filter((m) => m.group === g).map((m) => (
-                        <label key={m.key} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
-                          <span>{m.label}</span>
-                          <Switch checked={!!perms[m.key]}
-                            onCheckedChange={(v) => setPerms((p) => ({ ...p, [m.key]: v }))} />
-                        </label>
+                        <div key={m.key} className="rounded border p-2 text-sm">
+                          <label className="flex items-center justify-between">
+                            <span className="font-medium">{m.label}</span>
+                            <Switch checked={!!perms[m.key]}
+                              onCheckedChange={(v) => setPerms((p) => {
+                                const np = { ...p, [m.key]: v };
+                                m.tabs?.forEach((t) => { np[`${m.key}.${t.key}`] = v; });
+                                return np;
+                              })} />
+                          </label>
+                          {m.tabs && perms[m.key] && (
+                            <div className="mt-2 space-y-1 border-t pt-2 pl-2">
+                              {m.tabs.map((t) => (
+                                <label key={t.key} className="flex items-center justify-between text-xs">
+                                  <span className="text-muted-foreground">↳ {t.label}</span>
+                                  <Switch checked={!!perms[`${m.key}.${t.key}`]}
+                                    onCheckedChange={(v) => setPerms((p) => ({ ...p, [`${m.key}.${t.key}`]: v }))} />
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
