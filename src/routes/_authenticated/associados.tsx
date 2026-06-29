@@ -339,6 +339,9 @@ function AssociadosPage() {
       (a.cpf ?? "").includes(search) || String(a.codigo).includes(search)) &&
     (statusFilter === "todos" || a.status === statusFilter)
   );
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <AppShell
