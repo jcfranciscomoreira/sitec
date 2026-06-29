@@ -441,7 +441,7 @@ function AssociadosPage() {
             <TableBody>
               {isLoading && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
               {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={7} className="py-8 text-center text-muted-foreground">Nenhum associado encontrado.</TableCell></TableRow>}
-              {filtered.map((a) => (
+              {paged.map((a) => (
                 <TableRow key={a.id}>
                   <TableCell className="font-mono text-xs text-muted-foreground">#{String(a.codigo).padStart(4, "0")}</TableCell>
                   <TableCell>
