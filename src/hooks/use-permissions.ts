@@ -1,0 +1,38 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export type AppRole = "admin" | "operador" | "vendedor" | "cobrador";
+
+export function usePermissions() {
+  const [allowedModules, setAllowedModules] = useState<Set<string> | null>(null);
+  const [roles, setRoles] = useState<AppRole[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancel = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { if (!cancel) { setAllowedModules(new Set()); setLoading(false); } return; }
+      const { data: ur } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+      const userRoles = (ur ?? []).map((r: any) => r.role as AppRole);
+      if (userRoles.includes("admin")) {
+        if (!cancel) { setRoles(userRoles); setAllowedModules(new Set(["*"])); setLoading(false); }
+        return;
+      }
+      const { data: perms } = await supabase
+        .from("role_permissions").select("module, allowed, role").in("role", userRoles);
+      const allowed = new Set<string>();
+      (perms ?? []).forEach((p: any) => { if (p.allowed) allowed.add(p.module); });
+      if (!cancel) { setRoles(userRoles); setAllowedModules(allowed); setLoading(false); }
+    })();
+    return () => { cancel = true; };
+  }, []);
+
+  function can(module: string) {
+    if (!allowedModules) return false;
+    if (allowedModules.has("*")) return true;
+    return allowedModules.has(module);
+  }
+
+  return { roles, can, loading, isAdmin: roles.includes("admin") };
+}
