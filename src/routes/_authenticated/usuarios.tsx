@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -17,6 +19,7 @@ import { Loader2, Plus, Trash2, KeyRound, UserPlus } from "lucide-react";
 import {
   listUsuarios, createUsuario, updateUsuarioRole, deleteUsuario, resetUsuarioPassword,
 } from "@/lib/usuarios.functions";
+import { listRolePermissions, updateRolePermission } from "@/lib/permissions.functions";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
@@ -24,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
   notFoundComponent: () => <div className="p-6">Página não encontrada</div>,
 });
 
-type Role = "admin" | "operador" | "vendedor";
+type Role = "admin" | "operador" | "vendedor" | "cobrador";
 type Usuario = {
   id: string;
   email: string;
@@ -39,13 +42,32 @@ const ROLE_LABEL: Record<Role, string> = {
   admin: "Administrador",
   operador: "Operador",
   vendedor: "Vendedor",
+  cobrador: "Cobrador",
 };
 
 const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
   admin: "default",
   operador: "secondary",
   vendedor: "outline",
+  cobrador: "outline",
 };
+
+const ALL_ROLES: Role[] = ["admin", "operador", "vendedor", "cobrador"];
+const MODULES: { key: string; label: string; group: string }[] = [
+  { group: "Associados", key: "dashboard", label: "Painel" },
+  { group: "Associados", key: "associados", label: "Associados" },
+  { group: "Associados", key: "planos", label: "Planos" },
+  { group: "Associados", key: "financeiro", label: "Mensalidades" },
+  { group: "Associados", key: "recebimento", label: "Recebimento" },
+  { group: "Gestão Financeira", key: "empresa-financeiro", label: "Painel Financeiro" },
+  { group: "Gestão Financeira", key: "contas", label: "Contas a Pagar/Receber" },
+  { group: "Gestão Financeira", key: "centros-custo", label: "Centros de Custo" },
+  { group: "Vendas", key: "vendas", label: "Mapa de Vendas" },
+  { group: "Vendas", key: "vendas-relatorio", label: "Relatório de Vendas" },
+  { group: "Administração", key: "usuarios", label: "Usuários" },
+  { group: "Administração", key: "configuracoes", label: "Configurações" },
+];
+
 
 function UsuariosPage() {
   const router = useRouter();
