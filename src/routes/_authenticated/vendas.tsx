@@ -305,7 +305,7 @@ function VendasPage() {
           title: `${pin.nome} — ${statusDef.label}`,
           icon,
         });
-        m.addListener("click", () => setDialog({ open: true, pin }));
+        m.addListener("click", () => setViewPin(pin));
         markersRef.current.set(pin.id, m);
       }
     }
