@@ -975,6 +975,11 @@ function MobileRecebimentoSection() {
   const [preview, setPreview] = useState<any | null>(null);
   const [previewErr, setPreviewErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [filtroModo, setFiltroModo] = useState<"hoje" | "dia" | "periodo" | "cidade">("hoje");
+  const [filtroDia, setFiltroDia] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [filtroDe, setFiltroDe] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [filtroAte, setFiltroAte] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [filtroCidade, setFiltroCidade] = useState<string>("");
 
   const { data: cobradores = [] } = useQuery({
     queryKey: ["cobradores", "ativos"],
@@ -1038,26 +1043,46 @@ function MobileRecebimentoSection() {
 
   const hoje = new Date().toISOString().slice(0, 10);
   const { data: aReceber = [], isLoading: loadingAR } = useQuery({
-    queryKey: ["receb-mobile-areceber", cobradorId, hoje],
+    queryKey: ["receb-mobile-areceber", cobradorId, filtroModo, filtroDia, filtroDe, filtroAte, filtroCidade, hoje],
     enabled: !!cobradorId,
     queryFn: async () => {
-      const { data: assocs, error: e1 } = await supabase
+      let qAssoc = supabase
         .from("associados")
-        .select("id")
+        .select("id, cidade")
         .eq("cobrador_id", cobradorId)
         .eq("forma_pagamento", "cobrador");
+      if (filtroModo === "cidade" && filtroCidade) qAssoc = qAssoc.eq("cidade", filtroCidade);
+      const { data: assocs, error: e1 } = await qAssoc;
       if (e1) throw e1;
       const ids = (assocs ?? []).map((a: any) => a.id);
       if (ids.length === 0) return [] as any[];
-      const { data, error } = await supabase
+      let q = supabase
         .from("mensalidades")
         .select("id, codigo, competencia, vencimento, valor, status, associados!inner(nome, codigo, endereco, cidade, telefone)")
         .in("associado_id", ids)
         .in("status", ["pendente", "atrasado"])
-        .lte("vencimento", hoje)
         .order("vencimento", { ascending: true });
+      if (filtroModo === "hoje") q = q.lte("vencimento", hoje);
+      else if (filtroModo === "dia") q = q.eq("vencimento", filtroDia);
+      else if (filtroModo === "periodo") q = q.gte("vencimento", filtroDe).lte("vencimento", filtroAte);
+      else if (filtroModo === "cidade") q = q.lte("vencimento", hoje);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
+    },
+  });
+
+  const { data: cidades = [] } = useQuery({
+    queryKey: ["cidades-cobrador", cobradorId],
+    enabled: !!cobradorId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("associados").select("cidade")
+        .eq("cobrador_id", cobradorId).eq("forma_pagamento", "cobrador");
+      if (error) throw error;
+      const set = new Set<string>();
+      (data ?? []).forEach((a: any) => { if (a.cidade) set.add(a.cidade); });
+      return Array.from(set).sort();
     },
   });
 
@@ -1154,10 +1179,49 @@ function MobileRecebimentoSection() {
         </div>
 
         {cobradorId && (
-          <div className="rounded border border-border/60 bg-muted/20 p-3 space-y-2">
+          <div className="rounded border border-border/60 bg-muted/20 p-3 space-y-3">
+            <div className="grid gap-2 md:grid-cols-[180px_1fr] items-end">
+              <div className="space-y-1">
+                <Label className="text-xs">Filtrar por</Label>
+                <Select value={filtroModo} onValueChange={(v: any) => setFiltroModo(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hoje">Vencidas até hoje</SelectItem>
+                    <SelectItem value="dia">Dia específico</SelectItem>
+                    <SelectItem value="periodo">Período</SelectItem>
+                    <SelectItem value="cidade">Cidade</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {filtroModo === "dia" && (
+                <div className="space-y-1"><Label className="text-xs">Data de vencimento</Label>
+                  <Input type="date" value={filtroDia} onChange={(e) => setFiltroDia(e.target.value)} />
+                </div>
+              )}
+              {filtroModo === "periodo" && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1"><Label className="text-xs">De</Label>
+                    <Input type="date" value={filtroDe} onChange={(e) => setFiltroDe(e.target.value)} />
+                  </div>
+                  <div className="space-y-1"><Label className="text-xs">Até</Label>
+                    <Input type="date" value={filtroAte} onChange={(e) => setFiltroAte(e.target.value)} />
+                  </div>
+                </div>
+              )}
+              {filtroModo === "cidade" && (
+                <div className="space-y-1"><Label className="text-xs">Cidade</Label>
+                  <Select value={filtroCidade} onValueChange={setFiltroCidade}>
+                    <SelectTrigger><SelectValue placeholder={cidades.length ? "Selecione a cidade" : "Nenhuma cidade"} /></SelectTrigger>
+                    <SelectContent>
+                      {(cidades as string[]).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="font-serif text-base">Parcelas a receber hoje</h3>
-              <div className="flex gap-2">
+              <h3 className="font-serif text-base">Parcelas a receber</h3>
+              <div className="flex gap-2 items-center">
                 <span className="text-xs text-muted-foreground">
                   {(aReceber as any[]).length} parcela(s) — <b className="text-foreground">{brl((aReceber as any[]).reduce((s, m: any) => s + Number(m.valor), 0))}</b>
                 </span>
