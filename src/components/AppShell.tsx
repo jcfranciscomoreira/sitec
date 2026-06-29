@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers, HandCoins, MapPin, Shield, Settings } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers, HandCoins, MapPin, Shield, Settings, BarChart3 } from "lucide-react";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import type { ReactNode } from "react";
 import {
