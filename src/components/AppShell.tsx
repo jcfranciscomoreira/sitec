@@ -1,5 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers, HandCoins, MapPin, Shield } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers, HandCoins, MapPin, Shield, Settings } from "lucide-react";
+import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import type { ReactNode } from "react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -38,6 +39,7 @@ const groups: { label: string; items: { title: string; url: string; icon: any }[
     label: "Administração",
     items: [
       { title: "Usuários", url: "/usuarios", icon: Shield },
+      { title: "Configurações", url: "/configuracoes", icon: Settings },
     ],
   },
 ];
