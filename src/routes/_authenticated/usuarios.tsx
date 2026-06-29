@@ -129,72 +129,84 @@ function UsuariosPage() {
         </Button>
       }
     >
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center p-10 text-muted-foreground">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
-            </div>
-          ) : error ? (
-            <div className="p-6 text-destructive">{error}</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead>Nível de acesso</TableHead>
-                  <TableHead>Último acesso</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((u) => {
-                  const currentRole = (u.roles[0] ?? "operador") as Role;
-                  return (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.nome || "—"}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {u.email}
-                          {!u.confirmed && <Badge variant="outline">não confirmado</Badge>}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={ROLE_VARIANT[currentRole]}>{ROLE_LABEL[currentRole]}</Badge>
-                          <Select value={currentRole} onValueChange={(v) => changeRole(u.id, v as Role)}>
-                            <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Administrador</SelectItem>
-                              <SelectItem value="operador">Operador</SelectItem>
-                              <SelectItem value="vendedor">Vendedor</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString("pt-BR") : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="outline" onClick={() => setResetUser(u)}>
-                          <KeyRound className="mr-1 h-3 w-3" /> Senha
-                        </Button>
-                        <Button size="sm" variant="ghost" className="ml-1 text-destructive" onClick={() => handleDelete(u)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+      <Tabs defaultValue="usuarios">
+        <TabsList>
+          <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+          <TabsTrigger value="permissoes">Permissões de acesso</TabsTrigger>
+        </TabsList>
+        <TabsContent value="usuarios">
+          <Card>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="flex items-center justify-center p-10 text-muted-foreground">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
+                </div>
+              ) : error ? (
+                <div className="p-6 text-destructive">{error}</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>E-mail</TableHead>
+                      <TableHead>Nível de acesso</TableHead>
+                      <TableHead>Último acesso</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  );
-                })}
-                {users.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Nenhum usuário</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((u) => {
+                      const currentRole = (u.roles[0] ?? "operador") as Role;
+                      return (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-medium">{u.nome || "—"}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {u.email}
+                              {!u.confirmed && <Badge variant="outline">não confirmado</Badge>}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={ROLE_VARIANT[currentRole]}>{ROLE_LABEL[currentRole]}</Badge>
+                              <Select value={currentRole} onValueChange={(v) => changeRole(u.id, v as Role)}>
+                                <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {ALL_ROLES.map((r) => (
+                                    <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString("pt-BR") : "—"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="outline" onClick={() => setResetUser(u)}>
+                              <KeyRound className="mr-1 h-3 w-3" /> Senha
+                            </Button>
+                            <Button size="sm" variant="ghost" className="ml-1 text-destructive" onClick={() => handleDelete(u)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {users.length === 0 && (
+                      <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Nenhum usuário</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="permissoes">
+          <PermissoesTab />
+        </TabsContent>
+      </Tabs>
+
 
       <CreateDialog
         open={createOpen}
