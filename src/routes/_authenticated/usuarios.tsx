@@ -99,10 +99,21 @@ function UsuariosPage() {
   function defaultsFor(role: Role): Record<string, boolean> {
     const d: Record<string, boolean> = {};
     if (role === "admin") {
-      MODULES.forEach((m) => { d[m.key] = true; });
+      MODULES.forEach((m) => {
+        d[m.key] = true;
+        m.tabs?.forEach((t) => { d[`${m.key}.${t.key}`] = true; });
+      });
       return d;
     }
-    MODULES.forEach((m) => { d[m.key] = !!rolePerms[`${role}:${m.key}`]; });
+    MODULES.forEach((m) => {
+      d[m.key] = !!rolePerms[`${role}:${m.key}`];
+      m.tabs?.forEach((t) => {
+        const k = `${m.key}.${t.key}`;
+        // padrão: se não houver registro de aba, herdar o do módulo
+        const stored = rolePerms[`${role}:${k}`];
+        d[k] = stored === undefined ? d[m.key] : !!stored;
+      });
+    });
     return d;
   }
 
