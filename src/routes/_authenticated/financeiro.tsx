@@ -125,23 +125,30 @@ function FinanceiroPage() {
             <Button><Plus className="mr-2 h-4 w-4" />Gerar mensalidades</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle className="font-serif">Gerar mensalidades do mês</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle className="font-serif">Gerar mensalidades</DialogTitle></DialogHeader>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 const fd = new FormData(e.currentTarget);
-                gerar.mutate(String(fd.get("competencia")));
+                gerar.mutate({ inicio: String(fd.get("inicio")), fim: String(fd.get("fim")) });
               }}
               className="space-y-4"
             >
-              <div className="space-y-2">
-                <Label>Competência</Label>
-                <Input name="competencia" type="month" defaultValue={currentMonth} required />
-                <p className="text-xs text-muted-foreground">Cria 1 mensalidade pendente para cada associado ativo com plano. Lançamentos duplicados são ignorados.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Mês inicial</Label>
+                  <Input name="inicio" type="month" defaultValue={currentMonth} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mês final</Label>
+                  <Input name="fim" type="month" defaultValue={currentMonth} required />
+                </div>
               </div>
+              <p className="text-xs text-muted-foreground">Cria uma mensalidade pendente por mês no intervalo selecionado, para cada associado ativo com plano. Lançamentos duplicados são ignorados.</p>
               <DialogFooter><Button type="submit" disabled={gerar.isPending}>{gerar.isPending ? "Gerando..." : "Gerar"}</Button></DialogFooter>
             </form>
           </DialogContent>
+
         </Dialog>
       }
     >
