@@ -544,6 +544,7 @@ function PinDialog({
                 />
               </div>
             )}
+          </div>
           <div>
             <Label>Endereço</Label>
             <Input value={form.endereco ?? ""} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
