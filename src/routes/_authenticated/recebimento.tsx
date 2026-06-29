@@ -985,6 +985,21 @@ function MobileRecebimentoSection() {
     },
   });
 
+  // Auto-seleciona o cobrador quando o usuário logado for um cobrador
+  useEffect(() => {
+    if (cobradorId || cobradores.length === 0) return;
+    (async () => {
+      const { data: auth } = await supabase.auth.getUser();
+      const uid = auth.user?.id;
+      if (!uid) return;
+      const { data: prof } = await supabase.from("profiles").select("nome").eq("id", uid).maybeSingle();
+      const nome = (prof as any)?.nome?.trim();
+      if (!nome) return;
+      const match = cobradores.find((c) => c.nome.trim().toLowerCase() === nome.toLowerCase());
+      if (match) { setCobradorId(match.id); setCobradorNome(match.nome); }
+    })();
+  }, [cobradores, cobradorId]);
+
   const { data: meus = [] } = useQuery({
     queryKey: ["receb-pendentes-meus", cobradorId],
     enabled: !!cobradorId,
