@@ -336,6 +336,7 @@ function VendasPage() {
       status: form.status || "prospect",
       tipo_venda: form.tipo_venda || null,
       data_retorno: form.status === "retornar" ? (form.data_retorno || null) : null,
+      concorrente: form.status === "concorrencia" ? (form.concorrente || null) : null,
       observacoes: form.observacoes || null,
       latitude: form.latitude,
       longitude: form.longitude,
