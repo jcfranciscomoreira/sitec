@@ -853,6 +853,7 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Código</TableHead>
               <TableHead>Competência</TableHead>
               <TableHead>Vencimento</TableHead>
               <TableHead>Valor</TableHead>
@@ -862,10 +863,11 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
-            {!isLoading && mens.length === 0 && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Nenhuma parcela gerada.</TableCell></TableRow>}
+            {isLoading && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {!isLoading && mens.length === 0 && <TableRow><TableCell colSpan={7} className="py-6 text-center text-muted-foreground">Nenhuma parcela gerada.</TableCell></TableRow>}
             {mens.map((m) => (
               <TableRow key={m.id}>
+                <TableCell className="font-mono text-xs">{m.codigo}</TableCell>
                 <TableCell>{competenciaLabel(m.competencia)}</TableCell>
                 <TableCell>{fmtDate(m.vencimento)}</TableCell>
                 <TableCell>{brl(m.valor)}</TableCell>
