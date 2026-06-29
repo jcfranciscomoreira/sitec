@@ -445,6 +445,82 @@ export type Database = {
         }
         Relationships: []
       }
+      recebimentos_pendentes: {
+        Row: {
+          associado_id: string
+          cobrador_id: string | null
+          cobrador_nome: string
+          conciliado_em: string | null
+          conciliado_por: string | null
+          conciliado_por_nome: string | null
+          created_at: string
+          created_by: string | null
+          data_recebimento: string
+          id: string
+          mensalidade_id: string
+          observacoes: string | null
+          status: string
+          updated_at: string
+          valor_recebido: number
+        }
+        Insert: {
+          associado_id: string
+          cobrador_id?: string | null
+          cobrador_nome: string
+          conciliado_em?: string | null
+          conciliado_por?: string | null
+          conciliado_por_nome?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_recebimento?: string
+          id?: string
+          mensalidade_id: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor_recebido: number
+        }
+        Update: {
+          associado_id?: string
+          cobrador_id?: string | null
+          cobrador_nome?: string
+          conciliado_em?: string | null
+          conciliado_por?: string | null
+          conciliado_por_nome?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_recebimento?: string
+          id?: string
+          mensalidade_id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor_recebido?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimentos_pendentes_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_pendentes_cobrador_id_fkey"
+            columns: ["cobrador_id"]
+            isOneToOne: false
+            referencedRelation: "cobradores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_pendentes_mensalidade_id_fkey"
+            columns: ["mensalidade_id"]
+            isOneToOne: false
+            referencedRelation: "mensalidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
