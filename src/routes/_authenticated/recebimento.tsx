@@ -23,11 +23,17 @@ export const Route = createFileRoute("/_authenticated/recebimento")({
 });
 
 function RecebimentoPage() {
-  const [tab, setTab] = useState<"baixa" | "carne" | "historico" | "cobradores">("baixa");
+  const [tab, setTab] = useState<"baixa" | "carne" | "historico" | "cobradores" | "mobile" | "conciliar">("baixa");
 
   return (
-    <AppShell title="Recebimento" subtitle="Baixa em massa de mensalidades, histórico, carnês e cobradores">
+    <AppShell title="Recebimento" subtitle="Recebimento mobile, conciliação, baixas, carnês e cobradores">
       <div className="mb-4 flex flex-wrap gap-2">
+        <Button variant={tab === "mobile" ? "default" : "outline"} onClick={() => setTab("mobile")}>
+          <Smartphone className="mr-2 h-4 w-4" />Recebimento mobile
+        </Button>
+        <Button variant={tab === "conciliar" ? "default" : "outline"} onClick={() => setTab("conciliar")}>
+          <ClipboardCheck className="mr-2 h-4 w-4" />Conciliação (supervisor)
+        </Button>
         <Button variant={tab === "baixa" ? "default" : "outline"} onClick={() => setTab("baixa")}>
           <CheckCircle2 className="mr-2 h-4 w-4" />Baixa por agente
         </Button>
@@ -42,6 +48,8 @@ function RecebimentoPage() {
         </Button>
       </div>
 
+      {tab === "mobile" && <MobileRecebimentoSection />}
+      {tab === "conciliar" && <ConciliacaoSection />}
       {tab === "baixa" && <BaixaWizard />}
       {tab === "historico" && <HistoricoSection />}
       {tab === "carne" && <CarneSection />}
@@ -49,6 +57,7 @@ function RecebimentoPage() {
     </AppShell>
   );
 }
+
 
 type Cobrador = { id: string; nome: string; telefone: string | null; documento: string | null; observacoes: string | null; ativo: boolean };
 
