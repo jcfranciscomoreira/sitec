@@ -430,6 +430,18 @@ function VendasPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label className="text-xs">Filtrar por status</Label>
+              <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Todos os status</SelectItem>
+                  {STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Pontos ({filteredPins.length})</h3>
             </div>
