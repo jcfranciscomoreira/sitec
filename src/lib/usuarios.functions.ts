@@ -84,6 +84,17 @@ export const createUsuario = createServerFn({ method: "POST" })
       .update({ nome: data.nome, email: data.email })
       .eq("id", newId);
 
+    if (data.role === "cobrador") {
+      const { data: existing } = await supabaseAdmin
+        .from("cobradores")
+        .select("id")
+        .eq("nome", data.nome)
+        .maybeSingle();
+      if (!existing) {
+        await supabaseAdmin.from("cobradores").insert({ nome: data.nome, ativo: true });
+      }
+    }
+
     return { id: newId };
   });
 
@@ -103,6 +114,26 @@ export const updateUsuarioRole = createServerFn({ method: "POST" })
       .from("user_roles")
       .insert({ user_id: data.userId, role: data.role });
     if (error) throw new Error(error.message);
+
+    if (data.role === "cobrador") {
+      const { data: prof } = await supabaseAdmin
+        .from("profiles")
+        .select("nome")
+        .eq("id", data.userId)
+        .maybeSingle();
+      const nome = prof?.nome?.trim();
+      if (nome) {
+        const { data: existing } = await supabaseAdmin
+          .from("cobradores")
+          .select("id")
+          .eq("nome", nome)
+          .maybeSingle();
+        if (!existing) {
+          await supabaseAdmin.from("cobradores").insert({ nome, ativo: true });
+        }
+      }
+    }
+
     return { ok: true };
   });
 
