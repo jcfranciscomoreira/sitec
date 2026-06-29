@@ -20,6 +20,7 @@ import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authentic
 import { Route as AuthenticatedEmpresaFinanceiroRouteImport } from './routes/_authenticated/empresa-financeiro'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedContasRouteImport } from './routes/_authenticated/contas'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedCentrosCustoRouteImport } from './routes/_authenticated/centros-custo'
 import { Route as AuthenticatedAssociadosListaRouteImport } from './routes/_authenticated/associados-lista'
 import { Route as AuthenticatedAssociadosRouteImport } from './routes/_authenticated/associados'
@@ -80,6 +81,12 @@ const AuthenticatedContasRoute = AuthenticatedContasRouteImport.update({
   path: '/contas',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedCentrosCustoRoute =
   AuthenticatedCentrosCustoRouteImport.update({
     id: '/centros-custo',
@@ -104,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/associados': typeof AuthenticatedAssociadosRoute
   '/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/centros-custo': typeof AuthenticatedCentrosCustoRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/contas': typeof AuthenticatedContasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
@@ -119,6 +127,7 @@ export interface FileRoutesByTo {
   '/associados': typeof AuthenticatedAssociadosRoute
   '/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/centros-custo': typeof AuthenticatedCentrosCustoRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/contas': typeof AuthenticatedContasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
@@ -136,6 +145,7 @@ export interface FileRoutesById {
   '/_authenticated/associados': typeof AuthenticatedAssociadosRoute
   '/_authenticated/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/_authenticated/centros-custo': typeof AuthenticatedCentrosCustoRoute
+  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/contas': typeof AuthenticatedContasRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/associados'
     | '/associados-lista'
     | '/centros-custo'
+    | '/configuracoes'
     | '/contas'
     | '/dashboard'
     | '/empresa-financeiro'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/associados'
     | '/associados-lista'
     | '/centros-custo'
+    | '/configuracoes'
     | '/contas'
     | '/dashboard'
     | '/empresa-financeiro'
@@ -184,6 +196,7 @@ export interface FileRouteTypes {
     | '/_authenticated/associados'
     | '/_authenticated/associados-lista'
     | '/_authenticated/centros-custo'
+    | '/_authenticated/configuracoes'
     | '/_authenticated/contas'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresa-financeiro'
@@ -279,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedContasRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/centros-custo': {
       id: '/_authenticated/centros-custo'
       path: '/centros-custo'
@@ -307,6 +327,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssociadosRoute: typeof AuthenticatedAssociadosRoute
   AuthenticatedAssociadosListaRoute: typeof AuthenticatedAssociadosListaRoute
   AuthenticatedCentrosCustoRoute: typeof AuthenticatedCentrosCustoRoute
+  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedContasRoute: typeof AuthenticatedContasRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresaFinanceiroRoute: typeof AuthenticatedEmpresaFinanceiroRoute
@@ -321,6 +342,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssociadosRoute: AuthenticatedAssociadosRoute,
   AuthenticatedAssociadosListaRoute: AuthenticatedAssociadosListaRoute,
   AuthenticatedCentrosCustoRoute: AuthenticatedCentrosCustoRoute,
+  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedContasRoute: AuthenticatedContasRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresaFinanceiroRoute: AuthenticatedEmpresaFinanceiroRoute,
