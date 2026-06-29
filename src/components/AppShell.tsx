@@ -11,37 +11,37 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-const groups: { label: string; items: { title: string; url: string; icon: any }[] }[] = [
+const groups: { label: string; items: { title: string; url: string; icon: any; module: string }[] }[] = [
   {
     label: "Associados",
     items: [
-      { title: "Painel", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Associados", url: "/associados", icon: Users },
-      { title: "Planos", url: "/planos", icon: FileText },
-      { title: "Mensalidades", url: "/financeiro", icon: Wallet },
-      { title: "Recebimento", url: "/recebimento", icon: HandCoins },
+      { title: "Painel", url: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
+      { title: "Associados", url: "/associados", icon: Users, module: "associados" },
+      { title: "Planos", url: "/planos", icon: FileText, module: "planos" },
+      { title: "Mensalidades", url: "/financeiro", icon: Wallet, module: "financeiro" },
+      { title: "Recebimento", url: "/recebimento", icon: HandCoins, module: "recebimento" },
     ],
   },
   {
     label: "Gestão Financeira",
     items: [
-      { title: "Painel Financeiro", url: "/empresa-financeiro", icon: Building2 },
-      { title: "Contas a Pagar/Receber", url: "/contas", icon: Receipt },
-      { title: "Centros de Custo", url: "/centros-custo", icon: Layers },
+      { title: "Painel Financeiro", url: "/empresa-financeiro", icon: Building2, module: "empresa-financeiro" },
+      { title: "Contas a Pagar/Receber", url: "/contas", icon: Receipt, module: "contas" },
+      { title: "Centros de Custo", url: "/centros-custo", icon: Layers, module: "centros-custo" },
     ],
   },
   {
     label: "Vendas",
     items: [
-      { title: "Mapa de Vendas", url: "/vendas", icon: MapPin },
-      { title: "Relatório de Vendas", url: "/vendas-relatorio", icon: BarChart3 },
+      { title: "Mapa de Vendas", url: "/vendas", icon: MapPin, module: "vendas" },
+      { title: "Relatório de Vendas", url: "/vendas-relatorio", icon: BarChart3, module: "vendas-relatorio" },
     ],
   },
   {
     label: "Administração",
     items: [
-      { title: "Usuários", url: "/usuarios", icon: Shield },
-      { title: "Configurações", url: "/configuracoes", icon: Settings },
+      { title: "Usuários", url: "/usuarios", icon: Shield, module: "usuarios" },
+      { title: "Configurações", url: "/configuracoes", icon: Settings, module: "configuracoes" },
     ],
   },
 ];
@@ -50,6 +50,8 @@ function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { config } = useConfiguracoes();
+  const { can, loading: permsLoading } = usePermissions();
+
 
   async function handleSignOut() {
     await supabase.auth.signOut();
