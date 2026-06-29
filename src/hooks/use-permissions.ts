@@ -19,10 +19,17 @@ export function usePermissions() {
         if (!cancel) { setRoles(userRoles); setAllowedModules(new Set(["*"])); setLoading(false); }
         return;
       }
-      const { data: perms } = await supabase
-        .from("role_permissions").select("module, allowed, role").in("role", userRoles);
+      const [{ data: perms }, { data: overrides }] = await Promise.all([
+        supabase.from("role_permissions").select("module, allowed, role").in("role", userRoles),
+        supabase.from("user_permissions").select("module, allowed").eq("user_id", user.id),
+      ]);
       const allowed = new Set<string>();
       (perms ?? []).forEach((p: any) => { if (p.allowed) allowed.add(p.module); });
+      // User overrides win
+      (overrides ?? []).forEach((o: any) => {
+        if (o.allowed) allowed.add(o.module);
+        else allowed.delete(o.module);
+      });
       if (!cancel) { setRoles(userRoles); setAllowedModules(allowed); setLoading(false); }
     })();
     return () => { cancel = true; };

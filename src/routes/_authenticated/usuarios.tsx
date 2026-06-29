@@ -1,6 +1,6 @@
-import { createFileRoute, ErrorComponent, useRouter } from "@tanstack/react-router";
+import { createFileRoute, ErrorComponent } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,11 +15,14 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Plus, Trash2, KeyRound, UserPlus } from "lucide-react";
+import { Loader2, Plus, Trash2, KeyRound, UserPlus, ShieldCheck } from "lucide-react";
 import {
   listUsuarios, createUsuario, updateUsuarioRole, deleteUsuario, resetUsuarioPassword,
 } from "@/lib/usuarios.functions";
-import { listRolePermissions, updateRolePermission } from "@/lib/permissions.functions";
+import {
+  listRolePermissions, updateRolePermission,
+  listUserPermissions, setUserPermissionsBulk,
+} from "@/lib/permissions.functions";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
@@ -53,7 +56,7 @@ const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
 };
 
 const ALL_ROLES: Role[] = ["admin", "operador", "vendedor", "cobrador"];
-const MODULES: { key: string; label: string; group: string }[] = [
+export const MODULES: { key: string; label: string; group: string }[] = [
   { group: "Associados", key: "dashboard", label: "Painel" },
   { group: "Associados", key: "associados", label: "Associados" },
   { group: "Associados", key: "planos", label: "Planos" },
@@ -68,27 +71,32 @@ const MODULES: { key: string; label: string; group: string }[] = [
   { group: "Administração", key: "configuracoes", label: "Configurações" },
 ];
 
-
 function UsuariosPage() {
-  const router = useRouter();
   const listFn = useServerFn(listUsuarios);
   const createFn = useServerFn(createUsuario);
   const updateRoleFn = useServerFn(updateUsuarioRole);
   const deleteFn = useServerFn(deleteUsuario);
   const resetPwFn = useServerFn(resetUsuarioPassword);
+  const listRolePermsFn = useServerFn(listRolePermissions);
+  const bulkFn = useServerFn(setUserPermissionsBulk);
 
   const [users, setUsers] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [resetUser, setResetUser] = useState<Usuario | null>(null);
+  const [permsUser, setPermsUser] = useState<Usuario | null>(null);
+  const [rolePerms, setRolePerms] = useState<Record<string, boolean>>({});
 
   async function refresh() {
     setLoading(true);
     setError(null);
     try {
-      const data = await listFn();
+      const [data, rp] = await Promise.all([listFn(), listRolePermsFn()]);
       setUsers(data as Usuario[]);
+      const map: Record<string, boolean> = {};
+      (rp as any[]).forEach((p) => { map[`${p.role}:${p.module}`] = !!p.allowed; });
+      setRolePerms(map);
     } catch (e: any) {
       setError(e?.message ?? "Erro ao carregar usuários");
     } finally {
@@ -97,6 +105,16 @@ function UsuariosPage() {
   }
 
   useEffect(() => { refresh(); }, []);
+
+  function defaultsFor(role: Role): Record<string, boolean> {
+    const d: Record<string, boolean> = {};
+    if (role === "admin") {
+      MODULES.forEach((m) => { d[m.key] = true; });
+      return d;
+    }
+    MODULES.forEach((m) => { d[m.key] = !!rolePerms[`${role}:${m.key}`]; });
+    return d;
+  }
 
   async function changeRole(userId: string, role: Role) {
     try {
@@ -132,7 +150,7 @@ function UsuariosPage() {
       <Tabs defaultValue="usuarios">
         <TabsList>
           <TabsTrigger value="usuarios">Usuários</TabsTrigger>
-          <TabsTrigger value="permissoes">Permissões de acesso</TabsTrigger>
+          <TabsTrigger value="permissoes">Permissões padrão por perfil</TabsTrigger>
         </TabsList>
         <TabsContent value="usuarios">
           <Card>
@@ -149,7 +167,7 @@ function UsuariosPage() {
                     <TableRow>
                       <TableHead>Nome</TableHead>
                       <TableHead>E-mail</TableHead>
-                      <TableHead>Nível de acesso</TableHead>
+                      <TableHead>Nível</TableHead>
                       <TableHead>Último acesso</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -183,7 +201,10 @@ function UsuariosPage() {
                             {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString("pt-BR") : "—"}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button size="sm" variant="outline" onClick={() => setResetUser(u)}>
+                            <Button size="sm" variant="outline" onClick={() => setPermsUser(u)}>
+                              <ShieldCheck className="mr-1 h-3 w-3" /> Permissões
+                            </Button>
+                            <Button size="sm" variant="outline" className="ml-1" onClick={() => setResetUser(u)}>
                               <KeyRound className="mr-1 h-3 w-3" /> Senha
                             </Button>
                             <Button size="sm" variant="ghost" className="ml-1 text-destructive" onClick={() => handleDelete(u)}>
@@ -207,19 +228,21 @@ function UsuariosPage() {
         </TabsContent>
       </Tabs>
 
-
       <CreateDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onCreate={async (form) => {
-          try {
-            await createFn({ data: form });
-            toast.success("Usuário criado");
-            setCreateOpen(false);
-            refresh();
-          } catch (e: any) {
-            toast.error(e?.message ?? "Erro ao criar");
+        defaultsFor={defaultsFor}
+        onCreate={async (form, perms) => {
+          const created: any = await createFn({ data: { email: form.email, password: form.password, nome: form.nome, role: form.role } });
+          const newUserId = created?.userId ?? created?.id ?? created?.user?.id;
+          if (newUserId && perms) {
+            const list = Object.entries(perms).map(([module, allowed]) => ({ module, allowed }));
+            try { await bulkFn({ data: { userId: newUserId, permissions: list } }); }
+            catch (e: any) { toast.error("Usuário criado, mas falhou ao salvar permissões: " + (e?.message ?? "")); }
           }
+          toast.success("Usuário criado");
+          setCreateOpen(false);
+          refresh();
         }}
       />
       <ResetPwDialog
@@ -236,47 +259,105 @@ function UsuariosPage() {
           }
         }}
       />
+      <UserPermsDialog
+        user={permsUser}
+        defaultsFor={defaultsFor}
+        onClose={() => setPermsUser(null)}
+      />
     </AppShell>
   );
 }
 
 function CreateDialog({
-  open, onClose, onCreate,
-}: { open: boolean; onClose: () => void; onCreate: (f: { email: string; password: string; nome: string; role: Role }) => Promise<void> }) {
+  open, onClose, onCreate, defaultsFor,
+}: {
+  open: boolean; onClose: () => void;
+  defaultsFor: (r: Role) => Record<string, boolean>;
+  onCreate: (f: { email: string; password: string; nome: string; role: Role }, perms: Record<string, boolean>) => Promise<void>;
+}) {
   const [form, setForm] = useState({ email: "", password: "", nome: "", role: "operador" as Role });
+  const [perms, setPerms] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
+
   useEffect(() => {
-    if (open) setForm({ email: "", password: "", nome: "", role: "operador" });
+    if (open) {
+      setForm({ email: "", password: "", nome: "", role: "operador" });
+      setPerms(defaultsFor("operador"));
+    }
   }, [open]);
+
+  useEffect(() => { if (open) setPerms(defaultsFor(form.role)); }, [form.role]);
+
+  const groups = Array.from(new Set(MODULES.map((m) => m.group)));
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><UserPlus className="h-4 w-4" /> Novo usuário</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
-          <div><Label>E-mail *</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-          <div><Label>Senha * (mín. 8)</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div>
-          <div>
-            <Label>Nível de acesso *</Label>
-            <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as Role })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Administrador — acesso total</SelectItem>
-                <SelectItem value="operador">Operador — gestão diária</SelectItem>
-                <SelectItem value="vendedor">Vendedor — mapa de vendas</SelectItem>
-                <SelectItem value="cobrador">Cobrador — recebimento</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div><Label>Nome *</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+            <div><Label>E-mail *</Label><Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
+            <div><Label>Senha * (mín. 8)</Label><Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div>
+            <div>
+              <Label>Nível de acesso *</Label>
+              <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v as Role })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="operador">Operador</SelectItem>
+                  <SelectItem value="vendedor">Vendedor</SelectItem>
+                  <SelectItem value="cobrador">Cobrador</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="rounded-md border p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <h4 className="text-sm font-semibold">Permissões deste usuário</h4>
+              <Button type="button" size="sm" variant="ghost"
+                onClick={() => setPerms(defaultsFor(form.role))}>
+                Restaurar padrão do perfil
+              </Button>
+            </div>
+            <p className="mb-2 text-xs text-muted-foreground">
+              Comece com o padrão do perfil e ative/desative módulos para este usuário.
+            </p>
+            {form.role === "admin" ? (
+              <p className="text-xs text-muted-foreground">Administradores têm acesso total — não é necessário configurar.</p>
+            ) : (
+              <div className="space-y-3">
+                {groups.map((g) => (
+                  <div key={g}>
+                    <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g}</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+                      {MODULES.filter((m) => m.group === g).map((m) => (
+                        <label key={m.key} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
+                          <span>{m.label}</span>
+                          <Switch checked={!!perms[m.key]}
+                            onCheckedChange={(v) => setPerms((p) => ({ ...p, [m.key]: v }))} />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button
             disabled={saving || !form.email || !form.password || !form.nome || form.password.length < 8}
-            onClick={async () => { setSaving(true); try { await onCreate(form); } finally { setSaving(false); } }}
+            onClick={async () => {
+              setSaving(true);
+              try { await onCreate(form, form.role === "admin" ? {} : perms); }
+              catch (e: any) { toast.error(e?.message ?? "Erro ao criar"); }
+              finally { setSaving(false); }
+            }}
           >
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Criar
           </Button>
@@ -297,6 +378,102 @@ function ResetPwDialog({ user, onClose, onReset }: { user: Usuario | null; onClo
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancelar</Button>
           <Button disabled={pw.length < 8} onClick={() => onReset(pw)}>Salvar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function UserPermsDialog({
+  user, onClose, defaultsFor,
+}: { user: Usuario | null; onClose: () => void; defaultsFor: (r: Role) => Record<string, boolean> }) {
+  const listFn = useServerFn(listUserPermissions);
+  const bulkFn = useServerFn(setUserPermissionsBulk);
+  const [perms, setPerms] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const role = (user?.roles?.[0] ?? "operador") as Role;
+  const defaults = useMemo(() => (user ? defaultsFor(role) : {}), [user, role]);
+
+  useEffect(() => {
+    if (!user) return;
+    setLoading(true);
+    (async () => {
+      try {
+        const overrides = await listFn({ data: { userId: user.id } }) as { module: string; allowed: boolean }[];
+        const map: Record<string, boolean> = { ...defaults };
+        overrides.forEach((o) => { map[o.module] = !!o.allowed; });
+        setPerms(map);
+      } finally { setLoading(false); }
+    })();
+  }, [user]);
+
+  const groups = Array.from(new Set(MODULES.map((m) => m.group)));
+
+  async function save() {
+    if (!user) return;
+    setSaving(true);
+    try {
+      const list = Object.entries(perms).map(([module, allowed]) => ({ module, allowed }));
+      await bulkFn({ data: { userId: user.id, permissions: list } });
+      toast.success("Permissões salvas");
+      onClose();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao salvar");
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <Dialog open={!!user} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Permissões — {user?.nome || user?.email}</DialogTitle>
+        </DialogHeader>
+        {role === "admin" ? (
+          <p className="text-sm text-muted-foreground">Administradores têm acesso total.</p>
+        ) : loading ? (
+          <div className="flex items-center justify-center p-6 text-muted-foreground">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Perfil base: <strong>{ROLE_LABEL[role]}</strong>. Ative ou desative módulos individualmente.
+              </p>
+              <Button type="button" size="sm" variant="ghost" onClick={() => setPerms(defaults)}>
+                Restaurar padrão
+              </Button>
+            </div>
+            {groups.map((g) => (
+              <div key={g}>
+                <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{g}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+                  {MODULES.filter((m) => m.group === g).map((m) => {
+                    const overridden = !!perms[m.key] !== !!defaults[m.key];
+                    return (
+                      <label key={m.key} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
+                        <span className="flex items-center gap-2">
+                          {m.label}
+                          {overridden && <Badge variant="outline" className="text-[10px]">personalizado</Badge>}
+                        </span>
+                        <Switch checked={!!perms[m.key]}
+                          onCheckedChange={(v) => setPerms((p) => ({ ...p, [m.key]: v }))} />
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          {role !== "admin" && (
+            <Button disabled={saving || loading} onClick={save}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Salvar
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -344,7 +521,7 @@ function PermissoesTab() {
         ) : (
           <div className="space-y-6">
             <p className="text-sm text-muted-foreground">
-              Defina quais módulos cada nível de acesso pode visualizar. Administradores sempre têm acesso total.
+              Padrão por perfil. Cada usuário pode ter ajustes individuais no botão "Permissões".
             </p>
             {groups.map((group) => (
               <div key={group}>
