@@ -470,14 +470,38 @@ function UserPermsDialog({
                   {MODULES.filter((m) => m.group === g).map((m) => {
                     const overridden = !!perms[m.key] !== !!defaults[m.key];
                     return (
-                      <label key={m.key} className="flex items-center justify-between rounded border px-2 py-1 text-sm">
-                        <span className="flex items-center gap-2">
-                          {m.label}
-                          {overridden && <Badge variant="outline" className="text-[10px]">personalizado</Badge>}
-                        </span>
-                        <Switch checked={!!perms[m.key]}
-                          onCheckedChange={(v) => setPerms((p) => ({ ...p, [m.key]: v }))} />
-                      </label>
+                      <div key={m.key} className="rounded border p-2 text-sm">
+                        <label className="flex items-center justify-between">
+                          <span className="flex items-center gap-2 font-medium">
+                            {m.label}
+                            {overridden && <Badge variant="outline" className="text-[10px]">personalizado</Badge>}
+                          </span>
+                          <Switch checked={!!perms[m.key]}
+                            onCheckedChange={(v) => setPerms((p) => {
+                              const np = { ...p, [m.key]: v };
+                              m.tabs?.forEach((t) => { np[`${m.key}.${t.key}`] = v; });
+                              return np;
+                            })} />
+                        </label>
+                        {m.tabs && perms[m.key] && (
+                          <div className="mt-2 space-y-1 border-t pt-2 pl-2">
+                            {m.tabs.map((t) => {
+                              const tk = `${m.key}.${t.key}`;
+                              const tOver = !!perms[tk] !== !!defaults[tk];
+                              return (
+                                <label key={t.key} className="flex items-center justify-between text-xs">
+                                  <span className="flex items-center gap-1 text-muted-foreground">
+                                    ↳ {t.label}
+                                    {tOver && <Badge variant="outline" className="text-[9px]">personalizado</Badge>}
+                                  </span>
+                                  <Switch checked={!!perms[tk]}
+                                    onCheckedChange={(v) => setPerms((p) => ({ ...p, [tk]: v }))} />
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
