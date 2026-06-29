@@ -560,16 +560,26 @@ function CarneSection() {
     },
   });
 
+  const [assocBusca, setAssocBusca] = useState("");
   const { data: associadosData = [] } = useQuery({
-    queryKey: ["assoc-list-carne", cidade],
+    queryKey: ["assoc-list-carne", cidade, assocBusca],
+    enabled: assocBusca.trim().length >= 2,
     queryFn: async () => {
-      let q = supabase.from("associados").select("id, nome, codigo, cidade").order("nome", { ascending: true });
+      const termo = assocBusca.trim();
+      let q = supabase.from("associados").select("id, nome, codigo, cidade, cpf").order("nome", { ascending: true });
       if (cidade !== "todas") q = q.eq("cidade", cidade);
-      const { data, error } = await q.limit(2000);
+      const codNum = Number(termo);
+      if (!Number.isNaN(codNum) && /^\d+$/.test(termo)) {
+        q = q.or(`nome.ilike.%${termo}%,cpf.ilike.%${termo}%,codigo.eq.${codNum}`);
+      } else {
+        q = q.or(`nome.ilike.%${termo}%,cpf.ilike.%${termo}%`);
+      }
+      const { data, error } = await q.limit(20);
       if (error) throw error;
       return data ?? [];
     },
   });
+
 
   async function gerar() {
     const { data } = await refetch();
