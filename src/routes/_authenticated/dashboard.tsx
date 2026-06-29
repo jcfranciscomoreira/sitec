@@ -7,8 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
+
+function buildMonthOptions(count = 12) {
+  const opts: { value: string; label: string }[] = [];
+  const ref = new Date();
+  for (let i = 0; i < count; i++) {
+    const d = new Date(ref.getFullYear(), ref.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    opts.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+  return opts;
+}
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Painel — Memorial" }] }),
@@ -40,6 +53,16 @@ function Dashboard() {
     setInicio(daysAgoIso(days));
     setFim(todayIso());
   };
+
+  const monthOptions = useMemo(() => buildMonthOptions(12), []);
+  const aplicarMes = (value: string) => {
+    const [ano, m] = value.split("-").map(Number);
+    const ini = `${value}-01`;
+    const fimDate = new Date(ano, m, 0); // último dia do mês
+    setInicio(ini);
+    setFim(fimDate.toISOString().slice(0, 10));
+  };
+
 
   // fim exclusivo (+1 dia) para incluir o dia final
   const fimExclusivo = useMemo(() => {
@@ -97,6 +120,17 @@ function Dashboard() {
           <Label className="text-xs text-muted-foreground">Fim</Label>
           <Input type="date" value={fim} onChange={(e) => setFim(e.target.value)} className="w-44" />
         </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Mês</Label>
+          <Select onValueChange={aplicarMes}>
+            <SelectTrigger className="w-52"><SelectValue placeholder="Selecionar mês" /></SelectTrigger>
+            <SelectContent>
+              {monthOptions.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex flex-wrap gap-2">
           {presets.map((p) => (
             <Button key={p.days} type="button" variant="outline" size="sm" onClick={() => aplicarPreset(p.days)}>
@@ -104,6 +138,7 @@ function Dashboard() {
             </Button>
           ))}
         </div>
+
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
