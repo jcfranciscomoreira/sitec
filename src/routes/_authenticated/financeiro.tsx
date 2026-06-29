@@ -50,37 +50,49 @@ function FinanceiroPage() {
   });
 
   const gerar = useMutation({
-    mutationFn: async (competencia: string) => {
+    mutationFn: async (range: { inicio: string; fim: string }) => {
       const { data: associados, error } = await supabase
         .from("associados")
         .select("id, dia_vencimento, planos(valor_mensal)")
         .eq("status", "ativo")
         .not("plano_id", "is", null);
       if (error) throw error;
-      const compDate = new Date(competencia + "-01T00:00:00");
-      const payload = (associados ?? []).map((a: any) => {
-        const venc = new Date(compDate.getFullYear(), compDate.getMonth(), Math.min(a.dia_vencimento, 28));
-        return {
-          associado_id: a.id,
-          competencia: `${competencia}-01`,
-          valor: a.planos?.valor_mensal ?? 0,
-          vencimento: venc.toISOString().slice(0, 10),
-          status: "pendente" as const,
-        };
-      });
+      const start = new Date(range.inicio + "-01T00:00:00");
+      const end = new Date(range.fim + "-01T00:00:00");
+      if (end < start) throw new Error("Mês final deve ser maior ou igual ao inicial.");
+      const competencias: Date[] = [];
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        competencias.push(new Date(cursor));
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      const payload = (associados ?? []).flatMap((a: any) =>
+        competencias.map((compDate) => {
+          const venc = new Date(compDate.getFullYear(), compDate.getMonth(), Math.min(a.dia_vencimento, 28));
+          const compStr = `${compDate.getFullYear()}-${String(compDate.getMonth() + 1).padStart(2, "0")}-01`;
+          return {
+            associado_id: a.id,
+            competencia: compStr,
+            valor: a.planos?.valor_mensal ?? 0,
+            vencimento: venc.toISOString().slice(0, 10),
+            status: "pendente" as const,
+          };
+        }),
+      );
       if (payload.length === 0) throw new Error("Nenhum associado ativo com plano para gerar.");
       const { error: e2, count } = await supabase.from("mensalidades").upsert(payload as any, { onConflict: "associado_id,competencia", ignoreDuplicates: true, count: "exact" });
       if (e2) throw e2;
-      return { tentadas: payload.length, inseridas: count ?? 0 };
+      return { tentadas: payload.length, inseridas: count ?? 0, meses: competencias.length };
     },
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["mensalidades"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       setOpenGerar(false);
-      toast.success(`Mensalidades geradas`, { description: `${r.inseridas} novas de ${r.tentadas} associados.` });
+      toast.success(`Mensalidades geradas`, { description: `${r.inseridas} novas em ${r.meses} mês(es) (${r.tentadas} tentadas).` });
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
+
 
   const pay = useMutation({
     mutationFn: async (p: { id: string; data_pagamento: string; forma_pagamento: string }) => {
@@ -113,23 +125,30 @@ function FinanceiroPage() {
             <Button><Plus className="mr-2 h-4 w-4" />Gerar mensalidades</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle className="font-serif">Gerar mensalidades do mês</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle className="font-serif">Gerar mensalidades</DialogTitle></DialogHeader>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 const fd = new FormData(e.currentTarget);
-                gerar.mutate(String(fd.get("competencia")));
+                gerar.mutate({ inicio: String(fd.get("inicio")), fim: String(fd.get("fim")) });
               }}
               className="space-y-4"
             >
-              <div className="space-y-2">
-                <Label>Competência</Label>
-                <Input name="competencia" type="month" defaultValue={currentMonth} required />
-                <p className="text-xs text-muted-foreground">Cria 1 mensalidade pendente para cada associado ativo com plano. Lançamentos duplicados são ignorados.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Mês inicial</Label>
+                  <Input name="inicio" type="month" defaultValue={currentMonth} required />
+                </div>
+                <div className="space-y-2">
+                  <Label>Mês final</Label>
+                  <Input name="fim" type="month" defaultValue={currentMonth} required />
+                </div>
               </div>
+              <p className="text-xs text-muted-foreground">Cria uma mensalidade pendente por mês no intervalo selecionado, para cada associado ativo com plano. Lançamentos duplicados são ignorados.</p>
               <DialogFooter><Button type="submit" disabled={gerar.isPending}>{gerar.isPending ? "Gerando..." : "Gerar"}</Button></DialogFooter>
             </form>
           </DialogContent>
+
         </Dialog>
       }
     >
