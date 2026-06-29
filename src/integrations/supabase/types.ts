@@ -467,6 +467,7 @@ export type Database = {
         Row: {
           associado_id: string | null
           created_at: string
+          data_retorno: string | null
           endereco: string | null
           id: string
           latitude: number
@@ -477,6 +478,7 @@ export type Database = {
           plano_id: string | null
           status: string
           telefone: string | null
+          tipo_venda: string | null
           uf: string | null
           updated_at: string
           vendedor_id: string
@@ -484,6 +486,7 @@ export type Database = {
         Insert: {
           associado_id?: string | null
           created_at?: string
+          data_retorno?: string | null
           endereco?: string | null
           id?: string
           latitude: number
@@ -494,6 +497,7 @@ export type Database = {
           plano_id?: string | null
           status?: string
           telefone?: string | null
+          tipo_venda?: string | null
           uf?: string | null
           updated_at?: string
           vendedor_id: string
@@ -501,6 +505,7 @@ export type Database = {
         Update: {
           associado_id?: string | null
           created_at?: string
+          data_retorno?: string | null
           endereco?: string | null
           id?: string
           latitude?: number
@@ -511,6 +516,7 @@ export type Database = {
           plano_id?: string | null
           status?: string
           telefone?: string | null
+          tipo_venda?: string | null
           uf?: string | null
           updated_at?: string
           vendedor_id?: string
