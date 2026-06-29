@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -56,12 +56,14 @@ function abrirJanelaCarteirinha(title: string, cardsHtml: string) {
 }
 
 
+type FormaPag = "boleto" | "carne" | "escritorio" | "cobrador";
 type Associado = {
   id: string; codigo: number; nome: string; cpf: string | null; rg: string | null;
   data_nascimento: string | null; telefone: string | null; email: string | null;
   endereco: string | null; cidade: string | null; estado: string | null; cep: string | null;
   plano_id: string | null; data_adesao: string; dia_vencimento: number;
   status: "ativo" | "inativo" | "suspenso"; observacoes: string | null;
+  forma_pagamento: FormaPag | null; cobrador_id: string | null;
   planos?: { nome: string; valor_mensal: number } | null;
 };
 
@@ -83,6 +85,22 @@ function AssociadosPage() {
   const [editing, setEditing] = useState<Associado | null>(null);
   const [mensOpen, setMensOpen] = useState<Associado | null>(null);
   const [pendingDeps, setPendingDeps] = useState<PendingDep[]>([]);
+  const [formaPag, setFormaPag] = useState<string>("");
+  const [cobradorId, setCobradorId] = useState<string>("");
+
+  const { data: cobradores = [] } = useQuery({
+    queryKey: ["cobradores-ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cobradores").select("id, nome").eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data as { id: string; nome: string }[];
+    },
+  });
+
+  useEffect(() => {
+    setFormaPag(editing?.forma_pagamento ?? "");
+    setCobradorId(editing?.cobrador_id ?? "");
+  }, [editing]);
 
   const { data: associados = [], isLoading } = useQuery({
     queryKey: ["associados"],
@@ -329,6 +347,8 @@ function AssociadosPage() {
       data_adesao: String(fd.get("data_adesao") || new Date().toISOString().slice(0, 10)),
       dia_vencimento: Number(fd.get("dia_vencimento") || 10),
       status: (fd.get("status") as any) || "ativo",
+      forma_pagamento: (formaPag || null) as any,
+      cobrador_id: formaPag === "cobrador" ? (cobradorId || null) : null,
       observacoes: get("observacoes"),
       _pendingDeps: editing?.id ? undefined : pendingDeps,
     });
@@ -388,6 +408,32 @@ function AssociadosPage() {
                 </div>
                 <div className="space-y-2"><Label>Data de adesão</Label><Input name="data_adesao" type="date" defaultValue={editing?.data_adesao ?? new Date().toISOString().slice(0, 10)} /></div>
                 <div className="space-y-2"><Label>Dia de vencimento</Label><Input name="dia_vencimento" type="number" min={1} max={28} defaultValue={editing?.dia_vencimento ?? 10} /></div>
+                <div className="space-y-2">
+                  <Label>Forma de pagamento</Label>
+                  <Select value={formaPag} onValueChange={(v) => { setFormaPag(v); if (v !== "cobrador") setCobradorId(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="boleto">Boleto</SelectItem>
+                      <SelectItem value="carne">Carnê</SelectItem>
+                      <SelectItem value="escritorio">No escritório</SelectItem>
+                      <SelectItem value="cobrador">Cobrador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {formaPag === "cobrador" && (
+                  <div className="space-y-2 col-span-2">
+                    <Label>Cobrador responsável</Label>
+                    <Select value={cobradorId} onValueChange={setCobradorId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o cobrador" /></SelectTrigger>
+                      <SelectContent>
+                        {cobradores.length === 0 && <SelectItem value="__none" disabled>Nenhum cobrador cadastrado</SelectItem>}
+                        {cobradores.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div className="space-y-2 col-span-2"><Label>Observações</Label><Textarea name="observacoes" rows={2} defaultValue={editing?.observacoes ?? ""} /></div>
               </div>
               <DialogFooter>

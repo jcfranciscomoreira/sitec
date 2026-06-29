@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           cep: string | null
           cidade: string | null
+          cobrador_id: string | null
           codigo: number
           cpf: string | null
           created_at: string
@@ -28,6 +29,7 @@ export type Database = {
           email: string | null
           endereco: string | null
           estado: string | null
+          forma_pagamento: string | null
           id: string
           nome: string
           observacoes: string | null
@@ -40,6 +42,7 @@ export type Database = {
         Insert: {
           cep?: string | null
           cidade?: string | null
+          cobrador_id?: string | null
           codigo?: number
           cpf?: string | null
           created_at?: string
@@ -50,6 +53,7 @@ export type Database = {
           email?: string | null
           endereco?: string | null
           estado?: string | null
+          forma_pagamento?: string | null
           id?: string
           nome: string
           observacoes?: string | null
@@ -62,6 +66,7 @@ export type Database = {
         Update: {
           cep?: string | null
           cidade?: string | null
+          cobrador_id?: string | null
           codigo?: number
           cpf?: string | null
           created_at?: string
@@ -72,6 +77,7 @@ export type Database = {
           email?: string | null
           endereco?: string | null
           estado?: string | null
+          forma_pagamento?: string | null
           id?: string
           nome?: string
           observacoes?: string | null
@@ -82,6 +88,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "associados_cobrador_id_fkey"
+            columns: ["cobrador_id"]
+            isOneToOne: false
+            referencedRelation: "cobradores"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "associados_plano_id_fkey"
             columns: ["plano_id"]
@@ -444,6 +457,82 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      recebimentos_pendentes: {
+        Row: {
+          associado_id: string
+          cobrador_id: string | null
+          cobrador_nome: string
+          conciliado_em: string | null
+          conciliado_por: string | null
+          conciliado_por_nome: string | null
+          created_at: string
+          created_by: string | null
+          data_recebimento: string
+          id: string
+          mensalidade_id: string
+          observacoes: string | null
+          status: string
+          updated_at: string
+          valor_recebido: number
+        }
+        Insert: {
+          associado_id: string
+          cobrador_id?: string | null
+          cobrador_nome: string
+          conciliado_em?: string | null
+          conciliado_por?: string | null
+          conciliado_por_nome?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_recebimento?: string
+          id?: string
+          mensalidade_id: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor_recebido: number
+        }
+        Update: {
+          associado_id?: string
+          cobrador_id?: string | null
+          cobrador_nome?: string
+          conciliado_em?: string | null
+          conciliado_por?: string | null
+          conciliado_por_nome?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_recebimento?: string
+          id?: string
+          mensalidade_id?: string
+          observacoes?: string | null
+          status?: string
+          updated_at?: string
+          valor_recebido?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recebimentos_pendentes_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_pendentes_cobrador_id_fkey"
+            columns: ["cobrador_id"]
+            isOneToOne: false
+            referencedRelation: "cobradores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recebimentos_pendentes_mensalidade_id_fkey"
+            columns: ["mensalidade_id"]
+            isOneToOne: false
+            referencedRelation: "mensalidades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
