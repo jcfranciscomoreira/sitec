@@ -11,8 +11,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { fmtDate } from "@/lib/format";
 
 const searchSchema = z.object({
-  status: z.enum(["ativo", "inativos"]).optional().default("ativo"),
+  status: z.string().optional().default("ativo"),
 });
+
+function normalizeStatusFilter(status?: string) {
+  return ["inativo", "inativos", "suspenso", "suspensos"].includes(status ?? "") ? "inativos" : "ativo";
+}
 
 export const Route = createFileRoute("/_authenticated/associados-lista")({
   head: () => ({ meta: [{ title: "Lista de associados — Memorial" }] }),
@@ -22,16 +26,17 @@ export const Route = createFileRoute("/_authenticated/associados-lista")({
 
 function AssociadosListaPage() {
   const { status } = Route.useSearch();
-  const isAtivos = status === "ativo";
+  const statusFilter = normalizeStatusFilter(status);
+  const isAtivos = statusFilter === "ativo";
 
   const { data = [], isLoading } = useQuery({
-    queryKey: ["associados-lista", status],
+    queryKey: ["associados-lista", statusFilter],
     queryFn: async () => {
       let q = supabase
         .from("associados")
-        .select("id, codigo, nome, cpf, telefone, cidade, status, vencimento_dia, plano_id")
+        .select("id, codigo, nome, cpf, telefone, cidade, status, dia_vencimento, plano_id")
         .order("nome");
-      q = isAtivos ? q.eq("status", "ativo") : q.neq("status", "ativo");
+      q = isAtivos ? q.eq("status", "ativo") : q.in("status", ["inativo", "suspenso"]);
       const { data: assoc, error } = await q;
       if (error) throw error;
       const { data: planos } = await supabase.from("planos").select("id, nome");
