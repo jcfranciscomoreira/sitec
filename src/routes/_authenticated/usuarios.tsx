@@ -56,20 +56,10 @@ const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
 };
 
 const ALL_ROLES: Role[] = ["admin", "operador", "vendedor", "cobrador"];
-export const MODULES: { key: string; label: string; group: string }[] = [
-  { group: "Associados", key: "dashboard", label: "Painel" },
-  { group: "Associados", key: "associados", label: "Associados" },
-  { group: "Associados", key: "planos", label: "Planos" },
-  { group: "Associados", key: "financeiro", label: "Mensalidades" },
-  { group: "Associados", key: "recebimento", label: "Recebimento" },
-  { group: "Gestão Financeira", key: "empresa-financeiro", label: "Painel Financeiro" },
-  { group: "Gestão Financeira", key: "contas", label: "Contas a Pagar/Receber" },
-  { group: "Gestão Financeira", key: "centros-custo", label: "Centros de Custo" },
-  { group: "Vendas", key: "vendas", label: "Mapa de Vendas" },
-  { group: "Vendas", key: "vendas-relatorio", label: "Relatório de Vendas" },
-  { group: "Administração", key: "usuarios", label: "Usuários" },
-  { group: "Administração", key: "configuracoes", label: "Configurações" },
-];
+// Módulos vêm do registro central em src/lib/modules.ts.
+// Adicione novos módulos lá — aparecerão automaticamente nas permissões.
+import { MODULES } from "@/lib/modules";
+export { MODULES };
 
 function UsuariosPage() {
   const listFn = useServerFn(listUsuarios);

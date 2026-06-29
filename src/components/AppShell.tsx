@@ -1,7 +1,8 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers, HandCoins, MapPin, Shield, Settings, BarChart3 } from "lucide-react";
+import { LogOut, Cross } from "lucide-react";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import { usePermissions } from "@/hooks/use-permissions";
+import { MODULES, MODULE_GROUPS } from "@/lib/modules";
 import type { ReactNode } from "react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -11,40 +12,12 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-const groups: { label: string; items: { title: string; url: string; icon: any; module: string }[] }[] = [
-  {
-    label: "Associados",
-    items: [
-      { title: "Painel", url: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
-      { title: "Associados", url: "/associados", icon: Users, module: "associados" },
-      { title: "Planos", url: "/planos", icon: FileText, module: "planos" },
-      { title: "Mensalidades", url: "/financeiro", icon: Wallet, module: "financeiro" },
-      { title: "Recebimento", url: "/recebimento", icon: HandCoins, module: "recebimento" },
-    ],
-  },
-  {
-    label: "Gestão Financeira",
-    items: [
-      { title: "Painel Financeiro", url: "/empresa-financeiro", icon: Building2, module: "empresa-financeiro" },
-      { title: "Contas a Pagar/Receber", url: "/contas", icon: Receipt, module: "contas" },
-      { title: "Centros de Custo", url: "/centros-custo", icon: Layers, module: "centros-custo" },
-    ],
-  },
-  {
-    label: "Vendas",
-    items: [
-      { title: "Mapa de Vendas", url: "/vendas", icon: MapPin, module: "vendas" },
-      { title: "Relatório de Vendas", url: "/vendas-relatorio", icon: BarChart3, module: "vendas-relatorio" },
-    ],
-  },
-  {
-    label: "Administração",
-    items: [
-      { title: "Usuários", url: "/usuarios", icon: Shield, module: "usuarios" },
-      { title: "Configurações", url: "/configuracoes", icon: Settings, module: "configuracoes" },
-    ],
-  },
-];
+const groups = MODULE_GROUPS.map((label) => ({
+  label,
+  items: MODULES.filter((m) => m.group === label).map((m) => ({
+    title: m.label, url: m.url, icon: m.icon, module: m.key,
+  })),
+}));
 
 function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
