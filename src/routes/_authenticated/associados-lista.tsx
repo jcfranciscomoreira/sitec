@@ -29,12 +29,14 @@ function AssociadosListaPage() {
     queryFn: async () => {
       let q = supabase
         .from("associados")
-        .select("id, codigo, nome, cpf, telefone, cidade, status, vencimento_dia, planos(nome)")
+        .select("id, codigo, nome, cpf, telefone, cidade, status, vencimento_dia, plano_id")
         .order("nome");
       q = isAtivos ? q.eq("status", "ativo") : q.neq("status", "ativo");
-      const { data, error } = await q;
+      const { data: assoc, error } = await q;
       if (error) throw error;
-      return data ?? [];
+      const { data: planos } = await supabase.from("planos").select("id, nome");
+      const planMap = new Map((planos ?? []).map((p: any) => [p.id, p.nome]));
+      return (assoc ?? []).map((a: any) => ({ ...a, plano_nome: planMap.get(a.plano_id) ?? "—" }));
     },
   });
 
@@ -80,7 +82,7 @@ function AssociadosListaPage() {
                   <TableCell>{a.cpf ?? "—"}</TableCell>
                   <TableCell>{a.telefone ?? "—"}</TableCell>
                   <TableCell>{a.cidade ?? "—"}</TableCell>
-                  <TableCell>{a.planos?.nome ?? "—"}</TableCell>
+                  <TableCell>{a.plano_nome ?? "—"}</TableCell>
                   <TableCell><Badge variant="outline">{a.status}</Badge></TableCell>
                 </TableRow>
               ))}
