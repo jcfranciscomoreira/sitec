@@ -604,19 +604,36 @@ function CarneSection() {
             </Select>
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label>Associado</Label>
-            <Select value={associadoId} onValueChange={setAssociadoId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
+            <Label>Associado (nome, código ou CPF)</Label>
+            <Input
+              value={assocBusca}
+              onChange={(e) => { setAssocBusca(e.target.value); setAssociadoId("todos"); }}
+              placeholder="Digite ao menos 2 caracteres"
+            />
+            {associadoId !== "todos" ? (
+              <div className="flex items-center justify-between rounded border border-border px-2 py-1 text-xs">
+                <span>
+                  Selecionado: <b>{(associadosData as any[]).find((a) => a.id === associadoId)?.nome ?? assocBusca}</b>
+                </span>
+                <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => setAssociadoId("todos")}>Limpar</button>
+              </div>
+            ) : assocBusca.trim().length >= 2 && (associadosData as any[]).length > 0 ? (
+              <div className="max-h-40 overflow-auto rounded border border-border text-sm">
                 {(associadosData as any[]).map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
+                  <button
+                    key={a.id}
+                    type="button"
+                    className="block w-full px-2 py-1 text-left hover:bg-muted"
+                    onClick={() => setAssociadoId(a.id)}
+                  >
                     #{String(a.codigo ?? "").padStart(4, "0")} — {a.nome}
-                  </SelectItem>
+                    {a.cpf ? <span className="text-xs text-muted-foreground"> · {a.cpf}</span> : null}
+                  </button>
                 ))}
-              </SelectContent>
-            </Select>
+              </div>
+            ) : null}
           </div>
+
           <div className="space-y-2"><Label>Vencimento de</Label><Input type="date" value={vencDe} onChange={(e) => setVencDe(e.target.value)} /></div>
           <div className="space-y-2"><Label>Vencimento até</Label><Input type="date" value={vencAte} onChange={(e) => setVencAte(e.target.value)} /></div>
           <div className="space-y-2"><Label>Dia de pagamento</Label><Input type="number" min="1" max="31" value={diaPag} onChange={(e) => setDiaPag(e.target.value)} placeholder="Ex: 10" /></div>
