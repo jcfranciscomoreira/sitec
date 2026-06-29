@@ -56,10 +56,10 @@ const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
 };
 
 const ALL_ROLES: Role[] = ["admin", "operador", "vendedor", "cobrador"];
-// Lista de módulos vem do registro central em src/lib/modules.ts
-// Adicione novos módulos lá — eles aparecerão automaticamente nas permissões.
-export { MODULES } from "@/lib/modules";
+// Módulos vêm do registro central em src/lib/modules.ts.
+// Adicione novos módulos lá — aparecerão automaticamente nas permissões.
 import { MODULES } from "@/lib/modules";
+export { MODULES };
 
 function UsuariosPage() {
   const listFn = useServerFn(listUsuarios);
