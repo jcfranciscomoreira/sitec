@@ -1,0 +1,1 @@
+ALTER TABLE public.vendas_pins ADD COLUMN IF NOT EXISTS concorrente TEXT;

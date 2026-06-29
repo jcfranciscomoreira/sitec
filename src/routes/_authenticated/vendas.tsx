@@ -26,6 +26,7 @@ const STATUS_OPTIONS = [
   { value: "recusou", label: "Recusou", color: "bg-red-500" },
   { value: "sem_interesse", label: "Sem interesse", color: "bg-amber-500" },
   { value: "retornar", label: "Retornar", color: "bg-purple-500" },
+  { value: "concorrencia", label: "Concorrência", color: "bg-pink-600" },
 ];
 
 const TIPO_VENDA_OPTIONS = [
@@ -47,6 +48,7 @@ type Pin = {
   status: string;
   tipo_venda: string | null;
   data_retorno: string | null;
+  concorrente: string | null;
   observacoes: string | null;
   latitude: number;
   longitude: number;
@@ -280,7 +282,8 @@ function VendasPage() {
         pin.status === "associado" ? "#059669" :
         pin.status === "recusou" ? "#ef4444" :
         pin.status === "sem_interesse" ? "#f59e0b" :
-        pin.status === "retornar" ? "#a855f7" : "#3b82f6";
+        pin.status === "retornar" ? "#a855f7" :
+        pin.status === "concorrencia" ? "#db2777" : "#3b82f6";
       const icon = {
         path: google.maps.SymbolPath.CIRCLE,
         fillColor: color,
@@ -333,6 +336,7 @@ function VendasPage() {
       status: form.status || "prospect",
       tipo_venda: form.tipo_venda || null,
       data_retorno: form.status === "retornar" ? (form.data_retorno || null) : null,
+      concorrente: form.status === "concorrencia" ? (form.concorrente || null) : null,
       observacoes: form.observacoes || null,
       latitude: form.latitude,
       longitude: form.longitude,
@@ -580,6 +584,16 @@ function PinDialog({
               </div>
             )}
           </div>
+          {form.status === "concorrencia" && (
+            <div>
+              <Label>Empresa concorrente *</Label>
+              <Input
+                value={form.concorrente ?? ""}
+                placeholder="Nome da empresa concorrente"
+                onChange={(e) => setForm({ ...form, concorrente: e.target.value })}
+              />
+            </div>
+          )}
           <div>
             <Label>Endereço</Label>
             <Input value={form.endereco ?? ""} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
