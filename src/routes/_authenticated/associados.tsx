@@ -466,6 +466,18 @@ function AssociadosPage() {
               ))}
             </TableBody>
           </Table>
+          {filtered.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between border-t px-4 py-3 text-sm">
+              <span className="text-muted-foreground">
+                Mostrando {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} de {filtered.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Anterior</Button>
+                <span className="text-muted-foreground">Página {currentPage} de {totalPages}</span>
+                <Button variant="outline" size="sm" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>Próxima</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
