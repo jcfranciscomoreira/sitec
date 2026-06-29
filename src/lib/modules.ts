@@ -3,12 +3,15 @@ import {
   Building2, Receipt, Layers, MapPin, BarChart3, Shield, Settings,
 } from "lucide-react";
 
+export type AppModuleTab = { key: string; label: string };
+
 export type AppModule = {
   key: string;
   label: string;
   group: string;
   url: string;
   icon: any;
+  tabs?: AppModuleTab[];
 };
 
 /**
