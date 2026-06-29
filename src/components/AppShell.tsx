@@ -1,5 +1,5 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers, HandCoins } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers, HandCoins, MapPin } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -26,6 +26,12 @@ const groups: { label: string; items: { title: string; url: string; icon: any }[
       { title: "Painel Financeiro", url: "/empresa-financeiro", icon: Building2 },
       { title: "Contas a Pagar/Receber", url: "/contas", icon: Receipt },
       { title: "Centros de Custo", url: "/centros-custo", icon: Layers },
+    ],
+  },
+  {
+    label: "Vendas",
+    items: [
+      { title: "Mapa de Vendas", url: "/vendas", icon: MapPin },
     ],
   },
 ];

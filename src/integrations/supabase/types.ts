@@ -436,6 +436,69 @@ export type Database = {
         }
         Relationships: []
       }
+      vendas_pins: {
+        Row: {
+          associado_id: string | null
+          created_at: string
+          endereco: string | null
+          id: string
+          latitude: number
+          longitude: number
+          nome: string
+          observacoes: string | null
+          plano_id: string | null
+          status: string
+          telefone: string | null
+          updated_at: string
+          vendedor_id: string
+        }
+        Insert: {
+          associado_id?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          nome: string
+          observacoes?: string | null
+          plano_id?: string | null
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+          vendedor_id: string
+        }
+        Update: {
+          associado_id?: string | null
+          created_at?: string
+          endereco?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          nome?: string
+          observacoes?: string | null
+          plano_id?: string | null
+          status?: string
+          telefone?: string | null
+          updated_at?: string
+          vendedor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendas_pins_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendas_pins_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -451,7 +514,7 @@ export type Database = {
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "operador"
+      app_role: "admin" | "operador" | "vendedor"
       status_associado: "ativo" | "inativo" | "suspenso"
       status_conta: "pendente" | "pago" | "atrasado" | "cancelado"
       status_mensalidade: "pendente" | "pago" | "atrasado" | "cancelado"
@@ -583,7 +646,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "operador"],
+      app_role: ["admin", "operador", "vendedor"],
       status_associado: ["ativo", "inativo", "suspenso"],
       status_conta: ["pendente", "pago", "atrasado", "cancelado"],
       status_mensalidade: ["pendente", "pago", "atrasado", "cancelado"],
