@@ -33,6 +33,7 @@ const groups: { label: string; items: { title: string; url: string; icon: any }[
     label: "Vendas",
     items: [
       { title: "Mapa de Vendas", url: "/vendas", icon: MapPin },
+      { title: "Relatório de Vendas", url: "/vendas-relatorio", icon: BarChart3 },
     ],
   },
   {
