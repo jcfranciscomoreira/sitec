@@ -76,6 +76,7 @@ type PendingDep = { nome: string; parentesco: string; data_nascimento: string; c
 function AssociadosPage() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Associado | null>(null);
   const [mensOpen, setMensOpen] = useState<Associado | null>(null);
