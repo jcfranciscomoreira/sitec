@@ -524,12 +524,13 @@ function HistoricoSection() {
 
 function CarneSection() {
   const [cidade, setCidade] = useState<string>("todas");
+  const [associadoId, setAssociadoId] = useState<string>("todos");
   const [vencDe, setVencDe] = useState("");
   const [vencAte, setVencAte] = useState("");
   const [diaPag, setDiaPag] = useState<string>("");
 
   const { data: rows = [], isLoading, refetch } = useQuery({
-    queryKey: ["carne-rows", cidade, vencDe, vencAte, diaPag],
+    queryKey: ["carne-rows", cidade, associadoId, vencDe, vencAte, diaPag],
     enabled: false,
     queryFn: async () => {
       let q = supabase
@@ -538,6 +539,7 @@ function CarneSection() {
         .order("vencimento", { ascending: true });
       if (vencDe) q = q.gte("vencimento", vencDe);
       if (vencAte) q = q.lte("vencimento", vencAte);
+      if (associadoId !== "todos") q = q.eq("associado_id", associadoId);
       const { data, error } = await q.limit(1000);
       if (error) throw error;
       let list = (data ?? []) as any[];
@@ -558,6 +560,17 @@ function CarneSection() {
     },
   });
 
+  const { data: associadosData = [] } = useQuery({
+    queryKey: ["assoc-list-carne", cidade],
+    queryFn: async () => {
+      let q = supabase.from("associados").select("id, nome, codigo, cidade").order("nome", { ascending: true });
+      if (cidade !== "todas") q = q.eq("cidade", cidade);
+      const { data, error } = await q.limit(2000);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   async function gerar() {
     const { data } = await refetch();
     const list = (data ?? []) as any[];
@@ -569,10 +582,10 @@ function CarneSection() {
     <Card className="border-border/60 shadow-soft">
       <CardHeader><CardTitle className="font-serif flex items-center gap-2"><BookOpen className="h-4 w-4" />Carnês em massa</CardTitle></CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-6">
           <div className="space-y-2">
             <Label>Cidade</Label>
-            <Select value={cidade} onValueChange={setCidade}>
+            <Select value={cidade} onValueChange={(v) => { setCidade(v); setAssociadoId("todos"); }}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas</SelectItem>
@@ -580,17 +593,31 @@ function CarneSection() {
               </SelectContent>
             </Select>
           </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Associado</Label>
+            <Select value={associadoId} onValueChange={setAssociadoId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {(associadosData as any[]).map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    #{String(a.codigo ?? "").padStart(4, "0")} — {a.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2"><Label>Vencimento de</Label><Input type="date" value={vencDe} onChange={(e) => setVencDe(e.target.value)} /></div>
           <div className="space-y-2"><Label>Vencimento até</Label><Input type="date" value={vencAte} onChange={(e) => setVencAte(e.target.value)} /></div>
           <div className="space-y-2"><Label>Dia de pagamento</Label><Input type="number" min="1" max="31" value={diaPag} onChange={(e) => setDiaPag(e.target.value)} placeholder="Ex: 10" /></div>
-          <div className="flex items-end">
-            <Button className="w-full" onClick={gerar} disabled={isLoading}>
-              <BookOpen className="mr-2 h-4 w-4" />Gerar carnês
-            </Button>
-          </div>
+        </div>
+        <div>
+          <Button onClick={gerar} disabled={isLoading}>
+            <BookOpen className="mr-2 h-4 w-4" />Gerar carnês
+          </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Gera uma página por parcela com os dados do associado, valor, vencimento e código de identificação. Use os filtros para imprimir somente o lote desejado.
+          Gera uma página por parcela com os dados do associado, valor, vencimento e código de identificação. Filtre por associado para imprimir o carnê individual.
         </p>
         {rows.length > 0 && (
           <div className="rounded border border-border px-3 py-2 text-sm">
