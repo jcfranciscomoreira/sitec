@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sidebar";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { UserMenu } from "@/components/UserMenu";
 
 const groups = MODULE_GROUPS.map((label) => ({
   label,
@@ -105,6 +106,7 @@ export function AppShell({ title, subtitle, actions, children }: {
               {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
             </div>
             <div className="flex items-center gap-2">{actions}</div>
+            <UserMenu />
           </header>
           <main className="flex-1 p-4 lg:p-8">{children}</main>
         </div>
