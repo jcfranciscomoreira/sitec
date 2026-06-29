@@ -1179,9 +1179,50 @@ function MobileRecebimentoSection() {
         </div>
 
         {cobradorId && (
-          <div className="rounded border border-border/60 bg-muted/20 p-3 space-y-2">
+          <div className="rounded border border-border/60 bg-muted/20 p-3 space-y-3">
+            <div className="grid gap-2 md:grid-cols-[180px_1fr] items-end">
+              <div className="space-y-1">
+                <Label className="text-xs">Filtrar por</Label>
+                <Select value={filtroModo} onValueChange={(v: any) => setFiltroModo(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hoje">Vencidas até hoje</SelectItem>
+                    <SelectItem value="dia">Dia específico</SelectItem>
+                    <SelectItem value="periodo">Período</SelectItem>
+                    <SelectItem value="cidade">Cidade</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {filtroModo === "dia" && (
+                <div className="space-y-1"><Label className="text-xs">Data de vencimento</Label>
+                  <Input type="date" value={filtroDia} onChange={(e) => setFiltroDia(e.target.value)} />
+                </div>
+              )}
+              {filtroModo === "periodo" && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1"><Label className="text-xs">De</Label>
+                    <Input type="date" value={filtroDe} onChange={(e) => setFiltroDe(e.target.value)} />
+                  </div>
+                  <div className="space-y-1"><Label className="text-xs">Até</Label>
+                    <Input type="date" value={filtroAte} onChange={(e) => setFiltroAte(e.target.value)} />
+                  </div>
+                </div>
+              )}
+              {filtroModo === "cidade" && (
+                <div className="space-y-1"><Label className="text-xs">Cidade</Label>
+                  <Select value={filtroCidade} onValueChange={setFiltroCidade}>
+                    <SelectTrigger><SelectValue placeholder={cidades.length ? "Selecione a cidade" : "Nenhuma cidade"} /></SelectTrigger>
+                    <SelectContent>
+                      {(cidades as string[]).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <h3 className="font-serif text-base">Parcelas a receber hoje</h3>
+              <h3 className="font-serif text-base">Parcelas a receber</h3>
+              <div className="flex gap-2 items-center">
+                <span className="text-xs text-muted-foreground">Vencimento</span>
               <div className="flex gap-2">
                 <span className="text-xs text-muted-foreground">
                   {(aReceber as any[]).length} parcela(s) — <b className="text-foreground">{brl((aReceber as any[]).reduce((s, m: any) => s + Number(m.valor), 0))}</b>
