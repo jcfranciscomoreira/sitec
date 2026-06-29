@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedVendasRelatorioRouteImport } from './routes/_authenticated/vendas-relatorio'
 import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated/vendas'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedRecebimentoRouteImport } from './routes/_authenticated/recebimento'
@@ -39,6 +40,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedVendasRelatorioRoute =
+  AuthenticatedVendasRelatorioRouteImport.update({
+    id: '/vendas-relatorio',
+    path: '/vendas-relatorio',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedVendasRoute = AuthenticatedVendasRouteImport.update({
   id: '/vendas',
   path: '/vendas',
@@ -120,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/recebimento': typeof AuthenticatedRecebimentoRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
+  '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -136,6 +144,7 @@ export interface FileRoutesByTo {
   '/recebimento': typeof AuthenticatedRecebimentoRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
+  '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -154,6 +163,7 @@ export interface FileRoutesById {
   '/_authenticated/recebimento': typeof AuthenticatedRecebimentoRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
+  '/_authenticated/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/recebimento'
     | '/usuarios'
     | '/vendas'
+    | '/vendas-relatorio'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/recebimento'
     | '/usuarios'
     | '/vendas'
+    | '/vendas-relatorio'
   id:
     | '__root__'
     | '/'
@@ -205,6 +217,7 @@ export interface FileRouteTypes {
     | '/_authenticated/recebimento'
     | '/_authenticated/usuarios'
     | '/_authenticated/vendas'
+    | '/_authenticated/vendas-relatorio'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -235,6 +248,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/vendas-relatorio': {
+      id: '/_authenticated/vendas-relatorio'
+      path: '/vendas-relatorio'
+      fullPath: '/vendas-relatorio'
+      preLoaderRoute: typeof AuthenticatedVendasRelatorioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/vendas': {
       id: '/_authenticated/vendas'
@@ -336,6 +356,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRecebimentoRoute: typeof AuthenticatedRecebimentoRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedVendasRoute: typeof AuthenticatedVendasRoute
+  AuthenticatedVendasRelatorioRoute: typeof AuthenticatedVendasRelatorioRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -351,6 +372,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRecebimentoRoute: AuthenticatedRecebimentoRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedVendasRoute: AuthenticatedVendasRoute,
+  AuthenticatedVendasRelatorioRoute: AuthenticatedVendasRelatorioRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

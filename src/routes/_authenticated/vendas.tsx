@@ -28,6 +28,12 @@ const STATUS_OPTIONS = [
   { value: "retornar", label: "Retornar", color: "bg-purple-500" },
 ];
 
+const TIPO_VENDA_OPTIONS = [
+  { value: "nova_venda", label: "Nova venda (novo associado)" },
+  { value: "troca_plano", label: "Troca de plano" },
+  { value: "cancelamento", label: "Cancelamento" },
+];
+
 type Pin = {
   id: string;
   vendedor_id: string;
@@ -39,6 +45,8 @@ type Pin = {
   municipio: string | null;
   uf: string | null;
   status: string;
+  tipo_venda: string | null;
+  data_retorno: string | null;
   observacoes: string | null;
   latitude: number;
   longitude: number;
@@ -318,6 +326,8 @@ function VendasPage() {
       municipio,
       uf,
       status: form.status || "prospect",
+      tipo_venda: form.tipo_venda || null,
+      data_retorno: form.status === "retornar" ? (form.data_retorno || null) : null,
       observacoes: form.observacoes || null,
       latitude: form.latitude,
       longitude: form.longitude,
@@ -507,6 +517,33 @@ function PinDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <Label>Tipo de negociação</Label>
+              <Select
+                value={form.tipo_venda ?? "none"}
+                onValueChange={(v) => setForm({ ...form, tipo_venda: v === "none" ? null : v })}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecionar" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Não definido</SelectItem>
+                  {TIPO_VENDA_OPTIONS.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {form.status === "retornar" && (
+              <div>
+                <Label>Data de retorno</Label>
+                <Input
+                  type="date"
+                  value={form.data_retorno ?? ""}
+                  onChange={(e) => setForm({ ...form, data_retorno: e.target.value })}
+                />
+              </div>
+            )}
           </div>
           <div>
             <Label>Endereço</Label>
