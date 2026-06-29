@@ -56,6 +56,8 @@ function CobradoresSection() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Cobrador | null>(null);
+  const [stats, setStats] = useState<Cobrador | null>(null);
+  const [statsMes, setStatsMes] = useState<string>(() => new Date().toISOString().slice(0, 7));
 
   const { data: lista = [], isLoading } = useQuery({
     queryKey: ["cobradores"],
@@ -151,6 +153,7 @@ function CobradoresSection() {
                 <TableCell>{c.documento ?? "—"}</TableCell>
                 <TableCell>{c.ativo ? <Badge className="bg-success/15 text-success border-success/30" variant="outline">Ativo</Badge> : <Badge variant="outline">Inativo</Badge>}</TableCell>
                 <TableCell className="text-right">
+                  <Button size="sm" variant="outline" onClick={() => setStats(c)}><Eye className="mr-1 h-4 w-4" />Recebido no mês</Button>
                   <Button size="icon" variant="ghost" onClick={() => { setEditing(c); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir cobrador?")) del.mutate(c.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </TableCell>
@@ -159,7 +162,51 @@ function CobradoresSection() {
           </TableBody>
         </Table>
       </CardContent>
+      {stats && <CobradorStatsDialog cobrador={stats} mes={statsMes} setMes={setStatsMes} onClose={() => setStats(null)} />}
     </Card>
+  );
+}
+
+function CobradorStatsDialog({ cobrador, mes, setMes, onClose }: { cobrador: Cobrador; mes: string; setMes: (v: string) => void; onClose: () => void }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["cobrador-stats", cobrador.nome, mes],
+    queryFn: async () => {
+      const ini = `${mes}-01`;
+      const d = new Date(ini + "T00:00:00"); d.setMonth(d.getMonth() + 1);
+      const fim = d.toISOString().slice(0, 10);
+      const { data, error } = await supabase
+        .from("baixa_sessoes")
+        .select("total_qtd,total_valor,data_recebimento")
+        .eq("agente", cobrador.nome)
+        .gte("data_recebimento", ini)
+        .lt("data_recebimento", fim);
+      if (error) throw error;
+      const qtd = (data ?? []).reduce((s, r: any) => s + Number(r.total_qtd || 0), 0);
+      const valor = (data ?? []).reduce((s, r: any) => s + Number(r.total_valor || 0), 0);
+      return { qtd, valor, sessoes: data?.length ?? 0 };
+    },
+  });
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader><DialogTitle className="font-serif">Recebido no mês — {cobrador.nome}</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2"><Label>Mês</Label><Input type="month" value={mes} onChange={(e) => setMes(e.target.value)} /></div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Quantidade de parcelas</div>
+              <div className="text-3xl font-bold text-primary">{isLoading ? "..." : data?.qtd ?? 0}</div>
+            </div>
+            <div className="rounded-lg border border-success/40 bg-success/5 px-4 py-3">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Total recebido</div>
+              <div className="text-3xl font-bold text-success">{isLoading ? "..." : brl(data?.valor ?? 0)}</div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">{data?.sessoes ?? 0} sessão(ões) de baixa neste mês.</p>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
