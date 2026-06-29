@@ -90,6 +90,7 @@ function VendasPage() {
   const [associados, setAssociados] = useState<Associado[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ open: boolean; pin: Partial<Pin> | null }>({ open: false, pin: null });
+  const [viewPin, setViewPin] = useState<Pin | null>(null);
   const [municipioFiltro, setMunicipioFiltro] = useState<string>("__auto__");
   const [statusFiltro, setStatusFiltro] = useState<string>("__all__");
   const [meMunicipio, setMeMunicipio] = useState<string | null>(null);
