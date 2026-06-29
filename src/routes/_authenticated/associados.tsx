@@ -97,6 +97,11 @@ function AssociadosPage() {
     },
   });
 
+  useEffect(() => {
+    setFormaPag(editing?.forma_pagamento ?? "");
+    setCobradorId(editing?.cobrador_id ?? "");
+  }, [editing]);
+
   const { data: associados = [], isLoading } = useQuery({
     queryKey: ["associados"],
     queryFn: async () => {
