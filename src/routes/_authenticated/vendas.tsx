@@ -582,8 +582,17 @@ function PinDialog({
                   onChange={(e) => setForm({ ...form, data_retorno: e.target.value })}
                 />
               </div>
-            )}
           </div>
+          {form.status === "concorrencia" && (
+            <div>
+              <Label>Empresa concorrente *</Label>
+              <Input
+                value={form.concorrente ?? ""}
+                placeholder="Nome da empresa concorrente"
+                onChange={(e) => setForm({ ...form, concorrente: e.target.value })}
+              />
+            </div>
+          )}
           <div>
             <Label>Endereço</Label>
             <Input value={form.endereco ?? ""} onChange={(e) => setForm({ ...form, endereco: e.target.value })} />
