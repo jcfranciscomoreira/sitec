@@ -69,6 +69,9 @@ function VendasPage() {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<Map<string, any>>(new Map());
+  const meMarkerRef = useRef<any>(null);
+  const meAccuracyRef = useRef<any>(null);
+  const geoWatchRef = useRef<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [pins, setPins] = useState<Pin[]>([]);
   const [planos, setPlanos] = useState<Plano[]>([]);
