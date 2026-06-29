@@ -153,6 +153,7 @@ function CobradoresSection() {
                 <TableCell>{c.documento ?? "—"}</TableCell>
                 <TableCell>{c.ativo ? <Badge className="bg-success/15 text-success border-success/30" variant="outline">Ativo</Badge> : <Badge variant="outline">Inativo</Badge>}</TableCell>
                 <TableCell className="text-right">
+                  <Button size="sm" variant="outline" onClick={() => setStats(c)}><Eye className="mr-1 h-4 w-4" />Recebido no mês</Button>
                   <Button size="icon" variant="ghost" onClick={() => { setEditing(c); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => { if (confirm("Excluir cobrador?")) del.mutate(c.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </TableCell>
