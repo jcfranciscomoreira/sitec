@@ -34,6 +34,7 @@ type Associado = {
 type Dependente = {
   id: string; associado_id: string; nome: string; cpf: string | null;
   data_nascimento: string | null; parentesco: string; observacoes: string | null;
+  status: "ativo" | "inativo" | "falecido"; data_falecimento: string | null;
 };
 
 type PendingDep = { nome: string; parentesco: string; data_nascimento: string; cpf: string };
