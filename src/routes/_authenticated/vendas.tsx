@@ -282,7 +282,8 @@ function VendasPage() {
         pin.status === "associado" ? "#059669" :
         pin.status === "recusou" ? "#ef4444" :
         pin.status === "sem_interesse" ? "#f59e0b" :
-        pin.status === "retornar" ? "#a855f7" : "#3b82f6";
+        pin.status === "retornar" ? "#a855f7" :
+        pin.status === "concorrencia" ? "#db2777" : "#3b82f6";
       const icon = {
         path: google.maps.SymbolPath.CIRCLE,
         fillColor: color,
