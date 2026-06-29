@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-type AppRole = "admin" | "operador" | "vendedor";
+type AppRole = "admin" | "operador" | "vendedor" | "cobrador";
 
 async function ensureAdmin(supabase: any, userId: string) {
   const { data, error } = await supabase
@@ -52,7 +52,7 @@ const createSchema = z.object({
   email: z.string().email().max(255),
   password: z.string().min(8).max(72),
   nome: z.string().trim().min(1).max(120),
-  role: z.enum(["admin", "operador", "vendedor"]),
+  role: z.enum(["admin", "operador", "vendedor", "cobrador"]),
 });
 
 export const createUsuario = createServerFn({ method: "POST" })
@@ -89,7 +89,7 @@ export const createUsuario = createServerFn({ method: "POST" })
 
 const updateRoleSchema = z.object({
   userId: z.string().uuid(),
-  role: z.enum(["admin", "operador", "vendedor"]),
+  role: z.enum(["admin", "operador", "vendedor", "cobrador"]),
 });
 
 export const updateUsuarioRole = createServerFn({ method: "POST" })

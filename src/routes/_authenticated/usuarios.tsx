@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -17,6 +19,7 @@ import { Loader2, Plus, Trash2, KeyRound, UserPlus } from "lucide-react";
 import {
   listUsuarios, createUsuario, updateUsuarioRole, deleteUsuario, resetUsuarioPassword,
 } from "@/lib/usuarios.functions";
+import { listRolePermissions, updateRolePermission } from "@/lib/permissions.functions";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   component: UsuariosPage,
@@ -24,7 +27,7 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
   notFoundComponent: () => <div className="p-6">Página não encontrada</div>,
 });
 
-type Role = "admin" | "operador" | "vendedor";
+type Role = "admin" | "operador" | "vendedor" | "cobrador";
 type Usuario = {
   id: string;
   email: string;
@@ -39,13 +42,32 @@ const ROLE_LABEL: Record<Role, string> = {
   admin: "Administrador",
   operador: "Operador",
   vendedor: "Vendedor",
+  cobrador: "Cobrador",
 };
 
 const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
   admin: "default",
   operador: "secondary",
   vendedor: "outline",
+  cobrador: "outline",
 };
+
+const ALL_ROLES: Role[] = ["admin", "operador", "vendedor", "cobrador"];
+const MODULES: { key: string; label: string; group: string }[] = [
+  { group: "Associados", key: "dashboard", label: "Painel" },
+  { group: "Associados", key: "associados", label: "Associados" },
+  { group: "Associados", key: "planos", label: "Planos" },
+  { group: "Associados", key: "financeiro", label: "Mensalidades" },
+  { group: "Associados", key: "recebimento", label: "Recebimento" },
+  { group: "Gestão Financeira", key: "empresa-financeiro", label: "Painel Financeiro" },
+  { group: "Gestão Financeira", key: "contas", label: "Contas a Pagar/Receber" },
+  { group: "Gestão Financeira", key: "centros-custo", label: "Centros de Custo" },
+  { group: "Vendas", key: "vendas", label: "Mapa de Vendas" },
+  { group: "Vendas", key: "vendas-relatorio", label: "Relatório de Vendas" },
+  { group: "Administração", key: "usuarios", label: "Usuários" },
+  { group: "Administração", key: "configuracoes", label: "Configurações" },
+];
+
 
 function UsuariosPage() {
   const router = useRouter();
@@ -107,72 +129,84 @@ function UsuariosPage() {
         </Button>
       }
     >
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="flex items-center justify-center p-10 text-muted-foreground">
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
-            </div>
-          ) : error ? (
-            <div className="p-6 text-destructive">{error}</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead>Nível de acesso</TableHead>
-                  <TableHead>Último acesso</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((u) => {
-                  const currentRole = (u.roles[0] ?? "operador") as Role;
-                  return (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.nome || "—"}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {u.email}
-                          {!u.confirmed && <Badge variant="outline">não confirmado</Badge>}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={ROLE_VARIANT[currentRole]}>{ROLE_LABEL[currentRole]}</Badge>
-                          <Select value={currentRole} onValueChange={(v) => changeRole(u.id, v as Role)}>
-                            <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Administrador</SelectItem>
-                              <SelectItem value="operador">Operador</SelectItem>
-                              <SelectItem value="vendedor">Vendedor</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString("pt-BR") : "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="outline" onClick={() => setResetUser(u)}>
-                          <KeyRound className="mr-1 h-3 w-3" /> Senha
-                        </Button>
-                        <Button size="sm" variant="ghost" className="ml-1 text-destructive" onClick={() => handleDelete(u)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
+      <Tabs defaultValue="usuarios">
+        <TabsList>
+          <TabsTrigger value="usuarios">Usuários</TabsTrigger>
+          <TabsTrigger value="permissoes">Permissões de acesso</TabsTrigger>
+        </TabsList>
+        <TabsContent value="usuarios">
+          <Card>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="flex items-center justify-center p-10 text-muted-foreground">
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
+                </div>
+              ) : error ? (
+                <div className="p-6 text-destructive">{error}</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>E-mail</TableHead>
+                      <TableHead>Nível de acesso</TableHead>
+                      <TableHead>Último acesso</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  );
-                })}
-                {users.length === 0 && (
-                  <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Nenhum usuário</TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((u) => {
+                      const currentRole = (u.roles[0] ?? "operador") as Role;
+                      return (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-medium">{u.nome || "—"}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {u.email}
+                              {!u.confirmed && <Badge variant="outline">não confirmado</Badge>}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={ROLE_VARIANT[currentRole]}>{ROLE_LABEL[currentRole]}</Badge>
+                              <Select value={currentRole} onValueChange={(v) => changeRole(u.id, v as Role)}>
+                                <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {ALL_ROLES.map((r) => (
+                                    <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString("pt-BR") : "—"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button size="sm" variant="outline" onClick={() => setResetUser(u)}>
+                              <KeyRound className="mr-1 h-3 w-3" /> Senha
+                            </Button>
+                            <Button size="sm" variant="ghost" className="ml-1 text-destructive" onClick={() => handleDelete(u)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {users.length === 0 && (
+                      <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">Nenhum usuário</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="permissoes">
+          <PermissoesTab />
+        </TabsContent>
+      </Tabs>
+
 
       <CreateDialog
         open={createOpen}
@@ -233,6 +267,7 @@ function CreateDialog({
                 <SelectItem value="admin">Administrador — acesso total</SelectItem>
                 <SelectItem value="operador">Operador — gestão diária</SelectItem>
                 <SelectItem value="vendedor">Vendedor — mapa de vendas</SelectItem>
+                <SelectItem value="cobrador">Cobrador — recebimento</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -265,5 +300,92 @@ function ResetPwDialog({ user, onClose, onReset }: { user: Usuario | null; onClo
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function PermissoesTab() {
+  const listFn = useServerFn(listRolePermissions);
+  const updateFn = useServerFn(updateRolePermission);
+  const [perms, setPerms] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+
+  async function load() {
+    setLoading(true);
+    try {
+      const data = await listFn();
+      const map: Record<string, boolean> = {};
+      (data as any[]).forEach((p) => { map[`${p.role}:${p.module}`] = !!p.allowed; });
+      setPerms(map);
+    } finally { setLoading(false); }
+  }
+  useEffect(() => { load(); }, []);
+
+  async function toggle(role: Role, module: string, allowed: boolean) {
+    const key = `${role}:${module}`;
+    setPerms((p) => ({ ...p, [key]: allowed }));
+    try {
+      await updateFn({ data: { role, module, allowed } });
+      toast.success("Permissão atualizada");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro");
+      setPerms((p) => ({ ...p, [key]: !allowed }));
+    }
+  }
+
+  const groups = Array.from(new Set(MODULES.map((m) => m.group)));
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        {loading ? (
+          <div className="flex items-center justify-center p-10 text-muted-foreground">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Carregando...
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <p className="text-sm text-muted-foreground">
+              Defina quais módulos cada nível de acesso pode visualizar. Administradores sempre têm acesso total.
+            </p>
+            {groups.map((group) => (
+              <div key={group}>
+                <h3 className="mb-2 font-serif text-sm font-semibold uppercase tracking-wider text-muted-foreground">{group}</h3>
+                <div className="overflow-x-auto rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Módulo</TableHead>
+                        {ALL_ROLES.map((r) => (
+                          <TableHead key={r} className="text-center">{ROLE_LABEL[r]}</TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {MODULES.filter((m) => m.group === group).map((m) => (
+                        <TableRow key={m.key}>
+                          <TableCell className="font-medium">{m.label}</TableCell>
+                          {ALL_ROLES.map((r) => {
+                            const isAdmin = r === "admin";
+                            const checked = isAdmin ? true : !!perms[`${r}:${m.key}`];
+                            return (
+                              <TableCell key={r} className="text-center">
+                                <Switch
+                                  checked={checked}
+                                  disabled={isAdmin}
+                                  onCheckedChange={(v) => toggle(r, m.key, v)}
+                                />
+                              </TableCell>
+                            );
+                          })}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

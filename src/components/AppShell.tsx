@@ -1,6 +1,7 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { LayoutDashboard, Users, FileText, Wallet, LogOut, Cross, Building2, Receipt, Layers, HandCoins, MapPin, Shield, Settings, BarChart3 } from "lucide-react";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
+import { usePermissions } from "@/hooks/use-permissions";
 import type { ReactNode } from "react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -10,37 +11,37 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-const groups: { label: string; items: { title: string; url: string; icon: any }[] }[] = [
+const groups: { label: string; items: { title: string; url: string; icon: any; module: string }[] }[] = [
   {
     label: "Associados",
     items: [
-      { title: "Painel", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Associados", url: "/associados", icon: Users },
-      { title: "Planos", url: "/planos", icon: FileText },
-      { title: "Mensalidades", url: "/financeiro", icon: Wallet },
-      { title: "Recebimento", url: "/recebimento", icon: HandCoins },
+      { title: "Painel", url: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
+      { title: "Associados", url: "/associados", icon: Users, module: "associados" },
+      { title: "Planos", url: "/planos", icon: FileText, module: "planos" },
+      { title: "Mensalidades", url: "/financeiro", icon: Wallet, module: "financeiro" },
+      { title: "Recebimento", url: "/recebimento", icon: HandCoins, module: "recebimento" },
     ],
   },
   {
     label: "Gestão Financeira",
     items: [
-      { title: "Painel Financeiro", url: "/empresa-financeiro", icon: Building2 },
-      { title: "Contas a Pagar/Receber", url: "/contas", icon: Receipt },
-      { title: "Centros de Custo", url: "/centros-custo", icon: Layers },
+      { title: "Painel Financeiro", url: "/empresa-financeiro", icon: Building2, module: "empresa-financeiro" },
+      { title: "Contas a Pagar/Receber", url: "/contas", icon: Receipt, module: "contas" },
+      { title: "Centros de Custo", url: "/centros-custo", icon: Layers, module: "centros-custo" },
     ],
   },
   {
     label: "Vendas",
     items: [
-      { title: "Mapa de Vendas", url: "/vendas", icon: MapPin },
-      { title: "Relatório de Vendas", url: "/vendas-relatorio", icon: BarChart3 },
+      { title: "Mapa de Vendas", url: "/vendas", icon: MapPin, module: "vendas" },
+      { title: "Relatório de Vendas", url: "/vendas-relatorio", icon: BarChart3, module: "vendas-relatorio" },
     ],
   },
   {
     label: "Administração",
     items: [
-      { title: "Usuários", url: "/usuarios", icon: Shield },
-      { title: "Configurações", url: "/configuracoes", icon: Settings },
+      { title: "Usuários", url: "/usuarios", icon: Shield, module: "usuarios" },
+      { title: "Configurações", url: "/configuracoes", icon: Settings, module: "configuracoes" },
     ],
   },
 ];
@@ -49,6 +50,8 @@ function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const { config } = useConfiguracoes();
+  const { can, loading: permsLoading } = usePermissions();
+
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -74,25 +77,29 @@ function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {groups.map((g) => (
-          <SidebarGroup key={g.label}>
-            <SidebarGroupLabel>{g.label}</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {g.items.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
-                      <Link to={item.url} className="flex items-center gap-2">
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        ))}
+        {groups.map((g) => {
+          const items = permsLoading ? g.items : g.items.filter((i) => can(i.module));
+          if (items.length === 0) return null;
+          return (
+            <SidebarGroup key={g.label}>
+              <SidebarGroupLabel>{g.label}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {items.map((item) => (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton asChild isActive={pathname.startsWith(item.url)}>
+                        <Link to={item.url} className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">

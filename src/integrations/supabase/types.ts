@@ -534,6 +534,33 @@ export type Database = {
           },
         ]
       }
+      role_permissions: {
+        Row: {
+          allowed: boolean
+          created_at: string
+          id: string
+          module: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          module: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          allowed?: boolean
+          created_at?: string
+          id?: string
+          module?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -645,7 +672,7 @@ export type Database = {
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "operador" | "vendedor"
+      app_role: "admin" | "operador" | "vendedor" | "cobrador"
       status_associado: "ativo" | "inativo" | "suspenso"
       status_conta: "pendente" | "pago" | "atrasado" | "cancelado"
       status_mensalidade: "pendente" | "pago" | "atrasado" | "cancelado"
@@ -777,7 +804,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "operador", "vendedor"],
+      app_role: ["admin", "operador", "vendedor", "cobrador"],
       status_associado: ["ativo", "inativo", "suspenso"],
       status_conta: ["pendente", "pago", "atrasado", "cancelado"],
       status_mensalidade: ["pendente", "pago", "atrasado", "cancelado"],
