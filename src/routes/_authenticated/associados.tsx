@@ -85,6 +85,17 @@ function AssociadosPage() {
   const [editing, setEditing] = useState<Associado | null>(null);
   const [mensOpen, setMensOpen] = useState<Associado | null>(null);
   const [pendingDeps, setPendingDeps] = useState<PendingDep[]>([]);
+  const [formaPag, setFormaPag] = useState<string>("");
+  const [cobradorId, setCobradorId] = useState<string>("");
+
+  const { data: cobradores = [] } = useQuery({
+    queryKey: ["cobradores-ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cobradores").select("id, nome").eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data as { id: string; nome: string }[];
+    },
+  });
 
   const { data: associados = [], isLoading } = useQuery({
     queryKey: ["associados"],
