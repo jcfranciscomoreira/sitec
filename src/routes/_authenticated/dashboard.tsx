@@ -7,8 +7,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
+
+function buildMonthOptions(count = 12) {
+  const opts: { value: string; label: string }[] = [];
+  const ref = new Date();
+  for (let i = 0; i < count; i++) {
+    const d = new Date(ref.getFullYear(), ref.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    opts.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+  return opts;
+}
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Painel — Memorial" }] }),
