@@ -1222,8 +1222,6 @@ function MobileRecebimentoSection() {
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="font-serif text-base">Parcelas a receber</h3>
               <div className="flex gap-2 items-center">
-                <span className="text-xs text-muted-foreground">Vencimento</span>
-              <div className="flex gap-2">
                 <span className="text-xs text-muted-foreground">
                   {(aReceber as any[]).length} parcela(s) — <b className="text-foreground">{brl((aReceber as any[]).reduce((s, m: any) => s + Number(m.valor), 0))}</b>
                 </span>
