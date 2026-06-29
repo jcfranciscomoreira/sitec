@@ -56,12 +56,14 @@ function abrirJanelaCarteirinha(title: string, cardsHtml: string) {
 }
 
 
+type FormaPag = "boleto" | "carne" | "escritorio" | "cobrador";
 type Associado = {
   id: string; codigo: number; nome: string; cpf: string | null; rg: string | null;
   data_nascimento: string | null; telefone: string | null; email: string | null;
   endereco: string | null; cidade: string | null; estado: string | null; cep: string | null;
   plano_id: string | null; data_adesao: string; dia_vencimento: number;
   status: "ativo" | "inativo" | "suspenso"; observacoes: string | null;
+  forma_pagamento: FormaPag | null; cobrador_id: string | null;
   planos?: { nome: string; valor_mensal: number } | null;
 };
 
