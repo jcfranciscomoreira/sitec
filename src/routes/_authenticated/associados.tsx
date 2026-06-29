@@ -466,10 +466,12 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge variant="outline" className={map[status] ?? ""}>{status}</Badge>;
 }
 
-function DependentesSection({ associadoId }: { associadoId: string }) {
+function DependentesSection({ associado }: { associado: Associado }) {
+  const associadoId = associado.id;
   const qc = useQueryClient();
   const [editingDep, setEditingDep] = useState<Dependente | null>(null);
   const [adding, setAdding] = useState(false);
+  const [formStatus, setFormStatus] = useState<"ativo" | "inativo" | "falecido">("ativo");
   const { data: deps = [], isLoading } = useQuery({
     queryKey: ["dependentes", associadoId],
     queryFn: async () => {
@@ -505,12 +507,29 @@ function DependentesSection({ associadoId }: { associadoId: string }) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["dependentes", associadoId] }); toast.success("Removido"); },
   });
 
-  const form = editingDep || (adding ? { nome: "", parentesco: "", data_nascimento: "", cpf: "" } : null);
+  function startAdd() {
+    setAdding(true); setEditingDep(null); setFormStatus("ativo");
+  }
+  function startEdit(d: Dependente) {
+    setEditingDep(d); setAdding(false); setFormStatus(d.status ?? "ativo");
+  }
+
+  function imprimirDep(d: Dependente) {
+    const card = renderCarteirinhaCard({
+      codigo: `#${String(associado.codigo).padStart(4, "0")}`,
+      nome: d.nome,
+      plano: associado.planos?.nome ?? "Plano não vinculado",
+      tipo: `Dependente · ${d.parentesco}`,
+    });
+    abrirJanelaCarteirinha(`Carteirinha — ${d.nome}`, card);
+  }
+
+  const form = editingDep || (adding ? { nome: "", parentesco: "", data_nascimento: "", cpf: "", status: "ativo", data_falecimento: "" } as any : null);
 
   return (
     <div className="space-y-3">
       {!form && (
-        <Button type="button" variant="outline" size="sm" onClick={() => setAdding(true)}>
+        <Button type="button" variant="outline" size="sm" onClick={startAdd}>
           <Plus className="mr-2 h-4 w-4" />Adicionar dependente
         </Button>
       )}
@@ -526,6 +545,8 @@ function DependentesSection({ associadoId }: { associadoId: string }) {
               parentesco: String(fd.get("parentesco")),
               data_nascimento: String(fd.get("data_nascimento") || "") || null,
               cpf: String(fd.get("cpf") || "") || null,
+              status: formStatus,
+              data_falecimento: formStatus === "falecido" ? (String(fd.get("data_falecimento") || "") || null) : null,
             });
           }}
           className="space-y-3 rounded-md border border-border p-4"
@@ -535,7 +556,24 @@ function DependentesSection({ associadoId }: { associadoId: string }) {
             <div className="space-y-2 col-span-2"><Label>Nome</Label><Input name="nome" defaultValue={form.nome ?? ""} required /></div>
             <div className="space-y-2"><Label>Parentesco</Label><Input name="parentesco" defaultValue={form.parentesco ?? ""} placeholder="Cônjuge, Filho(a)..." required /></div>
             <div className="space-y-2"><Label>Data de nascimento</Label><Input name="data_nascimento" type="date" defaultValue={form.data_nascimento ?? ""} /></div>
-            <div className="space-y-2 col-span-2"><Label>CPF</Label><Input name="cpf" defaultValue={form.cpf ?? ""} /></div>
+            <div className="space-y-2"><Label>CPF</Label><Input name="cpf" defaultValue={form.cpf ?? ""} /></div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={formStatus} onValueChange={(v) => setFormStatus(v as any)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                  <SelectItem value="falecido">Falecido</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formStatus === "falecido" && (
+              <div className="space-y-2 col-span-2">
+                <Label>Data de falecimento</Label>
+                <Input name="data_falecimento" type="date" defaultValue={form.data_falecimento ?? ""} required />
+              </div>
+            )}
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => { setAdding(false); setEditingDep(null); }}>Cancelar</Button>
@@ -546,26 +584,44 @@ function DependentesSection({ associadoId }: { associadoId: string }) {
       <div className="divide-y divide-border rounded-md border border-border">
         {isLoading && <p className="p-3 text-sm text-muted-foreground">Carregando...</p>}
         {!isLoading && deps.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">Nenhum dependente cadastrado.</p>}
-        {deps.map((d) => (
-          <div key={d.id} className="flex items-center justify-between px-3 py-2">
-            <div>
-              <p className="font-medium text-sm">{d.nome}</p>
-              <p className="text-xs text-muted-foreground">{d.parentesco}{d.data_nascimento ? ` · ${fmtDate(d.data_nascimento)}` : ""}{d.cpf ? ` · CPF ${d.cpf}` : ""}</p>
+        {deps.map((d) => {
+          const status = d.status ?? "ativo";
+          const statusClass = status === "ativo" ? "bg-success/15 text-success border-success/30"
+            : status === "falecido" ? "bg-destructive/15 text-destructive border-destructive/30"
+            : "bg-muted text-muted-foreground";
+          return (
+            <div key={d.id} className="flex items-center justify-between px-3 py-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm">{d.nome}</p>
+                  <Badge variant="outline" className={statusClass}>{status}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {d.parentesco}
+                  {d.data_nascimento ? ` · ${fmtDate(d.data_nascimento)}` : ""}
+                  {d.cpf ? ` · CPF ${d.cpf}` : ""}
+                  {status === "falecido" && d.data_falecimento ? ` · Falecimento ${fmtDate(d.data_falecimento)}` : ""}
+                </p>
+              </div>
+              <div className="flex gap-1">
+                <Button type="button" size="icon" variant="ghost" title="Imprimir carteirinha" disabled={status !== "ativo"} onClick={() => imprimirDep(d)}>
+                  <CreditCard className="h-4 w-4" />
+                </Button>
+                <Button type="button" size="icon" variant="ghost" onClick={() => startEdit(d)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button type="button" size="icon" variant="ghost" onClick={() => { if (confirm(`Remover ${d.nome}?`)) del.mutate(d.id); }}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-1">
-              <Button type="button" size="icon" variant="ghost" onClick={() => { setEditingDep(d); setAdding(false); }}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button type="button" size="icon" variant="ghost" onClick={() => { if (confirm(`Remover ${d.nome}?`)) del.mutate(d.id); }}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 }
+
 
 function gerarComprovante(a: Associado, m: any) {
   const w = window.open("", "_blank", "width=700,height=500");
