@@ -28,6 +28,12 @@ const groups: { label: string; items: { title: string; url: string; icon: any }[
       { title: "Centros de Custo", url: "/centros-custo", icon: Layers },
     ],
   },
+  {
+    label: "Vendas",
+    items: [
+      { title: "Mapa de Vendas", url: "/vendas", icon: MapPin },
+    ],
+  },
 ];
 
 function AppSidebar() {
