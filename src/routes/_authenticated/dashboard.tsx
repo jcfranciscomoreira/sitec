@@ -4,54 +4,66 @@ import { useState, useMemo } from "react";
 import { Users, AlertTriangle, CircleDollarSign, TrendingUp, Wallet } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { brl, fmtDate } from "@/lib/format";
-import { Badge } from "@/components/ui/badge";
+import { brl } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Painel — Memorial" }] }),
   component: Dashboard,
 });
 
-function buildMonthOptions(count = 12) {
-  const opts: { value: string; label: string }[] = [];
-  const ref = new Date();
-  for (let i = 0; i < count; i++) {
-    const d = new Date(ref.getFullYear(), ref.getMonth() - i, 1);
-    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    opts.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) });
-  }
-  return opts;
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+function daysAgoIso(n: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
 }
 
 function Dashboard() {
-  const monthOptions = useMemo(() => buildMonthOptions(12), []);
-  const [mes, setMes] = useState<string>(monthOptions[0].value);
+  const [inicio, setInicio] = useState<string>(daysAgoIso(30));
+  const [fim, setFim] = useState<string>(todayIso());
 
-  const inicioMes = `${mes}-01`;
-  const [ano, m] = mes.split("-").map(Number);
-  const proxMes = new Date(ano, m, 1).toISOString().slice(0, 10);
+  const presets = [
+    { label: "7 dias", days: 7 },
+    { label: "15 dias", days: 15 },
+    { label: "30 dias", days: 30 },
+    { label: "60 dias", days: 60 },
+    { label: "90 dias", days: 90 },
+  ];
+
+  const aplicarPreset = (days: number) => {
+    setInicio(daysAgoIso(days));
+    setFim(todayIso());
+  };
+
+  // fim exclusivo (+1 dia) para incluir o dia final
+  const fimExclusivo = useMemo(() => {
+    const d = new Date(fim);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  }, [fim]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard", mes],
+    queryKey: ["dashboard", inicio, fimExclusivo],
     queryFn: async () => {
-      const hojeIso = new Date().toISOString().slice(0, 10);
+      const hojeIso = todayIso();
 
-      const [assocAtivos, assocTotal, pagasMes, pendentes, atrasadas, ultimas, entradasMes] = await Promise.all([
+      const [assocAtivos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer] = await Promise.all([
         supabase.from("associados").select("*", { count: "exact", head: true }).eq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }),
-        supabase.from("mensalidades").select("valor").eq("status", "pago").gte("data_pagamento", inicioMes).lt("data_pagamento", proxMes),
+        supabase.from("mensalidades").select("valor").eq("status", "pago").gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).eq("status", "pendente"),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).in("status", ["pendente", "atrasado"]).lt("vencimento", hojeIso),
-        supabase.from("mensalidades").select("id, valor, vencimento, status, associados(nome)").gte("vencimento", inicioMes).lt("vencimento", proxMes).order("vencimento", { ascending: false }).limit(10),
-        supabase.from("contas_financeiras").select("valor").eq("tipo", "entrada").eq("status", "pago").gte("data_pagamento", inicioMes).lt("data_pagamento", proxMes),
+        supabase.from("contas_financeiras").select("valor").eq("tipo", "entrada").eq("status", "pago").gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo),
       ]);
 
-      const receitaPlanos = (pagasMes.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
-      const outrasReceitas = (entradasMes.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
+      const receitaPlanos = (pagasPer.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
+      const outrasReceitas = (entradasPer.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
 
       return {
         ativos: assocAtivos.count ?? 0,
@@ -61,14 +73,13 @@ function Dashboard() {
         totalRecebido: receitaPlanos + outrasReceitas,
         pendentes: pendentes.count ?? 0,
         atrasadas: atrasadas.count ?? 0,
-        ultimas: ultimas.data ?? [],
       };
     },
   });
 
   const cards = [
     { label: "Associados ativos", value: data?.ativos ?? 0, sub: `${data?.total ?? 0} no total`, icon: Users, tone: "text-primary" },
-    { label: "Receita de planos", value: brl(data?.receitaPlanos ?? 0), sub: "Mensalidades quitadas no mês", icon: TrendingUp, tone: "text-success" },
+    { label: "Receita de planos", value: brl(data?.receitaPlanos ?? 0), sub: "Mensalidades quitadas no período", icon: TrendingUp, tone: "text-success" },
     { label: "Outras receitas", value: brl(data?.outrasReceitas ?? 0), sub: "Entradas financeiras", icon: Wallet, tone: "text-gold" },
     { label: "Total recebido", value: brl(data?.totalRecebido ?? 0), sub: "Planos + outras entradas", icon: CircleDollarSign, tone: "text-primary" },
     { label: "Pendentes", value: data?.pendentes ?? 0, sub: "Aguardando pagamento", icon: CircleDollarSign, tone: "text-gold" },
@@ -79,15 +90,19 @@ function Dashboard() {
     <AppShell title="Painel de controle" subtitle="Visão geral do seu plano funerário">
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Mês de referência</Label>
-          <Select value={mes} onValueChange={setMes}>
-            <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {monthOptions.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label className="text-xs text-muted-foreground">Início</Label>
+          <Input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} className="w-44" />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs text-muted-foreground">Fim</Label>
+          <Input type="date" value={fim} onChange={(e) => setFim(e.target.value)} className="w-44" />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {presets.map((p) => (
+            <Button key={p.days} type="button" variant="outline" size="sm" onClick={() => aplicarPreset(p.days)}>
+              {p.label}
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -107,43 +122,6 @@ function Dashboard() {
           </Card>
         ))}
       </div>
-
-      <Card className="mt-6 border-border/60 shadow-soft">
-        <CardHeader>
-          <CardTitle className="font-serif">Mensalidades do mês</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {(!data?.ultimas || data.ultimas.length === 0) ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Nenhum lançamento no período.</p>
-          ) : (
-            <div className="divide-y divide-border">
-              {data.ultimas.map((m: any) => (
-                <div key={m.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="font-medium text-foreground">{m.associados?.nome ?? "—"}</p>
-                    <p className="text-xs text-muted-foreground">Vence em {fmtDate(m.vencimento)}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium">{brl(m.valor)}</span>
-                    <StatusBadge status={m.status} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </AppShell>
   );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    pago: { label: "Pago", cls: "bg-success/15 text-success border-success/30" },
-    pendente: { label: "Pendente", cls: "bg-gold/15 text-gold border-gold/30" },
-    atrasado: { label: "Atrasado", cls: "bg-destructive/15 text-destructive border-destructive/30" },
-    cancelado: { label: "Cancelado", cls: "bg-muted text-muted-foreground" },
-  };
-  const v = map[status] ?? { label: status, cls: "" };
-  return <Badge variant="outline" className={v.cls}>{v.label}</Badge>;
 }
