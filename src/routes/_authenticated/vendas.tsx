@@ -326,6 +326,8 @@ function VendasPage() {
       municipio,
       uf,
       status: form.status || "prospect",
+      tipo_venda: form.tipo_venda || null,
+      data_retorno: form.status === "retornar" ? (form.data_retorno || null) : null,
       observacoes: form.observacoes || null,
       latitude: form.latitude,
       longitude: form.longitude,
