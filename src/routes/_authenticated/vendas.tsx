@@ -344,6 +344,24 @@ function VendasPage() {
       if (error) return toast.error(error.message);
       toast.success("Pin criado");
     }
+    // Sincroniza alterações no associado vinculado
+    if (form.associado_id && form.tipo_venda) {
+      if (form.tipo_venda === "troca_plano" && form.plano_id) {
+        const { error: e } = await supabase
+          .from("associados")
+          .update({ plano_id: form.plano_id })
+          .eq("id", form.associado_id);
+        if (e) toast.error("Falha ao atualizar plano do associado: " + e.message);
+        else toast.success("Plano do associado atualizado");
+      } else if (form.tipo_venda === "cancelamento") {
+        const { error: e } = await supabase
+          .from("associados")
+          .update({ status: "inativo" })
+          .eq("id", form.associado_id);
+        if (e) toast.error("Falha ao inativar associado: " + e.message);
+        else toast.success("Associado marcado como inativo");
+      }
+    }
     setDialog({ open: false, pin: null });
     await loadData();
   }
