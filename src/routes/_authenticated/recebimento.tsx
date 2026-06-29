@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, BookOpen, Plus, Printer, ArrowLeft, History, Eye, Users, Pencil, Trash2 } from "lucide-react";
+import { CheckCircle2, BookOpen, Plus, Printer, ArrowLeft, History, Eye, Users, Pencil, Trash2, Smartphone, ClipboardCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -23,11 +23,17 @@ export const Route = createFileRoute("/_authenticated/recebimento")({
 });
 
 function RecebimentoPage() {
-  const [tab, setTab] = useState<"baixa" | "carne" | "historico" | "cobradores">("baixa");
+  const [tab, setTab] = useState<"baixa" | "carne" | "historico" | "cobradores" | "mobile" | "conciliar">("baixa");
 
   return (
-    <AppShell title="Recebimento" subtitle="Baixa em massa de mensalidades, histórico, carnês e cobradores">
+    <AppShell title="Recebimento" subtitle="Recebimento mobile, conciliação, baixas, carnês e cobradores">
       <div className="mb-4 flex flex-wrap gap-2">
+        <Button variant={tab === "mobile" ? "default" : "outline"} onClick={() => setTab("mobile")}>
+          <Smartphone className="mr-2 h-4 w-4" />Recebimento mobile
+        </Button>
+        <Button variant={tab === "conciliar" ? "default" : "outline"} onClick={() => setTab("conciliar")}>
+          <ClipboardCheck className="mr-2 h-4 w-4" />Conciliação (supervisor)
+        </Button>
         <Button variant={tab === "baixa" ? "default" : "outline"} onClick={() => setTab("baixa")}>
           <CheckCircle2 className="mr-2 h-4 w-4" />Baixa por agente
         </Button>
@@ -42,6 +48,8 @@ function RecebimentoPage() {
         </Button>
       </div>
 
+      {tab === "mobile" && <MobileRecebimentoSection />}
+      {tab === "conciliar" && <ConciliacaoSection />}
       {tab === "baixa" && <BaixaWizard />}
       {tab === "historico" && <HistoricoSection />}
       {tab === "carne" && <CarneSection />}
@@ -49,6 +57,7 @@ function RecebimentoPage() {
     </AppShell>
   );
 }
+
 
 type Cobrador = { id: string; nome: string; telefone: string | null; documento: string | null; observacoes: string | null; ativo: boolean };
 
@@ -923,4 +932,414 @@ function imprimirCarnes(list: any[]) {
     <script>window.onload=()=>{window.print();}</script>
     </body></html>`);
   w.document.close();
+}
+
+// ============= Recebimento Mobile (Cobrador) =============
+
+type Pendente = {
+  id: string;
+  mensalidade_id: string;
+  associado_id: string;
+  cobrador_id: string | null;
+  cobrador_nome: string;
+  valor_recebido: number;
+  data_recebimento: string;
+  observacoes: string | null;
+  status: string;
+  created_at: string;
+};
+
+function MobileRecebimentoSection() {
+  const qc = useQueryClient();
+  const [cobradorId, setCobradorId] = useState<string>("");
+  const [cobradorNome, setCobradorNome] = useState<string>("");
+  const [codigo, setCodigo] = useState("");
+  const [valor, setValor] = useState("");
+  const [obs, setObs] = useState("");
+  const [preview, setPreview] = useState<any | null>(null);
+  const [previewErr, setPreviewErr] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const { data: cobradores = [] } = useQuery({
+    queryKey: ["cobradores", "ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cobradores").select("id,nome").eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data as { id: string; nome: string }[];
+    },
+  });
+
+  const { data: meus = [] } = useQuery({
+    queryKey: ["receb-pendentes-meus", cobradorId],
+    enabled: !!cobradorId,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("recebimentos_pendentes")
+        .select("*, mensalidades(codigo, competencia, vencimento), associados(nome, codigo)")
+        .eq("cobrador_id", cobradorId)
+        .eq("status", "pendente")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  useEffect(() => {
+    const cod = Number(codigo.trim());
+    if (!cod || !Number.isFinite(cod)) { setPreview(null); setPreviewErr(""); return; }
+    let cancel = false;
+    const t = setTimeout(async () => {
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("id, codigo, competencia, vencimento, valor, status, associado_id, associados!inner(nome, codigo)")
+        .eq("codigo", cod)
+        .maybeSingle();
+      if (cancel) return;
+      if (error || !data) { setPreview(null); setPreviewErr("Parcela não encontrada"); return; }
+      setPreview(data);
+      setPreviewErr("");
+      setValor((cur) => cur || String(Number((data as any).valor)));
+    }, 250);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [codigo]);
+
+  async function registrar() {
+    if (!cobradorId || !cobradorNome) { toast.error("Selecione o cobrador."); return; }
+    if (!preview) { toast.error("Informe um código de parcela válido."); return; }
+    if ((preview as any).status === "pago") { toast.error("Parcela já está paga."); return; }
+    const v = Number(String(valor).replace(",", "."));
+    if (!v || v <= 0) { toast.error("Informe o valor recebido."); return; }
+    setBusy(true);
+    try {
+      const m: any = preview;
+      const dataRec = new Date().toISOString().slice(0, 10);
+      const { data: ins, error } = await (supabase as any).from("recebimentos_pendentes").insert({
+        mensalidade_id: m.id,
+        associado_id: m.associado_id,
+        cobrador_id: cobradorId,
+        cobrador_nome: cobradorNome,
+        valor_recebido: v,
+        data_recebimento: dataRec,
+        observacoes: obs || null,
+        status: "pendente",
+      }).select("id").single();
+      if (error) throw error;
+      imprimirComprovante({
+        id: ins.id,
+        cobrador: cobradorNome,
+        data: dataRec,
+        codigoParcela: m.codigo,
+        associado: m.associados?.nome ?? "",
+        codAssoc: m.associados?.codigo ?? 0,
+        competencia: m.competencia,
+        vencimento: m.vencimento,
+        valorParcela: Number(m.valor),
+        valorRecebido: v,
+        observacoes: obs,
+      });
+      toast.success("Recebimento registrado", { description: "Comprovante enviado para impressão. Baixa pendente de conciliação." });
+      setCodigo(""); setValor(""); setObs(""); setPreview(null); setPreviewErr("");
+      qc.invalidateQueries({ queryKey: ["receb-pendentes-meus"] });
+      qc.invalidateQueries({ queryKey: ["receb-pendentes-conciliar"] });
+    } catch (e: any) {
+      toast.error("Erro ao registrar", { description: e.message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const totalMes = (meus as any[]).reduce((s, p) => s + Number(p.valor_recebido), 0);
+
+  return (
+    <Card className="border-border/60 shadow-soft">
+      <CardHeader>
+        <CardTitle className="font-serif flex items-center gap-2"><Smartphone className="h-4 w-4" />Recebimento mobile do cobrador</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="rounded border border-gold/40 bg-gold/5 px-3 py-2 text-xs text-muted-foreground">
+          O recebimento gera <b>comprovante</b> para o associado, mas a <b>baixa da mensalidade</b> só ocorre após a <b>conciliação com o supervisor</b> no escritório.
+        </div>
+
+        <div className="space-y-2">
+          <Label>Cobrador</Label>
+          {cobradores.length === 0 ? (
+            <div className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              Nenhum cobrador ativo. Cadastre um na aba "Cadastro de cobradores".
+            </div>
+          ) : (
+            <Select value={cobradorId} onValueChange={(v) => { const c = cobradores.find((x) => x.id === v); setCobradorId(v); setCobradorNome(c?.nome ?? ""); }}>
+              <SelectTrigger><SelectValue placeholder="Selecione o cobrador" /></SelectTrigger>
+              <SelectContent>
+                {cobradores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-[1fr_180px]">
+          <div className="space-y-2"><Label>Código da parcela</Label><Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ex: 1024" inputMode="numeric" /></div>
+          <div className="space-y-2"><Label>Valor recebido (R$)</Label><Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" min="0" /></div>
+        </div>
+
+        {preview && (
+          <div className={`rounded border px-3 py-2 text-sm flex flex-wrap gap-x-6 gap-y-1 ${(preview as any).status === "pago" ? "border-destructive/40 bg-destructive/5" : "border-primary/40 bg-primary/5"}`}>
+            <span><span className="text-muted-foreground">Código:</span> <b>#{(preview as any).codigo}</b></span>
+            <span><span className="text-muted-foreground">Associado:</span> <b>{(preview as any).associados?.nome}</b></span>
+            <span><span className="text-muted-foreground">Vencimento:</span> <b>{fmtDate((preview as any).vencimento)}</b></span>
+            <span><span className="text-muted-foreground">Valor:</span> <b>{brl(Number((preview as any).valor))}</b></span>
+            <span className="capitalize"><span className="text-muted-foreground">Status:</span> <b>{(preview as any).status}</b></span>
+          </div>
+        )}
+        {!preview && previewErr && codigo && (
+          <div className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">{previewErr}</div>
+        )}
+
+        <div className="space-y-2"><Label>Observações (opcional)</Label><Textarea rows={2} value={obs} onChange={(e) => setObs(e.target.value)} /></div>
+
+        <Button onClick={registrar} disabled={busy || !preview || !cobradorId} size="lg" className="w-full md:w-auto">
+          <Printer className="mr-2 h-4 w-4" />{busy ? "Registrando..." : "Receber e imprimir comprovante"}
+        </Button>
+
+        {cobradorId && (
+          <div className="pt-4 border-t border-border">
+            <div className="mb-2 flex items-center justify-between">
+              <h3 className="font-serif text-base">Meus recebimentos pendentes de conciliação</h3>
+              <span className="text-sm text-muted-foreground">{(meus as any[]).length} item(ns) — <b className="text-success">{brl(totalMes)}</b></span>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Cód. parcela</TableHead>
+                  <TableHead>Associado</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(meus as any[]).length === 0 && <TableRow><TableCell colSpan={5} className="py-6 text-center text-muted-foreground">Nenhum recebimento pendente.</TableCell></TableRow>}
+                {(meus as any[]).map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell>{fmtDate(p.data_recebimento)}</TableCell>
+                    <TableCell className="font-mono text-xs">#{p.mensalidades?.codigo}</TableCell>
+                    <TableCell>{p.associados?.nome}</TableCell>
+                    <TableCell className="text-right text-success font-medium">{brl(Number(p.valor_recebido))}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => imprimirComprovante({
+                        id: p.id, cobrador: p.cobrador_nome, data: p.data_recebimento,
+                        codigoParcela: p.mensalidades?.codigo ?? 0, associado: p.associados?.nome ?? "",
+                        codAssoc: p.associados?.codigo ?? 0, competencia: p.mensalidades?.competencia ?? "",
+                        vencimento: p.mensalidades?.vencimento ?? "", valorParcela: Number(p.valor_recebido),
+                        valorRecebido: Number(p.valor_recebido), observacoes: p.observacoes ?? "",
+                      })}><Printer className="h-4 w-4" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function imprimirComprovante(c: {
+  id: string; cobrador: string; data: string; codigoParcela: number;
+  associado: string; codAssoc: number; competencia: string; vencimento: string;
+  valorParcela: number; valorRecebido: number; observacoes: string;
+}) {
+  const w = window.open("", "_blank", "width=420,height=700");
+  if (!w) { toast.error("Permita pop-ups."); return; }
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Comprovante</title>
+    <style>
+      body{font-family:Georgia,serif;color:#111;margin:0;padding:14px;max-width:360px}
+      .brand{text-align:center;font-weight:bold;color:#1e3a5f;letter-spacing:3px;font-size:14px}
+      h1{font-size:14px;text-align:center;margin:6px 0;color:#1e3a5f}
+      .alert{border:1px dashed #b8860b;background:#fffbe6;color:#7a5c00;padding:8px;font-size:11px;border-radius:4px;margin:8px 0;text-align:center}
+      table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+      td{padding:4px 2px;border-bottom:1px dotted #ccc;vertical-align:top}
+      td:first-child{color:#666;width:42%}
+      .val{margin-top:10px;text-align:center;font-size:20px;font-weight:bold;color:#1e3a5f;background:#f5f3ec;padding:8px;border-radius:6px}
+      .ass{margin-top:34px;text-align:center;font-size:11px}
+      .linha{border-top:1px solid #111;width:80%;margin:0 auto 2px}
+      .pid{margin-top:8px;font-family:monospace;font-size:10px;text-align:center;color:#666}
+      @media print{ body{padding:6px} }
+    </style></head><body>
+    <div class="brand">Memorial</div>
+    <h1>Comprovante de Recebimento</h1>
+    <div class="alert">PROVISÓRIO — baixa sujeita a conciliação com o supervisor</div>
+    <table>
+      <tr><td>Data</td><td><b>${fmtDate(c.data)}</b></td></tr>
+      <tr><td>Cobrador</td><td><b>${c.cobrador}</b></td></tr>
+      <tr><td>Associado</td><td><b>${c.associado}</b> #${String(c.codAssoc).padStart(4, "0")}</td></tr>
+      <tr><td>Parcela</td><td>#${c.codigoParcela} — ${competenciaLabel(c.competencia)}</td></tr>
+      <tr><td>Vencimento</td><td>${fmtDate(c.vencimento)}</td></tr>
+      ${c.observacoes ? `<tr><td>Obs.</td><td>${c.observacoes}</td></tr>` : ""}
+    </table>
+    <div class="val">${brl(c.valorRecebido)}</div>
+    <div class="ass"><div class="linha"></div>Assinatura do associado</div>
+    <div class="ass"><div class="linha"></div>${c.cobrador} — Cobrador</div>
+    <div class="pid">Protocolo: ${c.id}</div>
+    <script>window.onload=()=>{window.print();}</script>
+    </body></html>`;
+  w.document.write(html);
+  w.document.close();
+}
+
+// ============= Conciliação (Supervisor) =============
+
+function ConciliacaoSection() {
+  const qc = useQueryClient();
+  const [selecionados, setSelecionados] = useState<Record<string, boolean>>({});
+  const [filtroCobrador, setFiltroCobrador] = useState<string>("todos");
+  const [busy, setBusy] = useState(false);
+
+  const { data: pendentes = [], isLoading } = useQuery({
+    queryKey: ["receb-pendentes-conciliar", filtroCobrador],
+    queryFn: async () => {
+      let q = (supabase as any)
+        .from("recebimentos_pendentes")
+        .select("*, mensalidades(codigo, competencia, vencimento, valor), associados(nome, codigo)")
+        .eq("status", "pendente")
+        .order("data_recebimento", { ascending: false });
+      if (filtroCobrador !== "todos") q = q.eq("cobrador_id", filtroCobrador);
+      const { data, error } = await q.limit(500);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: cobradores = [] } = useQuery({
+    queryKey: ["cobradores", "ativos"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("cobradores").select("id,nome").eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data as { id: string; nome: string }[];
+    },
+  });
+
+  const selectedIds = useMemo(() => Object.keys(selecionados).filter((k) => selecionados[k]), [selecionados]);
+  const selectedList = useMemo(() => (pendentes as any[]).filter((p) => selecionados[p.id]), [pendentes, selecionados]);
+  const totalSel = selectedList.reduce((s, p) => s + Number(p.valor_recebido), 0);
+
+  async function conciliar() {
+    if (selectedIds.length === 0) { toast.error("Selecione ao menos um recebimento."); return; }
+    setBusy(true);
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      const userId = u.user?.id ?? null;
+      let userNome = "";
+      if (userId) {
+        const { data: p } = await supabase.from("profiles").select("nome,email").eq("id", userId).maybeSingle();
+        userNome = (p as any)?.nome || (p as any)?.email || u.user?.email || "";
+      }
+      for (const item of selectedList) {
+        const baseUpd = { status: "pago" as const, data_pagamento: item.data_recebimento, agente_recebimento: item.cobrador_nome };
+        const { error } = await supabase.from("mensalidades").update(baseUpd).eq("id", item.mensalidade_id);
+        if (error) throw error;
+        const { error: e2 } = await (supabase as any).from("recebimentos_pendentes").update({
+          status: "conciliado", conciliado_em: new Date().toISOString(), conciliado_por: userId, conciliado_por_nome: userNome,
+        }).eq("id", item.id);
+        if (e2) throw e2;
+      }
+      toast.success("Conciliado", { description: `${selectedIds.length} recebimento(s) — ${brl(totalSel)} baixados.` });
+      setSelecionados({});
+      qc.invalidateQueries({ queryKey: ["receb-pendentes-conciliar"] });
+      qc.invalidateQueries({ queryKey: ["receb-pendentes-meus"] });
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+    } catch (e: any) {
+      toast.error("Erro na conciliação", { description: e.message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function rejeitar(id: string) {
+    if (!confirm("Rejeitar este recebimento? Ele não baixará a parcela.")) return;
+    const { error } = await (supabase as any).from("recebimentos_pendentes").update({ status: "rejeitado" }).eq("id", id);
+    if (error) { toast.error("Erro", { description: error.message }); return; }
+    toast.success("Recebimento rejeitado");
+    qc.invalidateQueries({ queryKey: ["receb-pendentes-conciliar"] });
+  }
+
+  const totalGeral = (pendentes as any[]).reduce((s, p) => s + Number(p.valor_recebido), 0);
+
+  return (
+    <Card className="border-border/60 shadow-soft">
+      <CardHeader>
+        <CardTitle className="font-serif flex items-center gap-2"><ClipboardCheck className="h-4 w-4" />Conciliação de recebimentos do cobrador</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 md:grid-cols-[260px_1fr_1fr]">
+          <div className="space-y-2">
+            <Label>Filtrar por cobrador</Label>
+            <Select value={filtroCobrador} onValueChange={setFiltroCobrador}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {cobradores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Pendentes</div>
+            <div className="text-2xl font-bold text-primary">{(pendentes as any[]).length} — {brl(totalGeral)}</div>
+          </div>
+          <div className="rounded-lg border border-success/40 bg-success/5 px-4 py-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">Selecionados</div>
+            <div className="text-2xl font-bold text-success">{selectedIds.length} — {brl(totalSel)}</div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={conciliar} disabled={busy || selectedIds.length === 0}>
+            <CheckCircle2 className="mr-2 h-4 w-4" />{busy ? "Conciliando..." : "Conciliar e dar baixa"}
+          </Button>
+          <Button variant="outline" onClick={() => {
+            const all: Record<string, boolean> = {};
+            (pendentes as any[]).forEach((p) => { all[p.id] = true; });
+            setSelecionados(all);
+          }}>Selecionar todos</Button>
+          <Button variant="outline" onClick={() => setSelecionados({})}>Limpar seleção</Button>
+        </div>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-10"></TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead>Cobrador</TableHead>
+              <TableHead>Cód. parcela</TableHead>
+              <TableHead>Associado</TableHead>
+              <TableHead>Vencimento</TableHead>
+              <TableHead className="text-right">Parcela</TableHead>
+              <TableHead className="text-right">Recebido</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading && <TableRow><TableCell colSpan={9} className="py-6 text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {!isLoading && (pendentes as any[]).length === 0 && <TableRow><TableCell colSpan={9} className="py-10 text-center text-muted-foreground">Nenhum recebimento pendente de conciliação.</TableCell></TableRow>}
+            {(pendentes as any[]).map((p) => (
+              <TableRow key={p.id}>
+                <TableCell><input type="checkbox" checked={!!selecionados[p.id]} onChange={(e) => setSelecionados((s) => ({ ...s, [p.id]: e.target.checked }))} className="h-4 w-4" /></TableCell>
+                <TableCell>{fmtDate(p.data_recebimento)}</TableCell>
+                <TableCell>{p.cobrador_nome}</TableCell>
+                <TableCell className="font-mono text-xs">#{p.mensalidades?.codigo}</TableCell>
+                <TableCell>{p.associados?.nome} <span className="text-xs text-muted-foreground">#{String(p.associados?.codigo ?? "").padStart(4, "0")}</span></TableCell>
+                <TableCell>{p.mensalidades?.vencimento ? fmtDate(p.mensalidades.vencimento) : "—"}</TableCell>
+                <TableCell className="text-right">{brl(Number(p.mensalidades?.valor ?? 0))}</TableCell>
+                <TableCell className="text-right text-success font-medium">{brl(Number(p.valor_recebido))}</TableCell>
+                <TableCell className="text-right">
+                  <Button size="sm" variant="ghost" onClick={() => rejeitar(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
 }
