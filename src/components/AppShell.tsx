@@ -1,5 +1,5 @@
-import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
-import { LogOut, Cross } from "lucide-react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { Settings, Cross } from "lucide-react";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import { usePermissions } from "@/hooks/use-permissions";
 import { MODULES, MODULE_GROUPS } from "@/lib/modules";
@@ -9,8 +9,6 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger,
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { UserMenu } from "@/components/UserMenu";
 
 const groups = MODULE_GROUPS.map((label) => ({
