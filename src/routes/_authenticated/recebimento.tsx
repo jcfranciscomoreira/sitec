@@ -985,6 +985,31 @@ function MobileRecebimentoSection() {
     },
   });
 
+  const hoje = new Date().toISOString().slice(0, 10);
+  const { data: aReceber = [], isLoading: loadingAR } = useQuery({
+    queryKey: ["receb-mobile-areceber", cobradorId, hoje],
+    enabled: !!cobradorId,
+    queryFn: async () => {
+      const { data: assocs, error: e1 } = await supabase
+        .from("associados")
+        .select("id")
+        .eq("cobrador_id", cobradorId)
+        .eq("forma_pagamento", "cobrador");
+      if (e1) throw e1;
+      const ids = (assocs ?? []).map((a: any) => a.id);
+      if (ids.length === 0) return [] as any[];
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("id, codigo, competencia, vencimento, valor, status, associados!inner(nome, codigo, endereco, cidade, telefone)")
+        .in("associado_id", ids)
+        .in("status", ["pendente", "atrasado"])
+        .lte("vencimento", hoje)
+        .order("vencimento", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   useEffect(() => {
     const cod = Number(codigo.trim());
     if (!cod || !Number.isFinite(cod)) { setPreview(null); setPreviewErr(""); return; }
