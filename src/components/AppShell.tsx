@@ -47,17 +47,6 @@ const groups: { label: string; items: { title: string; url: string; icon: any }[
 function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
-
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
-
-  return (
-    <Sidebar collapsible="icon">
-function AppSidebar() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const navigate = useNavigate();
   const { config } = useConfiguracoes();
 
   async function handleSignOut() {
