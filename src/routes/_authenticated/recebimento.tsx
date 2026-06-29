@@ -23,37 +23,52 @@ export const Route = createFileRoute("/_authenticated/recebimento")({
 });
 
 function RecebimentoPage() {
-  const [tab, setTab] = useState<"baixa" | "carne" | "historico" | "cobradores" | "mobile" | "conciliar">("baixa");
+  const { canTab, loading: permsLoading } = usePermissions();
+  type TabKey = "baixa" | "carne" | "historico" | "cobradores" | "mobile" | "conciliar";
+  const [tab, setTab] = useState<TabKey>("baixa");
+  const show = (k: TabKey) => permsLoading || canTab("recebimento", k);
 
   return (
     <AppShell title="Recebimento" subtitle="Recebimento mobile, conciliação, baixas, carnês e cobradores">
       <div className="mb-4 flex flex-wrap gap-2">
-        <Button variant={tab === "mobile" ? "default" : "outline"} onClick={() => setTab("mobile")}>
-          <Smartphone className="mr-2 h-4 w-4" />Recebimento mobile
-        </Button>
-        <Button variant={tab === "conciliar" ? "default" : "outline"} onClick={() => setTab("conciliar")}>
-          <ClipboardCheck className="mr-2 h-4 w-4" />Conciliação (supervisor)
-        </Button>
-        <Button variant={tab === "baixa" ? "default" : "outline"} onClick={() => setTab("baixa")}>
-          <CheckCircle2 className="mr-2 h-4 w-4" />Baixa por agente
-        </Button>
-        <Button variant={tab === "historico" ? "default" : "outline"} onClick={() => setTab("historico")}>
-          <History className="mr-2 h-4 w-4" />Histórico de baixas
-        </Button>
-        <Button variant={tab === "carne" ? "default" : "outline"} onClick={() => setTab("carne")}>
-          <BookOpen className="mr-2 h-4 w-4" />Gerar carnês em massa
-        </Button>
-        <Button variant={tab === "cobradores" ? "default" : "outline"} onClick={() => setTab("cobradores")}>
-          <Users className="mr-2 h-4 w-4" />Cadastro de cobradores
-        </Button>
+        {show("mobile") && (
+          <Button variant={tab === "mobile" ? "default" : "outline"} onClick={() => setTab("mobile")}>
+            <Smartphone className="mr-2 h-4 w-4" />Recebimento mobile
+          </Button>
+        )}
+        {show("conciliar") && (
+          <Button variant={tab === "conciliar" ? "default" : "outline"} onClick={() => setTab("conciliar")}>
+            <ClipboardCheck className="mr-2 h-4 w-4" />Conciliação (supervisor)
+          </Button>
+        )}
+        {show("baixa") && (
+          <Button variant={tab === "baixa" ? "default" : "outline"} onClick={() => setTab("baixa")}>
+            <CheckCircle2 className="mr-2 h-4 w-4" />Baixa por agente
+          </Button>
+        )}
+        {show("historico") && (
+          <Button variant={tab === "historico" ? "default" : "outline"} onClick={() => setTab("historico")}>
+            <History className="mr-2 h-4 w-4" />Histórico de baixas
+          </Button>
+        )}
+        {show("carne") && (
+          <Button variant={tab === "carne" ? "default" : "outline"} onClick={() => setTab("carne")}>
+            <BookOpen className="mr-2 h-4 w-4" />Gerar carnês em massa
+          </Button>
+        )}
+        {show("cobradores") && (
+          <Button variant={tab === "cobradores" ? "default" : "outline"} onClick={() => setTab("cobradores")}>
+            <Users className="mr-2 h-4 w-4" />Cadastro de cobradores
+          </Button>
+        )}
       </div>
 
-      {tab === "mobile" && <MobileRecebimentoSection />}
-      {tab === "conciliar" && <ConciliacaoSection />}
-      {tab === "baixa" && <BaixaWizard />}
-      {tab === "historico" && <HistoricoSection />}
-      {tab === "carne" && <CarneSection />}
-      {tab === "cobradores" && <CobradoresSection />}
+      {tab === "mobile" && show("mobile") && <MobileRecebimentoSection />}
+      {tab === "conciliar" && show("conciliar") && <ConciliacaoSection />}
+      {tab === "baixa" && show("baixa") && <BaixaWizard />}
+      {tab === "historico" && show("historico") && <HistoricoSection />}
+      {tab === "carne" && show("carne") && <CarneSection />}
+      {tab === "cobradores" && show("cobradores") && <CobradoresSection />}
     </AppShell>
   );
 }
