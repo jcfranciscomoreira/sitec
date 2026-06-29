@@ -333,8 +333,9 @@ function AssociadosPage() {
   }
 
   const filtered = associados.filter((a) =>
-    !search || a.nome.toLowerCase().includes(search.toLowerCase()) ||
-    (a.cpf ?? "").includes(search) || String(a.codigo).includes(search)
+    (!search || a.nome.toLowerCase().includes(search.toLowerCase()) ||
+      (a.cpf ?? "").includes(search) || String(a.codigo).includes(search)) &&
+    (statusFilter === "todos" || a.status === statusFilter)
   );
 
   return (
