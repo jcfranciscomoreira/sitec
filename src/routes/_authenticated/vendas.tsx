@@ -26,6 +26,7 @@ const STATUS_OPTIONS = [
   { value: "recusou", label: "Recusou", color: "bg-red-500" },
   { value: "sem_interesse", label: "Sem interesse", color: "bg-amber-500" },
   { value: "retornar", label: "Retornar", color: "bg-purple-500" },
+  { value: "concorrencia", label: "Concorrência", color: "bg-pink-600" },
 ];
 
 const TIPO_VENDA_OPTIONS = [
