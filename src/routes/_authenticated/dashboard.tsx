@@ -76,8 +76,9 @@ function Dashboard() {
     queryFn: async () => {
       const hojeIso = todayIso();
 
-      const [assocAtivos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer] = await Promise.all([
+      const [assocAtivos, assocInativos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer] = await Promise.all([
         supabase.from("associados").select("*", { count: "exact", head: true }).eq("status", "ativo"),
+        supabase.from("associados").select("*", { count: "exact", head: true }).neq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }),
         supabase.from("mensalidades").select("valor").eq("status", "pago").gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).eq("status", "pendente"),
@@ -90,6 +91,7 @@ function Dashboard() {
 
       return {
         ativos: assocAtivos.count ?? 0,
+        inativos: assocInativos.count ?? 0,
         total: assocTotal.count ?? 0,
         receitaPlanos,
         outrasReceitas,
@@ -102,6 +104,7 @@ function Dashboard() {
 
   const cards = [
     { label: "Associados ativos", value: data?.ativos ?? 0, sub: `${data?.total ?? 0} no total`, icon: Users, tone: "text-primary" },
+    { label: "Associados inativos", value: data?.inativos ?? 0, sub: "Cancelados/suspensos", icon: Users, tone: "text-destructive" },
     { label: "Receita de planos", value: brl(data?.receitaPlanos ?? 0), sub: "Mensalidades quitadas no período", icon: TrendingUp, tone: "text-success" },
     { label: "Outras receitas", value: brl(data?.outrasReceitas ?? 0), sub: "Entradas financeiras", icon: Wallet, tone: "text-gold" },
     { label: "Total recebido", value: brl(data?.totalRecebido ?? 0), sub: "Planos + outras entradas", icon: CircleDollarSign, tone: "text-primary" },
