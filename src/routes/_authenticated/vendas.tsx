@@ -89,6 +89,7 @@ function VendasPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ open: boolean; pin: Partial<Pin> | null }>({ open: false, pin: null });
   const [municipioFiltro, setMunicipioFiltro] = useState<string>("__auto__");
+  const [statusFiltro, setStatusFiltro] = useState<string>("__all__");
   const [meMunicipio, setMeMunicipio] = useState<string | null>(null);
 
   async function loadData() {
@@ -253,13 +254,17 @@ function VendasPage() {
   }, [pins]);
 
   const filteredPins = useMemo(() => {
-    if (municipioFiltro === "__all__") return pins;
+    let list = pins;
     if (municipioFiltro === "__auto__") {
-      if (!meMunicipio) return pins;
-      return pins.filter((p) => p.municipio === meMunicipio);
+      if (meMunicipio) list = list.filter((p) => p.municipio === meMunicipio);
+    } else if (municipioFiltro !== "__all__") {
+      list = list.filter((p) => p.municipio === municipioFiltro);
     }
-    return pins.filter((p) => p.municipio === municipioFiltro);
-  }, [pins, municipioFiltro, meMunicipio]);
+    if (statusFiltro !== "__all__") {
+      list = list.filter((p) => p.status === statusFiltro);
+    }
+    return list;
+  }, [pins, municipioFiltro, statusFiltro, meMunicipio]);
 
   // Sync markers (only filtered)
   useEffect(() => {
@@ -421,6 +426,18 @@ function VendasPage() {
                   <SelectItem value="__all__">Todos os municípios</SelectItem>
                   {municipios.map((m) => (
                     <SelectItem key={m} value={m}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Filtrar por status</Label>
+              <Select value={statusFiltro} onValueChange={setStatusFiltro}>
+                <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Todos os status</SelectItem>
+                  {STATUS_OPTIONS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
