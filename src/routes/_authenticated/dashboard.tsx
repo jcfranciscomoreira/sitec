@@ -54,6 +54,16 @@ function Dashboard() {
     setFim(todayIso());
   };
 
+  const monthOptions = useMemo(() => buildMonthOptions(12), []);
+  const aplicarMes = (value: string) => {
+    const [ano, m] = value.split("-").map(Number);
+    const ini = `${value}-01`;
+    const fimDate = new Date(ano, m, 0); // último dia do mês
+    setInicio(ini);
+    setFim(fimDate.toISOString().slice(0, 10));
+  };
+
+
   // fim exclusivo (+1 dia) para incluir o dia final
   const fimExclusivo = useMemo(() => {
     const d = new Date(fim);
