@@ -20,15 +20,8 @@ const groups = MODULE_GROUPS.map((label) => ({
 
 function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const navigate = useNavigate();
   const { config } = useConfiguracoes();
   const { can, loading: permsLoading } = usePermissions();
-
-
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
-  }
 
   return (
     <Sidebar collapsible="icon">
