@@ -342,6 +342,8 @@ function AssociadosPage() {
       data_adesao: String(fd.get("data_adesao") || new Date().toISOString().slice(0, 10)),
       dia_vencimento: Number(fd.get("dia_vencimento") || 10),
       status: (fd.get("status") as any) || "ativo",
+      forma_pagamento: (formaPag || null) as any,
+      cobrador_id: formaPag === "cobrador" ? (cobradorId || null) : null,
       observacoes: get("observacoes"),
       _pendingDeps: editing?.id ? undefined : pendingDeps,
     });
