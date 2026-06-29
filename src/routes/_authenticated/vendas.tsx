@@ -109,7 +109,11 @@ function VendasPage() {
         mapRef.current = new google.maps.Map(mapDivRef.current, {
           center: initial,
           zoom: 13,
-          mapTypeControl: false,
+          mapTypeControl: true,
+          mapTypeControlOptions: {
+            style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+            mapTypeIds: ["roadmap", "satellite", "hybrid", "terrain"],
+          },
           streetViewControl: false,
           fullscreenControl: false,
         });
