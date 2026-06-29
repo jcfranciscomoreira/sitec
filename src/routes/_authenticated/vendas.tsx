@@ -69,6 +69,9 @@ function VendasPage() {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<Map<string, any>>(new Map());
+  const meMarkerRef = useRef<any>(null);
+  const meAccuracyRef = useRef<any>(null);
+  const geoWatchRef = useRef<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [pins, setPins] = useState<Pin[]>([]);
   const [planos, setPlanos] = useState<Plano[]>([]);
@@ -112,15 +115,21 @@ function VendasPage() {
             pin: { latitude: e.latLng.lat(), longitude: e.latLng.lng(), status: "prospect", nome: "" },
           });
         });
-        // try geolocate
+        // watch user position and render a "you are here" marker
         if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
+          let firstFix = true;
+          geoWatchRef.current = navigator.geolocation.watchPosition(
             (pos) => {
-              mapRef.current?.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-              mapRef.current?.setZoom(15);
+              const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              updateMeMarker(here, pos.coords.accuracy);
+              if (firstFix) {
+                firstFix = false;
+                mapRef.current?.setCenter(here);
+                mapRef.current?.setZoom(15);
+              }
             },
             () => {},
-            { timeout: 5000 },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
           );
         }
       } catch (err: any) {
@@ -129,8 +138,59 @@ function VendasPage() {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+  return () => {
+      cancelled = true;
+      if (geoWatchRef.current != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(geoWatchRef.current);
+        geoWatchRef.current = null;
+      }
+      meMarkerRef.current?.setMap?.(null);
+      meAccuracyRef.current?.setMap?.(null);
+      meMarkerRef.current = null;
+      meAccuracyRef.current = null;
+    };
   }, []);
+
+  function updateMeMarker(pos: { lat: number; lng: number }, accuracy?: number) {
+    const google = (window as any).google;
+    if (!google || !mapRef.current) return;
+    if (!meMarkerRef.current) {
+      meMarkerRef.current = new google.maps.Marker({
+        position: pos,
+        map: mapRef.current,
+        title: "Você está aqui",
+        zIndex: 9999,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: "#1d4ed8",
+          fillOpacity: 1,
+          strokeColor: "#fff",
+          strokeWeight: 3,
+          scale: 8,
+        },
+      });
+    } else {
+      meMarkerRef.current.setPosition(pos);
+    }
+    if (accuracy && accuracy > 0) {
+      if (!meAccuracyRef.current) {
+        meAccuracyRef.current = new google.maps.Circle({
+          map: mapRef.current,
+          center: pos,
+          radius: accuracy,
+          fillColor: "#1d4ed8",
+          fillOpacity: 0.12,
+          strokeColor: "#1d4ed8",
+          strokeOpacity: 0.35,
+          strokeWeight: 1,
+          clickable: false,
+        });
+      } else {
+        meAccuracyRef.current.setCenter(pos);
+        meAccuracyRef.current.setRadius(accuracy);
+      }
+    }
+  }
 
   // Sync markers
   useEffect(() => {
