@@ -582,6 +582,7 @@ function PinDialog({
                   onChange={(e) => setForm({ ...form, data_retorno: e.target.value })}
                 />
               </div>
+            )}
           </div>
           {form.status === "concorrencia" && (
             <div>
