@@ -50,37 +50,49 @@ function FinanceiroPage() {
   });
 
   const gerar = useMutation({
-    mutationFn: async (competencia: string) => {
+    mutationFn: async (range: { inicio: string; fim: string }) => {
       const { data: associados, error } = await supabase
         .from("associados")
         .select("id, dia_vencimento, planos(valor_mensal)")
         .eq("status", "ativo")
         .not("plano_id", "is", null);
       if (error) throw error;
-      const compDate = new Date(competencia + "-01T00:00:00");
-      const payload = (associados ?? []).map((a: any) => {
-        const venc = new Date(compDate.getFullYear(), compDate.getMonth(), Math.min(a.dia_vencimento, 28));
-        return {
-          associado_id: a.id,
-          competencia: `${competencia}-01`,
-          valor: a.planos?.valor_mensal ?? 0,
-          vencimento: venc.toISOString().slice(0, 10),
-          status: "pendente" as const,
-        };
-      });
+      const start = new Date(range.inicio + "-01T00:00:00");
+      const end = new Date(range.fim + "-01T00:00:00");
+      if (end < start) throw new Error("Mês final deve ser maior ou igual ao inicial.");
+      const competencias: Date[] = [];
+      const cursor = new Date(start);
+      while (cursor <= end) {
+        competencias.push(new Date(cursor));
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      const payload = (associados ?? []).flatMap((a: any) =>
+        competencias.map((compDate) => {
+          const venc = new Date(compDate.getFullYear(), compDate.getMonth(), Math.min(a.dia_vencimento, 28));
+          const compStr = `${compDate.getFullYear()}-${String(compDate.getMonth() + 1).padStart(2, "0")}-01`;
+          return {
+            associado_id: a.id,
+            competencia: compStr,
+            valor: a.planos?.valor_mensal ?? 0,
+            vencimento: venc.toISOString().slice(0, 10),
+            status: "pendente" as const,
+          };
+        }),
+      );
       if (payload.length === 0) throw new Error("Nenhum associado ativo com plano para gerar.");
       const { error: e2, count } = await supabase.from("mensalidades").upsert(payload as any, { onConflict: "associado_id,competencia", ignoreDuplicates: true, count: "exact" });
       if (e2) throw e2;
-      return { tentadas: payload.length, inseridas: count ?? 0 };
+      return { tentadas: payload.length, inseridas: count ?? 0, meses: competencias.length };
     },
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["mensalidades"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       setOpenGerar(false);
-      toast.success(`Mensalidades geradas`, { description: `${r.inseridas} novas de ${r.tentadas} associados.` });
+      toast.success(`Mensalidades geradas`, { description: `${r.inseridas} novas em ${r.meses} mês(es) (${r.tentadas} tentadas).` });
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
+
 
   const pay = useMutation({
     mutationFn: async (p: { id: string; data_pagamento: string; forma_pagamento: string }) => {
