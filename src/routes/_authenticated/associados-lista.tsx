@@ -34,7 +34,7 @@ function AssociadosListaPage() {
     queryFn: async () => {
       let q = supabase
         .from("associados")
-        .select("id, codigo, nome, cpf, telefone, cidade, status, vencimento_dia, plano_id")
+        .select("id, codigo, nome, cpf, telefone, cidade, status, dia_vencimento, plano_id")
         .order("nome");
       q = isAtivos ? q.eq("status", "ativo") : q.in("status", ["inativo", "suspenso"]);
       const { data: assoc, error } = await q;
