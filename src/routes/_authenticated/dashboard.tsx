@@ -156,6 +156,11 @@ function Dashboard() {
                 {isLoading ? "—" : c.value}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
+              {c.linkStatus && (
+                <Button asChild size="sm" variant="outline" className="mt-3">
+                  <Link to="/associados-lista" search={{ status: c.linkStatus }}>Ver lista</Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}
