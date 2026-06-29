@@ -115,15 +115,21 @@ function VendasPage() {
             pin: { latitude: e.latLng.lat(), longitude: e.latLng.lng(), status: "prospect", nome: "" },
           });
         });
-        // try geolocate
+        // watch user position and render a "you are here" marker
         if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
+          let firstFix = true;
+          geoWatchRef.current = navigator.geolocation.watchPosition(
             (pos) => {
-              mapRef.current?.setCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-              mapRef.current?.setZoom(15);
+              const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              updateMeMarker(here, pos.coords.accuracy);
+              if (firstFix) {
+                firstFix = false;
+                mapRef.current?.setCenter(here);
+                mapRef.current?.setZoom(15);
+              }
             },
             () => {},
-            { timeout: 5000 },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 },
           );
         }
       } catch (err: any) {
