@@ -505,6 +505,7 @@ function AssociadosPage() {
                       <Button size="icon" variant="ghost" title="Gerar contrato" onClick={() => gerarContrato(a)}><FileSignature className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Imprimir relatório" onClick={() => imprimirRelatorio(a)}><Printer className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Mensalidades geradas" onClick={() => setMensOpen(a)}><Receipt className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" title="Vincular ao mapa de vendas" onClick={() => setVincOpen(a)}><MapPin className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Editar" onClick={() => { setEditing(a); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Excluir" onClick={() => { if (confirm(`Excluir ${a.nome}?`)) del.mutate(a.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
