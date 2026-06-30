@@ -531,6 +531,7 @@ function AssociadosPage() {
 
       
       {mensOpen && <MensalidadesDialog associado={mensOpen} onClose={() => setMensOpen(null)} />}
+      {vincOpen && <VincularPontoDialog associado={vincOpen} onClose={() => setVincOpen(null)} />}
     </AppShell>
   );
 }
