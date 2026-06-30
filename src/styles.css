@@ -152,6 +152,7 @@
 
 @layer base {
   * { border-color: var(--color-border); }
+  html, body { max-width: 100%; overflow-x: hidden; }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
@@ -159,4 +160,5 @@
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4 { font-family: var(--font-serif); letter-spacing: -0.01em; }
+  img, svg, video, canvas { max-width: 100%; height: auto; }
 }
