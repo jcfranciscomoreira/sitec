@@ -141,13 +141,6 @@ function Dashboard() {
             </SelectContent>
           </Select>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {presets.map((p) => (
-            <Button key={p.days} type="button" variant="outline" size="sm" onClick={() => aplicarPreset(p.days)}>
-              {p.label}
-            </Button>
-          ))}
-        </div>
 
       </div>
 
