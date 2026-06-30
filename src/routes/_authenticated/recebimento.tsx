@@ -1238,13 +1238,16 @@ function MobileRecebimentoSection() {
               Nenhum cobrador ativo. Cadastre um na aba "Cadastro de cobradores".
             </div>
           ) : (
-            <Select value={cobradorId} disabled={cobradorLocked} onValueChange={(v) => { const c = cobradores.find((x) => x.id === v); setCobradorId(v); setCobradorNome(c?.nome ?? ""); }}>
-              <SelectTrigger><SelectValue placeholder="Selecione o cobrador" /></SelectTrigger>
-              <SelectContent>
-                {cobradores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {cobradorLocked && <p className="text-xs text-muted-foreground mt-1">Cobrador definido pelo seu perfil de acesso.</p>}
+            <>
+              <Select value={cobradorId} disabled={cobradorLocked} onValueChange={(v) => { const c = cobradores.find((x) => x.id === v); setCobradorId(v); setCobradorNome(c?.nome ?? ""); }}>
+                <SelectTrigger><SelectValue placeholder="Selecione o cobrador" /></SelectTrigger>
+                <SelectContent>
+                  {cobradores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {cobradorLocked && <p className="text-xs text-muted-foreground mt-1">Cobrador definido pelo seu perfil de acesso.</p>}
+            </>
+          )}
         </div>
 
         {cobradorId && (
