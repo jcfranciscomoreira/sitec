@@ -117,28 +117,87 @@ function VendasPage() {
   const [statusFiltro, setStatusFiltro] = useState<string>("__all__");
   const [meMunicipio, setMeMunicipio] = useState<string | null>(null);
 
+  const [online, setOnline] = useState<boolean>(typeof navigator === "undefined" ? true : navigator.onLine);
+  const [pendingCount, setPendingCount] = useState<number>(0);
+
   async function loadData() {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUserId(user?.id ?? null);
-    const [{ data: p }, { data: pl }, { data: as }] = await Promise.all([
-      supabase.from("vendas_pins").select("*").order("created_at", { ascending: false }),
-      supabase.from("planos").select("id, nome").eq("ativo", true).order("nome"),
-      supabase.from("associados").select("id, nome, codigo").order("nome"),
-    ]);
-    setPins((p ?? []) as Pin[]);
-    setPlanos((pl ?? []) as Plano[]);
-    setAssociados((as ?? []) as Associado[]);
+    const cached = readCache();
+    if (cached) {
+      const queue = readQueue();
+      setPins([...(queue as Pin[]), ...((cached.pins ?? []) as Pin[])]);
+      setPlanos((cached.planos ?? []) as Plano[]);
+      setAssociados((cached.associados ?? []) as Associado[]);
+      setPendingCount(queue.length);
+    }
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id ?? null);
+      const [{ data: p }, { data: pl }, { data: as }] = await Promise.all([
+        supabase.from("vendas_pins").select("*").order("created_at", { ascending: false }),
+        supabase.from("planos").select("id, nome").eq("ativo", true).order("nome"),
+        supabase.from("associados").select("id, nome, codigo").order("nome"),
+      ]);
+      const pinsData = (p ?? []) as Pin[];
+      const planosData = (pl ?? []) as Plano[];
+      const assocData = (as ?? []) as Associado[];
+      writeCache({ pins: pinsData, planos: planosData, associados: assocData });
+      const queue = readQueue();
+      setPins([...(queue as Pin[]), ...pinsData]);
+      setPlanos(planosData);
+      setAssociados(assocData);
+      setPendingCount(queue.length);
+    } catch {
+      // offline / network — cache already applied
+    }
   }
+
+  async function flushQueue() {
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+    const queue = readQueue();
+    if (queue.length === 0) return;
+    const remaining: any[] = [];
+    for (const item of queue) {
+      const { _tmpId, ...payload } = item;
+      const { error } = await supabase.from("vendas_pins").insert(payload);
+      if (error) remaining.push(item);
+    }
+    writeQueue(remaining);
+    setPendingCount(remaining.length);
+    if (remaining.length < queue.length) {
+      toast.success(`${queue.length - remaining.length} ponto(s) sincronizado(s)`);
+      await loadData();
+    }
+  }
+
+  useEffect(() => {
+    function onOnline() { setOnline(true); flushQueue(); }
+    function onOffline() { setOnline(false); }
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        await loadGoogleMaps();
+        try { await loadGoogleMaps(); } catch (e) {
+          if (!navigator.onLine) {
+            await loadData();
+            return;
+          }
+          throw e;
+        }
         if (cancelled) return;
         await loadData();
+        await flushQueue();
         if (cancelled || !mapDivRef.current) return;
         const google = (window as any).google;
+        if (!google?.maps) return;
         const initialFix = await new Promise<{ lat: number; lng: number; accuracy?: number } | null>((resolve) => {
           if (!navigator.geolocation) return resolve(null);
           navigator.geolocation.getCurrentPosition(
