@@ -1053,7 +1053,7 @@ function MobileRecebimentoSection() {
         }
         qcRoot.invalidateQueries({ queryKey: ["cobradores"] });
       }
-      if (match) { setCobradorId(match.id); setCobradorNome(match.nome); }
+      if (match) { setCobradorId(match.id); setCobradorNome(match.nome); setCobradorLocked(true); }
     })();
   }, [cobradores, cobradorId, qcRoot]);
 
