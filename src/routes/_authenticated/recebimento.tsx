@@ -1073,8 +1073,8 @@ function MobileRecebimentoSection() {
   });
 
   const hoje = new Date().toISOString().slice(0, 10);
-  const { data: aReceber = [], isLoading: loadingAR } = useQuery({
-    queryKey: ["receb-mobile-areceber", cobradorId, filtroModo, filtroDia, filtroDe, filtroAte, filtroCidade, hoje],
+  const { data: aReceberRaw = [], isLoading: loadingAR } = useQuery({
+    queryKey: ["receb-mobile-areceber", cobradorId, filtroCidade, filtroModo],
     enabled: !!cobradorId,
     queryFn: async () => {
       let qAssoc = supabase
@@ -1087,21 +1087,30 @@ function MobileRecebimentoSection() {
       if (e1) throw e1;
       const ids = (assocs ?? []).map((a: any) => a.id);
       if (ids.length === 0) return [] as any[];
-      let q = supabase
+      const { data, error } = await supabase
         .from("mensalidades")
-        .select("id, codigo, competencia, vencimento, valor, status, associados!inner(nome, codigo, endereco, cidade, telefone)")
+        .select("id, codigo, competencia, vencimento, reagendamento_data, valor, status, associado_id, associados!inner(nome, codigo, endereco, cidade, telefone)")
         .in("associado_id", ids)
         .in("status", ["pendente", "atrasado"])
         .order("vencimento", { ascending: true });
-      if (filtroModo === "hoje") q = q.lte("vencimento", hoje);
-      else if (filtroModo === "dia") q = q.eq("vencimento", filtroDia);
-      else if (filtroModo === "periodo") q = q.gte("vencimento", filtroDe).lte("vencimento", filtroAte);
-      else if (filtroModo === "cidade") q = q.lte("vencimento", hoje);
-      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  const aReceber = useMemo(() => {
+    const arr = (aReceberRaw as any[]).map((m) => ({ ...m, _efetivo: (m.reagendamento_data as string) || m.vencimento }));
+    let out = arr;
+    if (filtroModo === "hoje") out = out.filter((m) => m._efetivo <= hoje);
+    else if (filtroModo === "dia") out = out.filter((m) => m._efetivo === filtroDia);
+    else if (filtroModo === "periodo") out = out.filter((m) => m._efetivo >= filtroDe && m._efetivo <= filtroAte);
+    else if (filtroModo === "cidade") out = out.filter((m) => m._efetivo <= hoje);
+    if (filtroAssociado.trim()) {
+      const s = filtroAssociado.trim().toLowerCase();
+      out = out.filter((m) => (m.associados?.nome ?? "").toLowerCase().includes(s) || String(m.associados?.codigo ?? "").includes(s));
+    }
+    return out.sort((a, b) => a._efetivo.localeCompare(b._efetivo));
+  }, [aReceberRaw, filtroModo, filtroDia, filtroDe, filtroAte, filtroAssociado, hoje]);
 
   const { data: cidades = [] } = useQuery({
     queryKey: ["cidades-cobrador", cobradorId],
@@ -1116,6 +1125,16 @@ function MobileRecebimentoSection() {
       return Array.from(set).sort();
     },
   });
+
+  async function confirmarReagendamento() {
+    if (!reagendar || !reagData) { toast.error("Selecione uma data."); return; }
+    const { error } = await supabase.from("mensalidades")
+      .update({ reagendamento_data: reagData } as any).eq("id", reagendar.id);
+    if (error) { toast.error("Erro", { description: error.message }); return; }
+    toast.success("Reagendado", { description: `Parcela #${reagendar.codigo} voltará em ${fmtDate(reagData)}` });
+    setReagendar(null); setReagData("");
+    qc.invalidateQueries({ queryKey: ["receb-mobile-areceber"] });
+  }
 
   useEffect(() => {
     const cod = Number(codigo.trim());
