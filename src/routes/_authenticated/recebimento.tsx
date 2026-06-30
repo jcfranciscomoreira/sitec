@@ -347,30 +347,28 @@ function BaixaWizard() {
   }
 
   const { data: cobradores = [] } = useQuery({
-    queryKey: ["cobradores", "ativos"],
+    queryKey: ["cobradores", "ativos-with-user"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("cobradores").select("id,nome").eq("ativo", true).order("nome");
+      const { data, error } = await supabase.from("cobradores").select("id,nome,user_id").eq("ativo", true).order("nome");
       if (error) throw error;
-      return data as { id: string; nome: string }[];
+      return data as { id: string; nome: string; user_id: string | null }[];
     },
   });
 
   const [agenteSel, setAgenteSel] = useState<string>("");
   useEffect(() => {
-    if (agenteSel) return;
+    if (agenteSel || cobradores.length === 0) return;
     (async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return;
       const { data: role } = await supabase
         .from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "cobrador").maybeSingle();
       if (!role) return;
-      const { data: p } = await supabase.from("profiles").select("nome,email").eq("id", u.user.id).maybeSingle();
-      const nome = (p?.nome || "").trim();
-      if (!nome) return;
-      const match = cobradores.find((c) => c.nome.trim().toLowerCase() === nome.toLowerCase());
+      const match = cobradores.find((c) => c.user_id === u.user!.id);
       if (match) setAgenteSel(match.nome);
     })();
   }, [cobradores, agenteSel]);
+
 
 
   if (step === 1) {
