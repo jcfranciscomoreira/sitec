@@ -1408,9 +1408,40 @@ function MobileRecebimentoSection() {
           </div>
         )}
       </CardContent>
+      {reagendar && (
+        <Dialog open onOpenChange={(v) => !v && setReagendar(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle className="font-serif">Reagendar parcela #{reagendar.codigo}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="text-sm">
+                <div><span className="text-muted-foreground">Associado:</span> <b>{reagendar.associados?.nome}</b></div>
+                <div><span className="text-muted-foreground">Vencimento original:</span> {fmtDate(reagendar.vencimento)}</div>
+                <div><span className="text-muted-foreground">Valor:</span> {brl(Number(reagendar.valor))}</div>
+              </div>
+              <div className="space-y-1">
+                <Label>Data de retorno</Label>
+                <Input type="date" value={reagData} onChange={(e) => setReagData(e.target.value)} min={new Date().toISOString().slice(0, 10)} />
+                <p className="text-xs text-muted-foreground">Esta parcela voltará a aparecer no filtro por dia/período nesta data.</p>
+              </div>
+              <DialogFooter className="gap-2">
+                {reagendar.reagendamento_data && (
+                  <Button variant="outline" onClick={async () => {
+                    const { error } = await supabase.from("mensalidades").update({ reagendamento_data: null } as any).eq("id", reagendar.id);
+                    if (error) { toast.error("Erro", { description: error.message }); return; }
+                    toast.success("Reagendamento removido"); setReagendar(null); setReagData("");
+                    qc.invalidateQueries({ queryKey: ["receb-mobile-areceber"] });
+                  }}>Remover reagendamento</Button>
+                )}
+                <Button onClick={confirmarReagendamento} disabled={!reagData}>Confirmar</Button>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }
+
 
 function imprimirRotaCobrador(cobrador: string, parcelas: any[]) {
   const w = window.open("", "_blank", "width=800,height=900");
