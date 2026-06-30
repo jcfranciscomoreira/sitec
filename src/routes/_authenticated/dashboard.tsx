@@ -41,18 +41,8 @@ function Dashboard() {
   const [inicio, setInicio] = useState<string>(daysAgoIso(30));
   const [fim, setFim] = useState<string>(todayIso());
 
-  const presets = [
-    { label: "7 dias", days: 7 },
-    { label: "15 dias", days: 15 },
-    { label: "30 dias", days: 30 },
-    { label: "60 dias", days: 60 },
-    { label: "90 dias", days: 90 },
-  ];
 
-  const aplicarPreset = (days: number) => {
-    setInicio(daysAgoIso(days));
-    setFim(todayIso());
-  };
+
 
   const monthOptions = useMemo(() => buildMonthOptions(12), []);
   const aplicarMes = (value: string) => {
