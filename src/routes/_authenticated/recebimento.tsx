@@ -1099,7 +1099,10 @@ function MobileRecebimentoSection() {
   });
 
   const aReceber = useMemo(() => {
-    const arr = (aReceberRaw as any[]).map((m) => ({ ...m, _efetivo: (m.reagendamento_data as string) || m.vencimento }));
+    const pendentesIds = new Set((meus as any[]).map((p: any) => p.mensalidade_id));
+    const arr = (aReceberRaw as any[])
+      .filter((m) => !pendentesIds.has(m.id))
+      .map((m) => ({ ...m, _efetivo: (m.reagendamento_data as string) || m.vencimento }));
     let out = arr;
     if (filtroModo === "hoje") out = out.filter((m) => m._efetivo <= hoje);
     else if (filtroModo === "dia") out = out.filter((m) => m._efetivo === filtroDia);
@@ -1110,7 +1113,8 @@ function MobileRecebimentoSection() {
       out = out.filter((m) => (m.associados?.nome ?? "").toLowerCase().includes(s) || String(m.associados?.codigo ?? "").includes(s));
     }
     return out.sort((a, b) => a._efetivo.localeCompare(b._efetivo));
-  }, [aReceberRaw, filtroModo, filtroDia, filtroDe, filtroAte, filtroAssociado, hoje]);
+  }, [aReceberRaw, meus, filtroModo, filtroDia, filtroDe, filtroAte, filtroAssociado, hoje]);
+
 
   const { data: cidades = [] } = useQuery({
     queryKey: ["cidades-cobrador", cobradorId],
