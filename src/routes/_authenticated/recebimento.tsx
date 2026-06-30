@@ -1397,14 +1397,25 @@ function MobileRecebimentoSection() {
                     <TableCell>{p.associados?.nome}</TableCell>
                     <TableCell className="text-right text-success font-medium">{brl(Number(p.valor_recebido))}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" onClick={() => imprimirComprovante({
-                        id: p.id, cobrador: p.cobrador_nome, data: p.data_recebimento,
-                        codigoParcela: p.mensalidades?.codigo ?? 0, associado: p.associados?.nome ?? "",
-                        codAssoc: p.associados?.codigo ?? 0, competencia: p.mensalidades?.competencia ?? "",
-                        vencimento: p.mensalidades?.vencimento ?? "", valorParcela: Number(p.valor_recebido),
-                        valorRecebido: Number(p.valor_recebido), observacoes: p.observacoes ?? "",
-                      })}><Printer className="h-4 w-4" /></Button>
+                      <div className="flex justify-end gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => imprimirComprovante({
+                          id: p.id, cobrador: p.cobrador_nome, data: p.data_recebimento,
+                          codigoParcela: p.mensalidades?.codigo ?? 0, associado: p.associados?.nome ?? "",
+                          codAssoc: p.associados?.codigo ?? 0, competencia: p.mensalidades?.competencia ?? "",
+                          vencimento: p.mensalidades?.vencimento ?? "", valorParcela: Number(p.valor_recebido),
+                          valorRecebido: Number(p.valor_recebido), observacoes: p.observacoes ?? "",
+                        })}><Printer className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={async () => {
+                          if (!confirm("Estornar este recebimento? A parcela voltará para 'Parcelas a receber'.")) return;
+                          const { error } = await (supabase as any).from("recebimentos_pendentes").delete().eq("id", p.id);
+                          if (error) { toast.error("Erro ao estornar", { description: error.message }); return; }
+                          toast.success("Recebimento estornado");
+                          qc.invalidateQueries({ queryKey: ["receb-pendentes-meus"] });
+                          qc.invalidateQueries({ queryKey: ["receb-mobile-areceber"] });
+                        }}><Undo2 className="h-4 w-4" /></Button>
+                      </div>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
