@@ -84,6 +84,7 @@ function AssociadosPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Associado | null>(null);
   const [mensOpen, setMensOpen] = useState<Associado | null>(null);
+  const [vincOpen, setVincOpen] = useState<Associado | null>(null);
   const [pendingDeps, setPendingDeps] = useState<PendingDep[]>([]);
   const [formaPag, setFormaPag] = useState<string>("");
   const [cobradorId, setCobradorId] = useState<string>("");
