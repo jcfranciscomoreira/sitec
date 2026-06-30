@@ -11,8 +11,30 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MapPin, Trash2, Loader2, Crosshair } from "lucide-react";
+import { MapPin, Trash2, Loader2, Crosshair, WifiOff, RefreshCw } from "lucide-react";
 import { reverseGeocode } from "@/lib/geocode.functions";
+
+const CACHE_KEY = "vendas:cache:v1";
+const QUEUE_KEY = "vendas:queue:v1";
+
+function readCache(): any | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function writeCache(d: any) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(d)); } catch {}
+}
+function readQueue(): any[] {
+  try {
+    const raw = localStorage.getItem(QUEUE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function writeQueue(q: any[]) {
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch {}
+}
 
 export const Route = createFileRoute("/_authenticated/vendas")({
   component: VendasPage,
