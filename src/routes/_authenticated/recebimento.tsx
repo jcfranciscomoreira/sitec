@@ -986,6 +986,7 @@ function MobileRecebimentoSection() {
   const qc = useQueryClient();
   const [cobradorId, setCobradorId] = useState<string>("");
   const [cobradorNome, setCobradorNome] = useState<string>("");
+  const [cobradorLocked, setCobradorLocked] = useState<boolean>(false);
   const [codigo, setCodigo] = useState("");
   const [valor, setValor] = useState("");
   const [obs, setObs] = useState("");
