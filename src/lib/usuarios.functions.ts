@@ -124,18 +124,19 @@ export const updateUsuarioRole = createServerFn({ method: "POST" })
         .select("nome")
         .eq("id", data.userId)
         .maybeSingle();
-      const nome = prof?.nome?.trim();
-      if (nome) {
-        const { data: existing } = await supabaseAdmin
-          .from("cobradores")
-          .select("id")
-          .eq("nome", nome)
-          .maybeSingle();
-        if (!existing) {
-          await supabaseAdmin.from("cobradores").insert({ nome, ativo: true });
-        }
+      const nome = prof?.nome?.trim() || "Cobrador";
+      const { data: existing } = await supabaseAdmin
+        .from("cobradores")
+        .select("id")
+        .or(`user_id.eq.${data.userId},nome.eq.${nome}`)
+        .maybeSingle();
+      if (existing) {
+        await supabaseAdmin.from("cobradores").update({ user_id: data.userId, ativo: true }).eq("id", existing.id);
+      } else {
+        await supabaseAdmin.from("cobradores").insert({ nome, ativo: true, user_id: data.userId });
       }
     }
+
 
     return { ok: true };
   });
