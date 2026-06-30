@@ -1,0 +1,1 @@
+CREATE POLICY "authenticated read active cobradores" ON public.cobradores FOR SELECT TO authenticated USING (ativo = true OR private.is_staff(auth.uid()));
