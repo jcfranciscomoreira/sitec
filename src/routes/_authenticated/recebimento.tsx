@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, BookOpen, Plus, Printer, ArrowLeft, History, Eye, Users, Pencil, Trash2, Smartphone, ClipboardCheck } from "lucide-react";
+import { CheckCircle2, BookOpen, Plus, Printer, ArrowLeft, History, Eye, Users, Pencil, Trash2, Smartphone, ClipboardCheck, Undo2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -1099,7 +1099,10 @@ function MobileRecebimentoSection() {
   });
 
   const aReceber = useMemo(() => {
-    const arr = (aReceberRaw as any[]).map((m) => ({ ...m, _efetivo: (m.reagendamento_data as string) || m.vencimento }));
+    const pendentesIds = new Set((meus as any[]).map((p: any) => p.mensalidade_id));
+    const arr = (aReceberRaw as any[])
+      .filter((m) => !pendentesIds.has(m.id))
+      .map((m) => ({ ...m, _efetivo: (m.reagendamento_data as string) || m.vencimento }));
     let out = arr;
     if (filtroModo === "hoje") out = out.filter((m) => m._efetivo <= hoje);
     else if (filtroModo === "dia") out = out.filter((m) => m._efetivo === filtroDia);
@@ -1110,7 +1113,8 @@ function MobileRecebimentoSection() {
       out = out.filter((m) => (m.associados?.nome ?? "").toLowerCase().includes(s) || String(m.associados?.codigo ?? "").includes(s));
     }
     return out.sort((a, b) => a._efetivo.localeCompare(b._efetivo));
-  }, [aReceberRaw, filtroModo, filtroDia, filtroDe, filtroAte, filtroAssociado, hoje]);
+  }, [aReceberRaw, meus, filtroModo, filtroDia, filtroDe, filtroAte, filtroAssociado, hoje]);
+
 
   const { data: cidades = [] } = useQuery({
     queryKey: ["cidades-cobrador", cobradorId],
@@ -1393,14 +1397,25 @@ function MobileRecebimentoSection() {
                     <TableCell>{p.associados?.nome}</TableCell>
                     <TableCell className="text-right text-success font-medium">{brl(Number(p.valor_recebido))}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" onClick={() => imprimirComprovante({
-                        id: p.id, cobrador: p.cobrador_nome, data: p.data_recebimento,
-                        codigoParcela: p.mensalidades?.codigo ?? 0, associado: p.associados?.nome ?? "",
-                        codAssoc: p.associados?.codigo ?? 0, competencia: p.mensalidades?.competencia ?? "",
-                        vencimento: p.mensalidades?.vencimento ?? "", valorParcela: Number(p.valor_recebido),
-                        valorRecebido: Number(p.valor_recebido), observacoes: p.observacoes ?? "",
-                      })}><Printer className="h-4 w-4" /></Button>
+                      <div className="flex justify-end gap-1">
+                        <Button size="sm" variant="ghost" onClick={() => imprimirComprovante({
+                          id: p.id, cobrador: p.cobrador_nome, data: p.data_recebimento,
+                          codigoParcela: p.mensalidades?.codigo ?? 0, associado: p.associados?.nome ?? "",
+                          codAssoc: p.associados?.codigo ?? 0, competencia: p.mensalidades?.competencia ?? "",
+                          vencimento: p.mensalidades?.vencimento ?? "", valorParcela: Number(p.valor_recebido),
+                          valorRecebido: Number(p.valor_recebido), observacoes: p.observacoes ?? "",
+                        })}><Printer className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={async () => {
+                          if (!confirm("Estornar este recebimento? A parcela voltará para 'Parcelas a receber'.")) return;
+                          const { error } = await (supabase as any).from("recebimentos_pendentes").delete().eq("id", p.id);
+                          if (error) { toast.error("Erro ao estornar", { description: error.message }); return; }
+                          toast.success("Recebimento estornado");
+                          qc.invalidateQueries({ queryKey: ["receb-pendentes-meus"] });
+                          qc.invalidateQueries({ queryKey: ["receb-mobile-areceber"] });
+                        }}><Undo2 className="h-4 w-4" /></Button>
+                      </div>
                     </TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>
