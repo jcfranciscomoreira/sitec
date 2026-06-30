@@ -1629,9 +1629,36 @@ function ConciliacaoSection() {
           </div>
         </div>
 
+        {filtroCobrador === "todos" && (pendentes as any[]).length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-serif text-base">Lotes por cobrador</h3>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {Object.values((pendentes as any[]).reduce((acc: Record<string, any>, p: any) => {
+                const k = p.cobrador_id;
+                if (!acc[k]) acc[k] = { cobrador_id: k, nome: p.cobrador_nome, qtd: 0, total: 0 };
+                acc[k].qtd += 1; acc[k].total += Number(p.valor_recebido);
+                return acc;
+              }, {})).map((l: any) => (
+                <button key={l.cobrador_id} onClick={() => { setFiltroCobrador(l.cobrador_id); setSelecionados({}); }}
+                  className="rounded-lg border border-border bg-card hover:border-primary/60 hover:bg-primary/5 px-4 py-3 text-left transition">
+                  <div className="font-medium">{l.nome}</div>
+                  <div className="text-xs text-muted-foreground">{l.qtd} recebimento(s)</div>
+                  <div className="text-lg font-bold text-success mt-1">{brl(l.total)}</div>
+                  <div className="text-[10px] uppercase tracking-wide text-primary mt-1">Abrir lote para conferência</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
+          {filtroCobrador !== "todos" && (
+            <Button variant="ghost" size="sm" onClick={() => { setFiltroCobrador("todos"); setSelecionados({}); }}>
+              <ArrowLeft className="mr-1 h-4 w-4" />Voltar aos lotes
+            </Button>
+          )}
           <Button onClick={conciliar} disabled={busy || selectedIds.length === 0}>
-            <CheckCircle2 className="mr-2 h-4 w-4" />{busy ? "Conciliando..." : "Conciliar e dar baixa"}
+            <CheckCircle2 className="mr-2 h-4 w-4" />{busy ? "Conferindo..." : "Confirmar baixa dos selecionados"}
           </Button>
           <Button variant="outline" onClick={() => {
             const all: Record<string, boolean> = {};
@@ -1640,6 +1667,7 @@ function ConciliacaoSection() {
           }}>Selecionar todos</Button>
           <Button variant="outline" onClick={() => setSelecionados({})}>Limpar seleção</Button>
         </div>
+
 
         <Table>
           <TableHeader>
