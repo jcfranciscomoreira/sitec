@@ -44,7 +44,7 @@ function RecebimentoPage() {
         )}
         {show("baixa") && (
           <Button variant={tab === "baixa" ? "default" : "outline"} onClick={() => setTab("baixa")}>
-            <CheckCircle2 className="mr-2 h-4 w-4" />Baixa por agente
+            <CheckCircle2 className="mr-2 h-4 w-4" />Baixa Manual
           </Button>
         )}
         {show("historico") && (
