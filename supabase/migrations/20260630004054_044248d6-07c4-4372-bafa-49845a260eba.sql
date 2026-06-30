@@ -1,0 +1,2 @@
+CREATE POLICY associados_cobrador_read ON public.associados FOR SELECT TO authenticated USING (private.has_role(auth.uid(), 'cobrador'));
+CREATE POLICY mensalidades_cobrador_read ON public.mensalidades FOR SELECT TO authenticated USING (private.has_role(auth.uid(), 'cobrador'));
