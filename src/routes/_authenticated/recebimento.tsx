@@ -997,6 +997,20 @@ function MobileRecebimentoSection() {
   const [filtroDe, setFiltroDe] = useState<string>(new Date().toISOString().slice(0, 10));
   const [filtroAte, setFiltroAte] = useState<string>(new Date().toISOString().slice(0, 10));
   const [filtroCidade, setFiltroCidade] = useState<string>("");
+  const [filtroAssociado, setFiltroAssociado] = useState<string>("");
+  const [reagendar, setReagendar] = useState<any | null>(null);
+  const [reagData, setReagData] = useState<string>("");
+  const [online, setOnline] = useState<boolean>(typeof navigator === "undefined" ? true : navigator.onLine);
+  const [offlineFila, setOfflineFila] = useState<any[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("recebimentos_offline_queue") || "[]"); } catch { return []; }
+  });
+  useEffect(() => {
+    const on = () => setOnline(true); const off = () => setOnline(false);
+    window.addEventListener("online", on); window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
+  function persistFila(f: any[]) { setOfflineFila(f); localStorage.setItem("recebimentos_offline_queue", JSON.stringify(f)); }
 
   const { data: cobradores = [] } = useQuery({
     queryKey: ["cobradores", "ativos"],
