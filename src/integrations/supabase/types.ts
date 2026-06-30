@@ -177,6 +177,7 @@ export type Database = {
           observacoes: string | null
           telefone: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           ativo?: boolean
@@ -187,6 +188,7 @@ export type Database = {
           observacoes?: string | null
           telefone?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           ativo?: boolean
@@ -197,6 +199,7 @@ export type Database = {
           observacoes?: string | null
           telefone?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
