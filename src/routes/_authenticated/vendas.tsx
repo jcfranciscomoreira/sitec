@@ -425,13 +425,31 @@ function VendasPage() {
       plano_id: form.plano_id || null,
       associado_id: form.associado_id || null,
     };
+    const offline = typeof navigator !== "undefined" && !navigator.onLine;
     if (form.id) {
+      if (offline) {
+        toast.error("Edição de pontos exige conexão");
+        return;
+      }
       const { error } = await supabase.from("vendas_pins").update(payload).eq("id", form.id);
       if (error) return toast.error(error.message);
       toast.success("Pin atualizado");
     } else {
-      if (!userId) return toast.error("Sessão inválida");
-      const { error } = await supabase.from("vendas_pins").insert({ ...payload, vendedor_id: userId });
+      const vendedorId = userId ?? (await supabase.auth.getUser()).data.user?.id ?? null;
+      if (offline) {
+        if (!vendedorId) return toast.error("Sessão inválida");
+        const tmpId = `local-${Date.now()}`;
+        const queue = readQueue();
+        queue.unshift({ ...payload, vendedor_id: vendedorId, _tmpId: tmpId });
+        writeQueue(queue);
+        setPins((prev) => [{ id: tmpId, vendedor_id: vendedorId, ...payload } as Pin, ...prev]);
+        setPendingCount(queue.length);
+        toast.success("Salvo offline — sincroniza ao reconectar");
+        setDialog({ open: false, pin: null });
+        return;
+      }
+      if (!vendedorId) return toast.error("Sessão inválida");
+      const { error } = await supabase.from("vendas_pins").insert({ ...payload, vendedor_id: vendedorId });
       if (error) return toast.error(error.message);
       toast.success("Pin criado");
     }
