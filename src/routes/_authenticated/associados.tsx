@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard, MapPin } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -84,6 +84,7 @@ function AssociadosPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Associado | null>(null);
   const [mensOpen, setMensOpen] = useState<Associado | null>(null);
+  const [vincOpen, setVincOpen] = useState<Associado | null>(null);
   const [pendingDeps, setPendingDeps] = useState<PendingDep[]>([]);
   const [formaPag, setFormaPag] = useState<string>("");
   const [cobradorId, setCobradorId] = useState<string>("");
@@ -504,6 +505,7 @@ function AssociadosPage() {
                       <Button size="icon" variant="ghost" title="Gerar contrato" onClick={() => gerarContrato(a)}><FileSignature className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Imprimir relatório" onClick={() => imprimirRelatorio(a)}><Printer className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Mensalidades geradas" onClick={() => setMensOpen(a)}><Receipt className="h-4 w-4" /></Button>
+                      <Button size="icon" variant="ghost" title="Vincular ao mapa de vendas" onClick={() => setVincOpen(a)}><MapPin className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Editar" onClick={() => { setEditing(a); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                       <Button size="icon" variant="ghost" title="Excluir" onClick={() => { if (confirm(`Excluir ${a.nome}?`)) del.mutate(a.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
@@ -529,6 +531,7 @@ function AssociadosPage() {
 
       
       {mensOpen && <MensalidadesDialog associado={mensOpen} onClose={() => setMensOpen(null)} />}
+      {vincOpen && <VincularPontoDialog associado={vincOpen} onClose={() => setVincOpen(null)} />}
     </AppShell>
   );
 }
@@ -1038,6 +1041,110 @@ function PendingDependentesSection({ list, onChange }: { list: PendingDep[]; onC
         ))}
       </div>
     </div>
+  );
+}
+
+function VincularPontoDialog({ associado, onClose }: { associado: Associado; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [busca, setBusca] = useState("");
+
+  const linked = useQuery({
+    queryKey: ["vendas_pins", "by-associado", associado.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("vendas_pins").select("*").eq("associado_id", associado.id);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const livres = useQuery({
+    queryKey: ["vendas_pins", "livres", busca],
+    queryFn: async () => {
+      let q = supabase.from("vendas_pins").select("id, nome, municipio, uf, endereco, latitude, longitude").is("associado_id", null).limit(50);
+      if (busca.trim()) q = q.or(`nome.ilike.%${busca}%,municipio.ilike.%${busca}%,endereco.ilike.%${busca}%`);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const vincular = useMutation({
+    mutationFn: async (pinId: string) => {
+      const upd: any = { associado_id: associado.id, status: "cliente", nome: associado.nome };
+      if (associado.plano_id) upd.plano_id = associado.plano_id;
+      const { error } = await supabase.from("vendas_pins").update(upd).eq("id", pinId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Ponto vinculado ao associado.");
+      qc.invalidateQueries({ queryKey: ["vendas_pins"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao vincular."),
+  });
+
+  const desvincular = useMutation({
+    mutationFn: async (pinId: string) => {
+      const { error } = await supabase.from("vendas_pins").update({ associado_id: null }).eq("id", pinId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Vínculo removido.");
+      qc.invalidateQueries({ queryKey: ["vendas_pins"] });
+    },
+    onError: (e: any) => toast.error(e.message ?? "Erro ao desvincular."),
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Vincular ponto do mapa — {associado.nome}</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Pontos vinculados</h3>
+            {linked.isLoading ? <p className="text-sm text-muted-foreground">Carregando…</p> :
+              (linked.data?.length ?? 0) === 0 ? <p className="text-sm text-muted-foreground">Nenhum ponto vinculado.</p> :
+              <div className="space-y-2">
+                {linked.data!.map((p: any) => (
+                  <div key={p.id} className="flex items-center justify-between rounded border p-2">
+                    <div className="text-sm">
+                      <div className="font-medium">{p.nome}</div>
+                      <div className="text-xs text-muted-foreground">{[p.endereco, p.municipio, p.uf].filter(Boolean).join(" · ") || `${p.latitude}, ${p.longitude}`}</div>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => desvincular.mutate(p.id)} disabled={desvincular.isPending}>Desvincular</Button>
+                  </div>
+                ))}
+              </div>
+            }
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold mb-2">Vincular a um ponto existente</h3>
+            <Input placeholder="Buscar por nome, município ou endereço…" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            <div className="mt-2 max-h-72 overflow-auto space-y-2">
+              {livres.isLoading ? <p className="text-sm text-muted-foreground">Carregando…</p> :
+                (livres.data?.length ?? 0) === 0 ? <p className="text-sm text-muted-foreground">Nenhum ponto livre encontrado.</p> :
+                livres.data!.map((p: any) => (
+                  <div key={p.id} className="flex items-center justify-between rounded border p-2">
+                    <div className="text-sm">
+                      <div className="font-medium">{p.nome}</div>
+                      <div className="text-xs text-muted-foreground">{[p.endereco, p.municipio, p.uf].filter(Boolean).join(" · ") || `${p.latitude}, ${p.longitude}`}</div>
+                    </div>
+                    <Button size="sm" onClick={() => vincular.mutate(p.id)} disabled={vincular.isPending}>Vincular</Button>
+                  </div>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Fechar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
