@@ -355,6 +355,24 @@ function BaixaWizard() {
     },
   });
 
+  const [agenteSel, setAgenteSel] = useState<string>("");
+  useEffect(() => {
+    if (agenteSel) return;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return;
+      const { data: role } = await supabase
+        .from("user_roles").select("role").eq("user_id", u.user.id).eq("role", "cobrador").maybeSingle();
+      if (!role) return;
+      const { data: p } = await supabase.from("profiles").select("nome,email").eq("id", u.user.id).maybeSingle();
+      const nome = (p?.nome || "").trim();
+      if (!nome) return;
+      const match = cobradores.find((c) => c.nome.trim().toLowerCase() === nome.toLowerCase());
+      if (match) setAgenteSel(match.nome);
+    })();
+  }, [cobradores, agenteSel]);
+
+
   if (step === 1) {
     return (
       <Card className="border-border/60 shadow-soft">
@@ -380,12 +398,13 @@ function BaixaWizard() {
                   Nenhum cobrador ativo. Cadastre um na aba "Cadastro de cobradores".
                 </div>
               ) : (
-                <Select name="agente" required>
+                <Select name="agente" required value={agenteSel} onValueChange={setAgenteSel}>
                   <SelectTrigger><SelectValue placeholder="Selecione o cobrador" /></SelectTrigger>
                   <SelectContent>
                     {cobradores.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
+
               )}
             </div>
             <div className="space-y-2"><Label>Data do recebimento</Label><Input name="data" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
