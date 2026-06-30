@@ -997,6 +997,20 @@ function MobileRecebimentoSection() {
   const [filtroDe, setFiltroDe] = useState<string>(new Date().toISOString().slice(0, 10));
   const [filtroAte, setFiltroAte] = useState<string>(new Date().toISOString().slice(0, 10));
   const [filtroCidade, setFiltroCidade] = useState<string>("");
+  const [filtroAssociado, setFiltroAssociado] = useState<string>("");
+  const [reagendar, setReagendar] = useState<any | null>(null);
+  const [reagData, setReagData] = useState<string>("");
+  const [online, setOnline] = useState<boolean>(typeof navigator === "undefined" ? true : navigator.onLine);
+  const [offlineFila, setOfflineFila] = useState<any[]>(() => {
+    if (typeof window === "undefined") return [];
+    try { return JSON.parse(localStorage.getItem("recebimentos_offline_queue") || "[]"); } catch { return []; }
+  });
+  useEffect(() => {
+    const on = () => setOnline(true); const off = () => setOnline(false);
+    window.addEventListener("online", on); window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
+  function persistFila(f: any[]) { setOfflineFila(f); localStorage.setItem("recebimentos_offline_queue", JSON.stringify(f)); }
 
   const { data: cobradores = [] } = useQuery({
     queryKey: ["cobradores", "ativos"],
@@ -1059,8 +1073,8 @@ function MobileRecebimentoSection() {
   });
 
   const hoje = new Date().toISOString().slice(0, 10);
-  const { data: aReceber = [], isLoading: loadingAR } = useQuery({
-    queryKey: ["receb-mobile-areceber", cobradorId, filtroModo, filtroDia, filtroDe, filtroAte, filtroCidade, hoje],
+  const { data: aReceberRaw = [], isLoading: loadingAR } = useQuery({
+    queryKey: ["receb-mobile-areceber", cobradorId, filtroCidade, filtroModo],
     enabled: !!cobradorId,
     queryFn: async () => {
       let qAssoc = supabase
@@ -1073,21 +1087,30 @@ function MobileRecebimentoSection() {
       if (e1) throw e1;
       const ids = (assocs ?? []).map((a: any) => a.id);
       if (ids.length === 0) return [] as any[];
-      let q = supabase
+      const { data, error } = await supabase
         .from("mensalidades")
-        .select("id, codigo, competencia, vencimento, valor, status, associados!inner(nome, codigo, endereco, cidade, telefone)")
+        .select("id, codigo, competencia, vencimento, reagendamento_data, valor, status, associado_id, associados!inner(nome, codigo, endereco, cidade, telefone)")
         .in("associado_id", ids)
         .in("status", ["pendente", "atrasado"])
         .order("vencimento", { ascending: true });
-      if (filtroModo === "hoje") q = q.lte("vencimento", hoje);
-      else if (filtroModo === "dia") q = q.eq("vencimento", filtroDia);
-      else if (filtroModo === "periodo") q = q.gte("vencimento", filtroDe).lte("vencimento", filtroAte);
-      else if (filtroModo === "cidade") q = q.lte("vencimento", hoje);
-      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  const aReceber = useMemo(() => {
+    const arr = (aReceberRaw as any[]).map((m) => ({ ...m, _efetivo: (m.reagendamento_data as string) || m.vencimento }));
+    let out = arr;
+    if (filtroModo === "hoje") out = out.filter((m) => m._efetivo <= hoje);
+    else if (filtroModo === "dia") out = out.filter((m) => m._efetivo === filtroDia);
+    else if (filtroModo === "periodo") out = out.filter((m) => m._efetivo >= filtroDe && m._efetivo <= filtroAte);
+    else if (filtroModo === "cidade") out = out.filter((m) => m._efetivo <= hoje);
+    if (filtroAssociado.trim()) {
+      const s = filtroAssociado.trim().toLowerCase();
+      out = out.filter((m) => (m.associados?.nome ?? "").toLowerCase().includes(s) || String(m.associados?.codigo ?? "").includes(s));
+    }
+    return out.sort((a, b) => a._efetivo.localeCompare(b._efetivo));
+  }, [aReceberRaw, filtroModo, filtroDia, filtroDe, filtroAte, filtroAssociado, hoje]);
 
   const { data: cidades = [] } = useQuery({
     queryKey: ["cidades-cobrador", cobradorId],
@@ -1102,6 +1125,16 @@ function MobileRecebimentoSection() {
       return Array.from(set).sort();
     },
   });
+
+  async function confirmarReagendamento() {
+    if (!reagendar || !reagData) { toast.error("Selecione uma data."); return; }
+    const { error } = await supabase.from("mensalidades")
+      .update({ reagendamento_data: reagData } as any).eq("id", reagendar.id);
+    if (error) { toast.error("Erro", { description: error.message }); return; }
+    toast.success("Reagendado", { description: `Parcela #${reagendar.codigo} voltará em ${fmtDate(reagData)}` });
+    setReagendar(null); setReagData("");
+    qc.invalidateQueries({ queryKey: ["receb-mobile-areceber"] });
+  }
 
   useEffect(() => {
     const cod = Number(codigo.trim());
@@ -1132,31 +1165,29 @@ function MobileRecebimentoSection() {
     try {
       const m: any = preview;
       const dataRec = new Date().toISOString().slice(0, 10);
-      const { data: ins, error } = await (supabase as any).from("recebimentos_pendentes").insert({
-        mensalidade_id: m.id,
-        associado_id: m.associado_id,
-        cobrador_id: cobradorId,
-        cobrador_nome: cobradorNome,
-        valor_recebido: v,
-        data_recebimento: dataRec,
-        observacoes: obs || null,
-        status: "pendente",
-      }).select("id").single();
-      if (error) throw error;
-      imprimirComprovante({
-        id: ins.id,
-        cobrador: cobradorNome,
-        data: dataRec,
-        codigoParcela: m.codigo,
-        associado: m.associados?.nome ?? "",
-        codAssoc: m.associados?.codigo ?? 0,
-        competencia: m.competencia,
-        vencimento: m.vencimento,
-        valorParcela: Number(m.valor),
-        valorRecebido: v,
-        observacoes: obs,
-      });
-      toast.success("Recebimento registrado", { description: "Comprovante enviado para impressão. Baixa pendente de conciliação." });
+      const payload = {
+        mensalidade_id: m.id, associado_id: m.associado_id,
+        cobrador_id: cobradorId, cobrador_nome: cobradorNome,
+        valor_recebido: v, data_recebimento: dataRec,
+        observacoes: obs || null, status: "pendente",
+      };
+      const comprovante = {
+        cobrador: cobradorNome, data: dataRec, codigoParcela: m.codigo,
+        associado: m.associados?.nome ?? "", codAssoc: m.associados?.codigo ?? 0,
+        competencia: m.competencia, vencimento: m.vencimento,
+        valorParcela: Number(m.valor), valorRecebido: v, observacoes: obs,
+      };
+      if (!online) {
+        const localId = `offline-${Date.now()}`;
+        persistFila([...offlineFila, { localId, payload, comprovante }]);
+        imprimirComprovante({ id: localId, ...comprovante });
+        toast.success("Salvo offline", { description: "Será sincronizado quando voltar a internet." });
+      } else {
+        const { data: ins, error } = await (supabase as any).from("recebimentos_pendentes").insert(payload).select("id").single();
+        if (error) throw error;
+        imprimirComprovante({ id: ins.id, ...comprovante });
+        toast.success("Recebimento registrado", { description: "Baixa pendente de conciliação." });
+      }
       setCodigo(""); setValor(""); setObs(""); setPreview(null); setPreviewErr("");
       qc.invalidateQueries({ queryKey: ["receb-pendentes-meus"] });
       qc.invalidateQueries({ queryKey: ["receb-pendentes-conciliar"] });
@@ -1165,6 +1196,23 @@ function MobileRecebimentoSection() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function sincronizarFila() {
+    if (offlineFila.length === 0) return;
+    if (!online) { toast.error("Sem internet."); return; }
+    setBusy(true);
+    const restante: any[] = [];
+    let ok = 0;
+    for (const item of offlineFila) {
+      const { error } = await (supabase as any).from("recebimentos_pendentes").insert(item.payload);
+      if (error) restante.push(item); else ok++;
+    }
+    persistFila(restante);
+    qc.invalidateQueries({ queryKey: ["receb-pendentes-meus"] });
+    qc.invalidateQueries({ queryKey: ["receb-pendentes-conciliar"] });
+    setBusy(false);
+    toast.success(`${ok} recebimento(s) sincronizado(s)`, restante.length ? { description: `${restante.length} ainda pendente(s).` } : undefined);
   }
 
   const totalMes = (meus as any[]).reduce((s, p) => s + Number(p.valor_recebido), 0);
@@ -1236,6 +1284,10 @@ function MobileRecebimentoSection() {
                 </div>
               )}
             </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Pesquisar associado (nome ou código)</Label>
+              <Input value={filtroAssociado} onChange={(e) => setFiltroAssociado(e.target.value)} placeholder="Filtrar parcelas listadas..." />
+            </div>
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="font-serif text-base">Parcelas a receber</h3>
               <div className="flex gap-2 items-center">
@@ -1243,16 +1295,16 @@ function MobileRecebimentoSection() {
                   {(aReceber as any[]).length} parcela(s) — <b className="text-foreground">{brl((aReceber as any[]).reduce((s, m: any) => s + Number(m.valor), 0))}</b>
                 </span>
                 <Button size="sm" variant="outline" onClick={() => imprimirRotaCobrador(cobradorNome, aReceber as any[])} disabled={(aReceber as any[]).length === 0}>
-                  <Printer className="mr-2 h-3 w-3" />Imprimir rota
+                  <Printer className="mr-2 h-3 w-3" />Imprimir relatório do dia
                 </Button>
               </div>
             </div>
             {loadingAR && <div className="text-xs text-muted-foreground">Carregando...</div>}
             {!loadingAR && (aReceber as any[]).length === 0 && (
-              <div className="text-xs text-muted-foreground">Nenhuma parcela em aberto vencida até hoje para este cobrador.</div>
+              <div className="text-xs text-muted-foreground">Nenhuma parcela em aberto para o filtro selecionado.</div>
             )}
             {(aReceber as any[]).length > 0 && (
-              <div className="max-h-64 overflow-auto">
+              <div className="max-h-72 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1265,13 +1317,14 @@ function MobileRecebimentoSection() {
                   </TableHeader>
                   <TableBody>
                     {(aReceber as any[]).map((m: any) => (
-                      <TableRow key={m.id} className="cursor-pointer" onClick={() => { setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>
+                      <TableRow key={m.id}>
                         <TableCell className="font-mono text-xs">#{m.codigo}</TableCell>
-                        <TableCell>{m.associados?.nome}</TableCell>
-                        <TableCell>{fmtDate(m.vencimento)}</TableCell>
+                        <TableCell>{m.associados?.nome}{m.reagendamento_data && <span className="ml-1 text-[10px] text-amber-600">(reag.)</span>}</TableCell>
+                        <TableCell>{fmtDate(m._efetivo)}</TableCell>
                         <TableCell className="text-right">{brl(Number(m.valor))}</TableCell>
-                        <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>Selecionar</Button>
+                        <TableCell className="text-right whitespace-nowrap">
+                          <Button size="sm" variant="ghost" onClick={() => { setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>Receber</Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setReagendar(m); setReagData(""); }}>Reagendar</Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1281,6 +1334,14 @@ function MobileRecebimentoSection() {
             )}
           </div>
         )}
+
+        <div className={`rounded border px-3 py-2 text-xs flex items-center justify-between gap-2 ${online ? "border-success/30 bg-success/5" : "border-amber-500/40 bg-amber-50"}`}>
+          <span>{online ? "Online" : "Offline — recebimentos serão salvos no aparelho"}{offlineFila.length > 0 ? ` · ${offlineFila.length} pendente(s) de sincronização` : ""}</span>
+          {offlineFila.length > 0 && online && (
+            <Button size="sm" variant="outline" onClick={sincronizarFila} disabled={busy}>Sincronizar agora</Button>
+          )}
+        </div>
+
 
 
         <div className="grid gap-3 md:grid-cols-[1fr_180px]">
@@ -1347,9 +1408,40 @@ function MobileRecebimentoSection() {
           </div>
         )}
       </CardContent>
+      {reagendar && (
+        <Dialog open onOpenChange={(v) => !v && setReagendar(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle className="font-serif">Reagendar parcela #{reagendar.codigo}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="text-sm">
+                <div><span className="text-muted-foreground">Associado:</span> <b>{reagendar.associados?.nome}</b></div>
+                <div><span className="text-muted-foreground">Vencimento original:</span> {fmtDate(reagendar.vencimento)}</div>
+                <div><span className="text-muted-foreground">Valor:</span> {brl(Number(reagendar.valor))}</div>
+              </div>
+              <div className="space-y-1">
+                <Label>Data de retorno</Label>
+                <Input type="date" value={reagData} onChange={(e) => setReagData(e.target.value)} min={new Date().toISOString().slice(0, 10)} />
+                <p className="text-xs text-muted-foreground">Esta parcela voltará a aparecer no filtro por dia/período nesta data.</p>
+              </div>
+              <DialogFooter className="gap-2">
+                {reagendar.reagendamento_data && (
+                  <Button variant="outline" onClick={async () => {
+                    const { error } = await supabase.from("mensalidades").update({ reagendamento_data: null } as any).eq("id", reagendar.id);
+                    if (error) { toast.error("Erro", { description: error.message }); return; }
+                    toast.success("Reagendamento removido"); setReagendar(null); setReagData("");
+                    qc.invalidateQueries({ queryKey: ["receb-mobile-areceber"] });
+                  }}>Remover reagendamento</Button>
+                )}
+                <Button onClick={confirmarReagendamento} disabled={!reagData}>Confirmar</Button>
+              </DialogFooter>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 }
+
 
 function imprimirRotaCobrador(cobrador: string, parcelas: any[]) {
   const w = window.open("", "_blank", "width=800,height=900");
@@ -1537,9 +1629,36 @@ function ConciliacaoSection() {
           </div>
         </div>
 
+        {filtroCobrador === "todos" && (pendentes as any[]).length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-serif text-base">Lotes por cobrador</h3>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {Object.values((pendentes as any[]).reduce((acc: Record<string, any>, p: any) => {
+                const k = p.cobrador_id;
+                if (!acc[k]) acc[k] = { cobrador_id: k, nome: p.cobrador_nome, qtd: 0, total: 0 };
+                acc[k].qtd += 1; acc[k].total += Number(p.valor_recebido);
+                return acc;
+              }, {})).map((l: any) => (
+                <button key={l.cobrador_id} onClick={() => { setFiltroCobrador(l.cobrador_id); setSelecionados({}); }}
+                  className="rounded-lg border border-border bg-card hover:border-primary/60 hover:bg-primary/5 px-4 py-3 text-left transition">
+                  <div className="font-medium">{l.nome}</div>
+                  <div className="text-xs text-muted-foreground">{l.qtd} recebimento(s)</div>
+                  <div className="text-lg font-bold text-success mt-1">{brl(l.total)}</div>
+                  <div className="text-[10px] uppercase tracking-wide text-primary mt-1">Abrir lote para conferência</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2">
+          {filtroCobrador !== "todos" && (
+            <Button variant="ghost" size="sm" onClick={() => { setFiltroCobrador("todos"); setSelecionados({}); }}>
+              <ArrowLeft className="mr-1 h-4 w-4" />Voltar aos lotes
+            </Button>
+          )}
           <Button onClick={conciliar} disabled={busy || selectedIds.length === 0}>
-            <CheckCircle2 className="mr-2 h-4 w-4" />{busy ? "Conciliando..." : "Conciliar e dar baixa"}
+            <CheckCircle2 className="mr-2 h-4 w-4" />{busy ? "Conferindo..." : "Confirmar baixa dos selecionados"}
           </Button>
           <Button variant="outline" onClick={() => {
             const all: Record<string, boolean> = {};
@@ -1548,6 +1667,7 @@ function ConciliacaoSection() {
           }}>Selecionar todos</Button>
           <Button variant="outline" onClick={() => setSelecionados({})}>Limpar seleção</Button>
         </div>
+
 
         <Table>
           <TableHeader>
