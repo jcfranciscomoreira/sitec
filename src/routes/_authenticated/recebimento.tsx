@@ -1284,6 +1284,10 @@ function MobileRecebimentoSection() {
                 </div>
               )}
             </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Pesquisar associado (nome ou código)</Label>
+              <Input value={filtroAssociado} onChange={(e) => setFiltroAssociado(e.target.value)} placeholder="Filtrar parcelas listadas..." />
+            </div>
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h3 className="font-serif text-base">Parcelas a receber</h3>
               <div className="flex gap-2 items-center">
@@ -1291,16 +1295,16 @@ function MobileRecebimentoSection() {
                   {(aReceber as any[]).length} parcela(s) — <b className="text-foreground">{brl((aReceber as any[]).reduce((s, m: any) => s + Number(m.valor), 0))}</b>
                 </span>
                 <Button size="sm" variant="outline" onClick={() => imprimirRotaCobrador(cobradorNome, aReceber as any[])} disabled={(aReceber as any[]).length === 0}>
-                  <Printer className="mr-2 h-3 w-3" />Imprimir rota
+                  <Printer className="mr-2 h-3 w-3" />Imprimir relatório do dia
                 </Button>
               </div>
             </div>
             {loadingAR && <div className="text-xs text-muted-foreground">Carregando...</div>}
             {!loadingAR && (aReceber as any[]).length === 0 && (
-              <div className="text-xs text-muted-foreground">Nenhuma parcela em aberto vencida até hoje para este cobrador.</div>
+              <div className="text-xs text-muted-foreground">Nenhuma parcela em aberto para o filtro selecionado.</div>
             )}
             {(aReceber as any[]).length > 0 && (
-              <div className="max-h-64 overflow-auto">
+              <div className="max-h-72 overflow-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -1313,13 +1317,14 @@ function MobileRecebimentoSection() {
                   </TableHeader>
                   <TableBody>
                     {(aReceber as any[]).map((m: any) => (
-                      <TableRow key={m.id} className="cursor-pointer" onClick={() => { setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>
+                      <TableRow key={m.id}>
                         <TableCell className="font-mono text-xs">#{m.codigo}</TableCell>
-                        <TableCell>{m.associados?.nome}</TableCell>
-                        <TableCell>{fmtDate(m.vencimento)}</TableCell>
+                        <TableCell>{m.associados?.nome}{m.reagendamento_data && <span className="ml-1 text-[10px] text-amber-600">(reag.)</span>}</TableCell>
+                        <TableCell>{fmtDate(m._efetivo)}</TableCell>
                         <TableCell className="text-right">{brl(Number(m.valor))}</TableCell>
-                        <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>Selecionar</Button>
+                        <TableCell className="text-right whitespace-nowrap">
+                          <Button size="sm" variant="ghost" onClick={() => { setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>Receber</Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setReagendar(m); setReagData(""); }}>Reagendar</Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1329,6 +1334,14 @@ function MobileRecebimentoSection() {
             )}
           </div>
         )}
+
+        <div className={`rounded border px-3 py-2 text-xs flex items-center justify-between gap-2 ${online ? "border-success/30 bg-success/5" : "border-amber-500/40 bg-amber-50"}`}>
+          <span>{online ? "Online" : "Offline — recebimentos serão salvos no aparelho"}{offlineFila.length > 0 ? ` · ${offlineFila.length} pendente(s) de sincronização` : ""}</span>
+          {offlineFila.length > 0 && online && (
+            <Button size="sm" variant="outline" onClick={sincronizarFila} disabled={busy}>Sincronizar agora</Button>
+          )}
+        </div>
+
 
 
         <div className="grid gap-3 md:grid-cols-[1fr_180px]">
