@@ -91,16 +91,16 @@ export function AppShell({ title, subtitle, actions, children }: {
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
         <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b border-border bg-card/80 px-4 backdrop-blur lg:px-8">
+          <header className="sticky top-0 z-10 flex h-16 items-center gap-2 border-b border-border bg-card/80 px-3 backdrop-blur sm:gap-3 sm:px-4 lg:px-8">
             <SidebarTrigger />
-            <div className="flex-1">
-              <h1 className="font-serif text-xl font-semibold leading-tight text-foreground">{title}</h1>
-              {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+            <div className="min-w-0 flex-1">
+              <h1 className="truncate font-serif text-base font-semibold leading-tight text-foreground sm:text-xl">{title}</h1>
+              {subtitle && <p className="hidden truncate text-xs text-muted-foreground sm:block">{subtitle}</p>}
             </div>
-            <div className="flex items-center gap-2">{actions}</div>
+            <div className="flex shrink-0 items-center gap-2">{actions}</div>
             <UserMenu />
           </header>
-          <main className="flex-1 p-4 lg:p-8">{children}</main>
+          <main className="flex-1 p-3 sm:p-4 lg:p-8">{children}</main>
         </div>
       </div>
     </SidebarProvider>
