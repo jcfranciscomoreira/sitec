@@ -122,9 +122,11 @@ function VendasPage() {
 
   async function loadData() {
     const cached = readCache();
+    const queueToPins = (q: any[]): Pin[] =>
+      q.map((it) => ({ ...it, id: it._tmpId ?? it.id }) as Pin);
     if (cached) {
       const queue = readQueue();
-      setPins([...(queue as Pin[]), ...((cached.pins ?? []) as Pin[])]);
+      setPins([...queueToPins(queue), ...((cached.pins ?? []) as Pin[])]);
       setPlanos((cached.planos ?? []) as Plano[]);
       setAssociados((cached.associados ?? []) as Associado[]);
       setPendingCount(queue.length);
@@ -143,7 +145,7 @@ function VendasPage() {
       const assocData = (as ?? []) as Associado[];
       writeCache({ pins: pinsData, planos: planosData, associados: assocData });
       const queue = readQueue();
-      setPins([...(queue as Pin[]), ...pinsData]);
+      setPins([...queueToPins(queue), ...pinsData]);
       setPlanos(planosData);
       setAssociados(assocData);
       setPendingCount(queue.length);
