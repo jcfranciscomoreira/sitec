@@ -1666,58 +1666,59 @@ function ConciliacaoSection() {
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
-          {filtroCobrador !== "todos" && (
-            <Button variant="ghost" size="sm" onClick={() => { setFiltroCobrador("todos"); setSelecionados({}); }}>
-              <ArrowLeft className="mr-1 h-4 w-4" />Voltar aos lotes
-            </Button>
-          )}
-          <Button onClick={conciliar} disabled={busy || selectedIds.length === 0}>
-            <CheckCircle2 className="mr-2 h-4 w-4" />{busy ? "Conferindo..." : "Confirmar baixa dos selecionados"}
-          </Button>
-          <Button variant="outline" onClick={() => {
-            const all: Record<string, boolean> = {};
-            (pendentes as any[]).forEach((p) => { all[p.id] = true; });
-            setSelecionados(all);
-          }}>Selecionar todos</Button>
-          <Button variant="outline" onClick={() => setSelecionados({})}>Limpar seleção</Button>
-        </div>
+        {filtroCobrador !== "todos" && (
+          <>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="ghost" size="sm" onClick={() => { setFiltroCobrador("todos"); setSelecionados({}); }}>
+                <ArrowLeft className="mr-1 h-4 w-4" />Voltar aos lotes
+              </Button>
+              <Button onClick={conciliar} disabled={busy || selectedIds.length === 0}>
+                <CheckCircle2 className="mr-2 h-4 w-4" />{busy ? "Conferindo..." : "Confirmar baixa dos selecionados"}
+              </Button>
+              <Button variant="outline" onClick={() => {
+                const all: Record<string, boolean> = {};
+                (pendentes as any[]).forEach((p) => { all[p.id] = true; });
+                setSelecionados(all);
+              }}>Selecionar todos</Button>
+              <Button variant="outline" onClick={() => setSelecionados({})}>Limpar seleção</Button>
+            </div>
 
-
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10"></TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead>Cobrador</TableHead>
-              <TableHead>Cód. parcela</TableHead>
-              <TableHead>Associado</TableHead>
-              <TableHead>Vencimento</TableHead>
-              <TableHead className="text-right">Parcela</TableHead>
-              <TableHead className="text-right">Recebido</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={9} className="py-6 text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
-            {!isLoading && (pendentes as any[]).length === 0 && <TableRow><TableCell colSpan={9} className="py-10 text-center text-muted-foreground">Nenhum recebimento pendente de conciliação.</TableCell></TableRow>}
-            {(pendentes as any[]).map((p) => (
-              <TableRow key={p.id}>
-                <TableCell><input type="checkbox" checked={!!selecionados[p.id]} onChange={(e) => setSelecionados((s) => ({ ...s, [p.id]: e.target.checked }))} className="h-4 w-4" /></TableCell>
-                <TableCell>{fmtDate(p.data_recebimento)}</TableCell>
-                <TableCell>{p.cobrador_nome}</TableCell>
-                <TableCell className="font-mono text-xs">#{p.mensalidades?.codigo}</TableCell>
-                <TableCell>{p.associados?.nome} <span className="text-xs text-muted-foreground">#{String(p.associados?.codigo ?? "").padStart(4, "0")}</span></TableCell>
-                <TableCell>{p.mensalidades?.vencimento ? fmtDate(p.mensalidades.vencimento) : "—"}</TableCell>
-                <TableCell className="text-right">{brl(Number(p.mensalidades?.valor ?? 0))}</TableCell>
-                <TableCell className="text-right text-success font-medium">{brl(Number(p.valor_recebido))}</TableCell>
-                <TableCell className="text-right">
-                  <Button size="sm" variant="ghost" onClick={() => rejeitar(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10"></TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Cobrador</TableHead>
+                  <TableHead>Cód. parcela</TableHead>
+                  <TableHead>Associado</TableHead>
+                  <TableHead>Vencimento</TableHead>
+                  <TableHead className="text-right">Parcela</TableHead>
+                  <TableHead className="text-right">Recebido</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading && <TableRow><TableCell colSpan={9} className="py-6 text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+                {!isLoading && (pendentes as any[]).length === 0 && <TableRow><TableCell colSpan={9} className="py-10 text-center text-muted-foreground">Nenhum recebimento pendente de conciliação.</TableCell></TableRow>}
+                {(pendentes as any[]).map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell><input type="checkbox" checked={!!selecionados[p.id]} onChange={(e) => setSelecionados((s) => ({ ...s, [p.id]: e.target.checked }))} className="h-4 w-4" /></TableCell>
+                    <TableCell>{fmtDate(p.data_recebimento)}</TableCell>
+                    <TableCell>{p.cobrador_nome}</TableCell>
+                    <TableCell className="font-mono text-xs">#{p.mensalidades?.codigo}</TableCell>
+                    <TableCell>{p.associados?.nome} <span className="text-xs text-muted-foreground">#{String(p.associados?.codigo ?? "").padStart(4, "0")}</span></TableCell>
+                    <TableCell>{p.mensalidades?.vencimento ? fmtDate(p.mensalidades.vencimento) : "—"}</TableCell>
+                    <TableCell className="text-right">{brl(Number(p.mensalidades?.valor ?? 0))}</TableCell>
+                    <TableCell className="text-right text-success font-medium">{brl(Number(p.valor_recebido))}</TableCell>
+                    <TableCell className="text-right">
+                      <Button size="sm" variant="ghost" onClick={() => rejeitar(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </>
+        )}
       </CardContent>
     </Card>
   );
