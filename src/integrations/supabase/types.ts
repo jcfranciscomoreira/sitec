@@ -356,6 +356,7 @@ export type Database = {
           forma_pagamento: string | null
           id: string
           observacoes: string | null
+          reagendamento_data: string | null
           status: Database["public"]["Enums"]["status_mensalidade"]
           updated_at: string
           valor: number
@@ -371,6 +372,7 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           observacoes?: string | null
+          reagendamento_data?: string | null
           status?: Database["public"]["Enums"]["status_mensalidade"]
           updated_at?: string
           valor: number
@@ -386,6 +388,7 @@ export type Database = {
           forma_pagamento?: string | null
           id?: string
           observacoes?: string | null
+          reagendamento_data?: string | null
           status?: Database["public"]["Enums"]["status_mensalidade"]
           updated_at?: string
           valor?: number
