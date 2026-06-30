@@ -986,6 +986,7 @@ function MobileRecebimentoSection() {
   const qc = useQueryClient();
   const [cobradorId, setCobradorId] = useState<string>("");
   const [cobradorNome, setCobradorNome] = useState<string>("");
+  const [cobradorLocked, setCobradorLocked] = useState<boolean>(false);
   const [codigo, setCodigo] = useState("");
   const [valor, setValor] = useState("");
   const [obs, setObs] = useState("");
@@ -1052,7 +1053,7 @@ function MobileRecebimentoSection() {
         }
         qcRoot.invalidateQueries({ queryKey: ["cobradores"] });
       }
-      if (match) { setCobradorId(match.id); setCobradorNome(match.nome); }
+      if (match) { setCobradorId(match.id); setCobradorNome(match.nome); setCobradorLocked(true); }
     })();
   }, [cobradores, cobradorId, qcRoot]);
 
@@ -1237,12 +1238,15 @@ function MobileRecebimentoSection() {
               Nenhum cobrador ativo. Cadastre um na aba "Cadastro de cobradores".
             </div>
           ) : (
-            <Select value={cobradorId} onValueChange={(v) => { const c = cobradores.find((x) => x.id === v); setCobradorId(v); setCobradorNome(c?.nome ?? ""); }}>
-              <SelectTrigger><SelectValue placeholder="Selecione o cobrador" /></SelectTrigger>
-              <SelectContent>
-                {cobradores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <>
+              <Select value={cobradorId} disabled={cobradorLocked} onValueChange={(v) => { const c = cobradores.find((x) => x.id === v); setCobradorId(v); setCobradorNome(c?.nome ?? ""); }}>
+                <SelectTrigger><SelectValue placeholder="Selecione o cobrador" /></SelectTrigger>
+                <SelectContent>
+                  {cobradores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {cobradorLocked && <p className="text-xs text-muted-foreground mt-1">Cobrador definido pelo seu perfil de acesso.</p>}
+            </>
           )}
         </div>
 
