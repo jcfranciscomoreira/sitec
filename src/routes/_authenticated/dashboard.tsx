@@ -75,8 +75,17 @@ function Dashboard() {
     queryKey: ["dashboard", inicio, fimExclusivo],
     queryFn: async () => {
       const hojeIso = todayIso();
+      const inicioMesIso = `${hojeIso.slice(0, 7)}-01`;
+      const proxMes = (() => {
+        const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + 1);
+        return d.toISOString().slice(0, 10);
+      })();
+      const amanhaIso = (() => {
+        const d = new Date(); d.setDate(d.getDate() + 1);
+        return d.toISOString().slice(0, 10);
+      })();
 
-      const [assocAtivos, assocInativos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer] = await Promise.all([
+      const [assocAtivos, assocInativos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer, novosMes, novosHoje] = await Promise.all([
         supabase.from("associados").select("*", { count: "exact", head: true }).eq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }).neq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }),
@@ -84,6 +93,8 @@ function Dashboard() {
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).eq("status", "pendente"),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).in("status", ["pendente", "atrasado"]).lt("vencimento", hojeIso),
         supabase.from("contas_financeiras").select("valor").eq("tipo", "entrada").eq("status", "pago").gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo),
+        supabase.from("associados").select("*", { count: "exact", head: true }).gte("created_at", inicioMesIso).lt("created_at", proxMes),
+        supabase.from("associados").select("*", { count: "exact", head: true }).gte("created_at", hojeIso).lt("created_at", amanhaIso),
       ]);
 
       const receitaPlanos = (pagasPer.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
@@ -98,9 +109,12 @@ function Dashboard() {
         totalRecebido: receitaPlanos + outrasReceitas,
         pendentes: pendentes.count ?? 0,
         atrasadas: atrasadas.count ?? 0,
+        novosMes: novosMes.count ?? 0,
+        novosHoje: novosHoje.count ?? 0,
       };
     },
   });
+
 
   const cards = [
     { label: "Associados ativos", value: data?.ativos ?? 0, sub: "", icon: Users, tone: "text-primary", linkStatus: "ativo" as const },
