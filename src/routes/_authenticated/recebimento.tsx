@@ -1227,9 +1227,8 @@ function MobileRecebimentoSection() {
         <CardTitle className="font-serif flex items-center gap-2"><Smartphone className="h-4 w-4" />Recebimento mobile do cobrador</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded border border-gold/40 bg-gold/5 px-3 py-2 text-xs text-muted-foreground">
-          O recebimento gera <b>comprovante</b> para o associado, mas a <b>baixa da mensalidade</b> só ocorre após a <b>conciliação com o supervisor</b> no escritório.
-        </div>
+
+
 
         <div className="space-y-2">
           <Label>Cobrador</Label>
