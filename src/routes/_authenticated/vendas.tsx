@@ -500,9 +500,21 @@ function VendasPage() {
       title="Mapa de Vendas"
       subtitle="Toque no mapa para registrar um ponto"
       actions={
-        <Button size="sm" variant="outline" onClick={centerOnMe}>
-          <Crosshair className="mr-2 h-4 w-4" /> Minha localização
-        </Button>
+        <div className="flex items-center gap-2">
+          {!online && (
+            <Badge variant="secondary" className="gap-1">
+              <WifiOff className="h-3 w-3" /> Offline
+            </Badge>
+          )}
+          {pendingCount > 0 && (
+            <Button size="sm" variant="outline" onClick={flushQueue} disabled={!online}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Sincronizar ({pendingCount})
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={centerOnMe}>
+            <Crosshair className="mr-2 h-4 w-4" /> Minha localização
+          </Button>
+        </div>
       }
     >
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
