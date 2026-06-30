@@ -11,8 +11,30 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { MapPin, Trash2, Loader2, Crosshair } from "lucide-react";
+import { MapPin, Trash2, Loader2, Crosshair, WifiOff, RefreshCw } from "lucide-react";
 import { reverseGeocode } from "@/lib/geocode.functions";
+
+const CACHE_KEY = "vendas:cache:v1";
+const QUEUE_KEY = "vendas:queue:v1";
+
+function readCache(): any | null {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function writeCache(d: any) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(d)); } catch {}
+}
+function readQueue(): any[] {
+  try {
+    const raw = localStorage.getItem(QUEUE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+function writeQueue(q: any[]) {
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch {}
+}
 
 export const Route = createFileRoute("/_authenticated/vendas")({
   component: VendasPage,
@@ -95,28 +117,89 @@ function VendasPage() {
   const [statusFiltro, setStatusFiltro] = useState<string>("__all__");
   const [meMunicipio, setMeMunicipio] = useState<string | null>(null);
 
+  const [online, setOnline] = useState<boolean>(typeof navigator === "undefined" ? true : navigator.onLine);
+  const [pendingCount, setPendingCount] = useState<number>(0);
+
   async function loadData() {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUserId(user?.id ?? null);
-    const [{ data: p }, { data: pl }, { data: as }] = await Promise.all([
-      supabase.from("vendas_pins").select("*").order("created_at", { ascending: false }),
-      supabase.from("planos").select("id, nome").eq("ativo", true).order("nome"),
-      supabase.from("associados").select("id, nome, codigo").order("nome"),
-    ]);
-    setPins((p ?? []) as Pin[]);
-    setPlanos((pl ?? []) as Plano[]);
-    setAssociados((as ?? []) as Associado[]);
+    const cached = readCache();
+    const queueToPins = (q: any[]): Pin[] =>
+      q.map((it) => ({ ...it, id: it._tmpId ?? it.id }) as Pin);
+    if (cached) {
+      const queue = readQueue();
+      setPins([...queueToPins(queue), ...((cached.pins ?? []) as Pin[])]);
+      setPlanos((cached.planos ?? []) as Plano[]);
+      setAssociados((cached.associados ?? []) as Associado[]);
+      setPendingCount(queue.length);
+    }
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id ?? null);
+      const [{ data: p }, { data: pl }, { data: as }] = await Promise.all([
+        supabase.from("vendas_pins").select("*").order("created_at", { ascending: false }),
+        supabase.from("planos").select("id, nome").eq("ativo", true).order("nome"),
+        supabase.from("associados").select("id, nome, codigo").order("nome"),
+      ]);
+      const pinsData = (p ?? []) as Pin[];
+      const planosData = (pl ?? []) as Plano[];
+      const assocData = (as ?? []) as Associado[];
+      writeCache({ pins: pinsData, planos: planosData, associados: assocData });
+      const queue = readQueue();
+      setPins([...queueToPins(queue), ...pinsData]);
+      setPlanos(planosData);
+      setAssociados(assocData);
+      setPendingCount(queue.length);
+    } catch {
+      // offline / network — cache already applied
+    }
   }
+
+  async function flushQueue() {
+    if (typeof navigator !== "undefined" && !navigator.onLine) return;
+    const queue = readQueue();
+    if (queue.length === 0) return;
+    const remaining: any[] = [];
+    for (const item of queue) {
+      const { _tmpId, ...payload } = item;
+      const { error } = await supabase.from("vendas_pins").insert(payload);
+      if (error) remaining.push(item);
+    }
+    writeQueue(remaining);
+    setPendingCount(remaining.length);
+    if (remaining.length < queue.length) {
+      toast.success(`${queue.length - remaining.length} ponto(s) sincronizado(s)`);
+      await loadData();
+    }
+  }
+
+  useEffect(() => {
+    function onOnline() { setOnline(true); flushQueue(); }
+    function onOffline() { setOnline(false); }
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        await loadGoogleMaps();
+        try { await loadGoogleMaps(); } catch (e) {
+          if (!navigator.onLine) {
+            await loadData();
+            return;
+          }
+          throw e;
+        }
         if (cancelled) return;
         await loadData();
+        await flushQueue();
         if (cancelled || !mapDivRef.current) return;
         const google = (window as any).google;
+        if (!google?.maps) return;
         const initialFix = await new Promise<{ lat: number; lng: number; accuracy?: number } | null>((resolve) => {
           if (!navigator.geolocation) return resolve(null);
           navigator.geolocation.getCurrentPosition(
@@ -344,13 +427,31 @@ function VendasPage() {
       plano_id: form.plano_id || null,
       associado_id: form.associado_id || null,
     };
+    const offline = typeof navigator !== "undefined" && !navigator.onLine;
     if (form.id) {
+      if (offline) {
+        toast.error("Edição de pontos exige conexão");
+        return;
+      }
       const { error } = await supabase.from("vendas_pins").update(payload).eq("id", form.id);
       if (error) return toast.error(error.message);
       toast.success("Pin atualizado");
     } else {
-      if (!userId) return toast.error("Sessão inválida");
-      const { error } = await supabase.from("vendas_pins").insert({ ...payload, vendedor_id: userId });
+      const vendedorId = userId ?? (await supabase.auth.getUser()).data.user?.id ?? null;
+      if (offline) {
+        if (!vendedorId) return toast.error("Sessão inválida");
+        const tmpId = `local-${Date.now()}`;
+        const queue = readQueue();
+        queue.unshift({ ...payload, vendedor_id: vendedorId, _tmpId: tmpId });
+        writeQueue(queue);
+        setPins((prev) => [{ id: tmpId, vendedor_id: vendedorId, ...payload } as Pin, ...prev]);
+        setPendingCount(queue.length);
+        toast.success("Salvo offline — sincroniza ao reconectar");
+        setDialog({ open: false, pin: null });
+        return;
+      }
+      if (!vendedorId) return toast.error("Sessão inválida");
+      const { error } = await supabase.from("vendas_pins").insert({ ...payload, vendedor_id: vendedorId });
       if (error) return toast.error(error.message);
       toast.success("Pin criado");
     }
@@ -401,9 +502,21 @@ function VendasPage() {
       title="Mapa de Vendas"
       subtitle="Toque no mapa para registrar um ponto"
       actions={
-        <Button size="sm" variant="outline" onClick={centerOnMe}>
-          <Crosshair className="mr-2 h-4 w-4" /> Minha localização
-        </Button>
+        <div className="flex items-center gap-2">
+          {!online && (
+            <Badge variant="secondary" className="gap-1">
+              <WifiOff className="h-3 w-3" /> Offline
+            </Badge>
+          )}
+          {pendingCount > 0 && (
+            <Button size="sm" variant="outline" onClick={flushQueue} disabled={!online}>
+              <RefreshCw className="mr-2 h-4 w-4" /> Sincronizar ({pendingCount})
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={centerOnMe}>
+            <Crosshair className="mr-2 h-4 w-4" /> Minha localização
+          </Button>
+        </div>
       }
     >
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
