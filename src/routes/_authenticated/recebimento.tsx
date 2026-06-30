@@ -1165,31 +1165,29 @@ function MobileRecebimentoSection() {
     try {
       const m: any = preview;
       const dataRec = new Date().toISOString().slice(0, 10);
-      const { data: ins, error } = await (supabase as any).from("recebimentos_pendentes").insert({
-        mensalidade_id: m.id,
-        associado_id: m.associado_id,
-        cobrador_id: cobradorId,
-        cobrador_nome: cobradorNome,
-        valor_recebido: v,
-        data_recebimento: dataRec,
-        observacoes: obs || null,
-        status: "pendente",
-      }).select("id").single();
-      if (error) throw error;
-      imprimirComprovante({
-        id: ins.id,
-        cobrador: cobradorNome,
-        data: dataRec,
-        codigoParcela: m.codigo,
-        associado: m.associados?.nome ?? "",
-        codAssoc: m.associados?.codigo ?? 0,
-        competencia: m.competencia,
-        vencimento: m.vencimento,
-        valorParcela: Number(m.valor),
-        valorRecebido: v,
-        observacoes: obs,
-      });
-      toast.success("Recebimento registrado", { description: "Comprovante enviado para impressão. Baixa pendente de conciliação." });
+      const payload = {
+        mensalidade_id: m.id, associado_id: m.associado_id,
+        cobrador_id: cobradorId, cobrador_nome: cobradorNome,
+        valor_recebido: v, data_recebimento: dataRec,
+        observacoes: obs || null, status: "pendente",
+      };
+      const comprovante = {
+        cobrador: cobradorNome, data: dataRec, codigoParcela: m.codigo,
+        associado: m.associados?.nome ?? "", codAssoc: m.associados?.codigo ?? 0,
+        competencia: m.competencia, vencimento: m.vencimento,
+        valorParcela: Number(m.valor), valorRecebido: v, observacoes: obs,
+      };
+      if (!online) {
+        const localId = `offline-${Date.now()}`;
+        persistFila([...offlineFila, { localId, payload, comprovante }]);
+        imprimirComprovante({ id: localId, ...comprovante });
+        toast.success("Salvo offline", { description: "Será sincronizado quando voltar a internet." });
+      } else {
+        const { data: ins, error } = await (supabase as any).from("recebimentos_pendentes").insert(payload).select("id").single();
+        if (error) throw error;
+        imprimirComprovante({ id: ins.id, ...comprovante });
+        toast.success("Recebimento registrado", { description: "Baixa pendente de conciliação." });
+      }
       setCodigo(""); setValor(""); setObs(""); setPreview(null); setPreviewErr("");
       qc.invalidateQueries({ queryKey: ["receb-pendentes-meus"] });
       qc.invalidateQueries({ queryKey: ["receb-pendentes-conciliar"] });
@@ -1198,6 +1196,23 @@ function MobileRecebimentoSection() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function sincronizarFila() {
+    if (offlineFila.length === 0) return;
+    if (!online) { toast.error("Sem internet."); return; }
+    setBusy(true);
+    const restante: any[] = [];
+    let ok = 0;
+    for (const item of offlineFila) {
+      const { error } = await (supabase as any).from("recebimentos_pendentes").insert(item.payload);
+      if (error) restante.push(item); else ok++;
+    }
+    persistFila(restante);
+    qc.invalidateQueries({ queryKey: ["receb-pendentes-meus"] });
+    qc.invalidateQueries({ queryKey: ["receb-pendentes-conciliar"] });
+    setBusy(false);
+    toast.success(`${ok} recebimento(s) sincronizado(s)`, restante.length ? { description: `${restante.length} ainda pendente(s).` } : undefined);
   }
 
   const totalMes = (meus as any[]).reduce((s, p) => s + Number(p.valor_recebido), 0);
