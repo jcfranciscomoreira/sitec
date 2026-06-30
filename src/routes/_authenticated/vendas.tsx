@@ -397,6 +397,22 @@ function VendasPage() {
     }
   }, [filteredPins]);
 
+  // Centraliza o mapa no município selecionado no filtro
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const google = (window as any).google;
+    if (!google) return;
+    const alvo =
+      municipioFiltro === "__auto__" ? meMunicipio :
+      municipioFiltro === "__all__" ? null : municipioFiltro;
+    if (!alvo) return;
+    const doMunic = pins.filter((p) => p.municipio === alvo);
+    if (doMunic.length === 0) return;
+    const bounds = new google.maps.LatLngBounds();
+    for (const p of doMunic) bounds.extend({ lat: p.latitude, lng: p.longitude });
+    mapRef.current.fitBounds(bounds, 64);
+  }, [municipioFiltro, meMunicipio, pins]);
+
   async function savePin(form: Partial<Pin>) {
     if (!form.nome || form.latitude == null || form.longitude == null) {
       toast.error("Informe nome e localização");
