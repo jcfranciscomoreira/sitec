@@ -398,12 +398,13 @@ function BaixaWizard() {
                   Nenhum cobrador ativo. Cadastre um na aba "Cadastro de cobradores".
                 </div>
               ) : (
-                <Select name="agente" required>
+                <Select name="agente" required value={agenteSel} onValueChange={setAgenteSel}>
                   <SelectTrigger><SelectValue placeholder="Selecione o cobrador" /></SelectTrigger>
                   <SelectContent>
                     {cobradores.map((c) => <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>)}
                   </SelectContent>
                 </Select>
+
               )}
             </div>
             <div className="space-y-2"><Label>Data do recebimento</Label><Input name="data" type="date" defaultValue={new Date().toISOString().slice(0, 10)} required /></div>
