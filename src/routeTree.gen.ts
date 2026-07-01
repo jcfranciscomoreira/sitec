@@ -20,6 +20,7 @@ import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedFinanceiroRouteImport } from './routes/_authenticated/financeiro'
 import { Route as AuthenticatedEmpresaFinanceiroRouteImport } from './routes/_authenticated/empresa-financeiro'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCrmRouteImport } from './routes/_authenticated/crm'
 import { Route as AuthenticatedContasRouteImport } from './routes/_authenticated/contas'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedCentrosCustoRouteImport } from './routes/_authenticated/centros-custo'
@@ -83,6 +84,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCrmRoute = AuthenticatedCrmRouteImport.update({
+  id: '/crm',
+  path: '/crm',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedContasRoute = AuthenticatedContasRouteImport.update({
   id: '/contas',
   path: '/contas',
@@ -120,6 +126,7 @@ export interface FileRoutesByFullPath {
   '/centros-custo': typeof AuthenticatedCentrosCustoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/contas': typeof AuthenticatedContasRoute
+  '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   '/centros-custo': typeof AuthenticatedCentrosCustoRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/contas': typeof AuthenticatedContasRoute
+  '/crm': typeof AuthenticatedCrmRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
   '/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/_authenticated/centros-custo': typeof AuthenticatedCentrosCustoRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/contas': typeof AuthenticatedContasRoute
+  '/_authenticated/crm': typeof AuthenticatedCrmRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/empresa-financeiro': typeof AuthenticatedEmpresaFinanceiroRoute
   '/_authenticated/financeiro': typeof AuthenticatedFinanceiroRoute
@@ -175,6 +184,7 @@ export interface FileRouteTypes {
     | '/centros-custo'
     | '/configuracoes'
     | '/contas'
+    | '/crm'
     | '/dashboard'
     | '/empresa-financeiro'
     | '/financeiro'
@@ -192,6 +202,7 @@ export interface FileRouteTypes {
     | '/centros-custo'
     | '/configuracoes'
     | '/contas'
+    | '/crm'
     | '/dashboard'
     | '/empresa-financeiro'
     | '/financeiro'
@@ -210,6 +221,7 @@ export interface FileRouteTypes {
     | '/_authenticated/centros-custo'
     | '/_authenticated/configuracoes'
     | '/_authenticated/contas'
+    | '/_authenticated/crm'
     | '/_authenticated/dashboard'
     | '/_authenticated/empresa-financeiro'
     | '/_authenticated/financeiro'
@@ -305,6 +317,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/crm': {
+      id: '/_authenticated/crm'
+      path: '/crm'
+      fullPath: '/crm'
+      preLoaderRoute: typeof AuthenticatedCrmRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/contas': {
       id: '/_authenticated/contas'
       path: '/contas'
@@ -349,6 +368,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCentrosCustoRoute: typeof AuthenticatedCentrosCustoRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedContasRoute: typeof AuthenticatedContasRoute
+  AuthenticatedCrmRoute: typeof AuthenticatedCrmRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEmpresaFinanceiroRoute: typeof AuthenticatedEmpresaFinanceiroRoute
   AuthenticatedFinanceiroRoute: typeof AuthenticatedFinanceiroRoute
@@ -365,6 +385,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCentrosCustoRoute: AuthenticatedCentrosCustoRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedContasRoute: AuthenticatedContasRoute,
+  AuthenticatedCrmRoute: AuthenticatedCrmRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEmpresaFinanceiroRoute: AuthenticatedEmpresaFinanceiroRoute,
   AuthenticatedFinanceiroRoute: AuthenticatedFinanceiroRoute,
@@ -386,13 +407,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
