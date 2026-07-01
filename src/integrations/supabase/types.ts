@@ -311,6 +311,7 @@ export type Database = {
           telefone: string | null
           updated_at: string
           valor_estimado: number | null
+          vendas_pin_id: string | null
         }
         Insert: {
           cidade?: string | null
@@ -327,6 +328,7 @@ export type Database = {
           telefone?: string | null
           updated_at?: string
           valor_estimado?: number | null
+          vendas_pin_id?: string | null
         }
         Update: {
           cidade?: string | null
@@ -343,6 +345,7 @@ export type Database = {
           telefone?: string | null
           updated_at?: string
           valor_estimado?: number | null
+          vendas_pin_id?: string | null
         }
         Relationships: [
           {
@@ -352,7 +355,44 @@ export type Database = {
             referencedRelation: "planos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "crm_leads_vendas_pin_id_fkey"
+            columns: ["vendas_pin_id"]
+            isOneToOne: false
+            referencedRelation: "vendas_pins"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      crm_stages: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          key: string
+          label: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          key: string
+          label: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          key?: string
+          label?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       dependentes: {
         Row: {
