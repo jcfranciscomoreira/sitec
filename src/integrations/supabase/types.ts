@@ -295,6 +295,65 @@ export type Database = {
           },
         ]
       }
+      crm_leads: {
+        Row: {
+          cidade: string | null
+          created_at: string
+          email: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          ordem: number
+          origem: string | null
+          plano_interesse: string | null
+          responsavel_id: string | null
+          stage: string
+          telefone: string | null
+          updated_at: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          cidade?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          ordem?: number
+          origem?: string | null
+          plano_interesse?: string | null
+          responsavel_id?: string | null
+          stage?: string
+          telefone?: string | null
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          cidade?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          ordem?: number
+          origem?: string | null
+          plano_interesse?: string | null
+          responsavel_id?: string | null
+          stage?: string
+          telefone?: string | null
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_leads_plano_interesse_fkey"
+            columns: ["plano_interesse"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dependentes: {
         Row: {
           associado_id: string
