@@ -26,8 +26,16 @@ export const Route = createFileRoute("/api/public/webhooks/cobranca/$provedor")(
 
         try {
           if (provedor === "asaas") {
-            // Validação por token no header (asaas-access-token)
-            const expected = process.env[secretName("asaas", "webhook_token")];
+            // Validação por token no header (asaas-access-token) — lido da integração criptografada no banco
+            let expected: string | undefined;
+            try {
+              const { data: integ } = await supabaseAdmin
+                .from("integracao_bancaria").select("secrets_encrypted").eq("provedor", "asaas").maybeSingle();
+              if ((integ as any)?.secrets_encrypted) {
+                const { decryptJson } = await import("@/lib/cobranca/crypto.server");
+                expected = decryptJson((integ as any).secrets_encrypted)["webhook_token"];
+              }
+            } catch { /* segredo ausente = sem validação estrita */ }
             const received = request.headers.get("asaas-access-token");
             if (expected && received !== expected) {
               await markProcessed(null, "Token inválido");
