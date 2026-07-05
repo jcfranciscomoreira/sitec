@@ -237,11 +237,24 @@ function FinanceiroPage() {
                   <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
                   <TableCell><StatusBadge status={m.status} /></TableCell>
                   <TableCell className="text-right">
-                    {m.status !== "pago" && m.status !== "cancelado" && (
-                      <Button size="sm" variant="outline" onClick={() => setPayOpen(m)}>
-                        <CheckCircle2 className="mr-1 h-4 w-4" />Receber
-                      </Button>
-                    )}
+                    <div className="flex justify-end gap-1">
+                      {m.status !== "pago" && m.status !== "cancelado" && !m.cobranca_id &&
+                        ["boleto", "pix", "boleto_pix"].includes(m.associados?.forma_pagamento ?? "") && (
+                          <Button size="sm" variant="outline" onClick={() => gerarCob.mutate(m.id)} disabled={gerarCob.isPending}>
+                            {gerarCob.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+                          </Button>
+                      )}
+                      {m.cobranca_id && (
+                        <Button size="sm" variant="outline" onClick={() => setCobrancaOpen(m)}>
+                          <QrCode className="mr-1 h-4 w-4" />Boleto/PIX
+                        </Button>
+                      )}
+                      {m.status !== "pago" && m.status !== "cancelado" && (
+                        <Button size="sm" variant="outline" onClick={() => setPayOpen(m)}>
+                          <CheckCircle2 className="mr-1 h-4 w-4" />Receber
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
