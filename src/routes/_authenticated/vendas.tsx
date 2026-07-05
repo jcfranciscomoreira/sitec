@@ -775,7 +775,16 @@ function PinDialog({
   associados: Associado[];
 }) {
   const [form, setForm] = useState<Partial<Pin>>({});
-  useEffect(() => { setForm(state.pin ?? {}); }, [state.pin, state.open]);
+  const [assocSearch, setAssocSearch] = useState("");
+  useEffect(() => { setForm(state.pin ?? {}); setAssocSearch(""); }, [state.pin, state.open]);
+  const selectedAssoc = associados.find((a) => a.id === form.associado_id);
+  const assocMatches = (() => {
+    const q = assocSearch.trim().toLowerCase();
+    if (!q) return [];
+    return associados
+      .filter((a) => a.nome.toLowerCase().includes(q) || String(a.codigo).includes(q))
+      .slice(0, 15);
+  })();
 
   return (
     <Dialog open={state.open} onOpenChange={(o) => !o && onClose()}>
