@@ -17,6 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useServerFn } from "@tanstack/react-start";
+import { criarCobranca } from "@/lib/cobranca.functions";
+import { FileText } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/recebimento")({
   head: () => ({ meta: [{ title: "Recebimento — Memorial" }] }),
@@ -773,7 +776,7 @@ function CarneSection() {
     queryFn: async () => {
       let q = supabase
         .from("mensalidades")
-        .select("*, associados!inner(id, nome, codigo, cidade, endereco, estado, cpf, dia_vencimento, planos(nome, valor_mensal))")
+        .select("*, associados!inner(id, nome, codigo, cidade, endereco, estado, cpf, dia_vencimento, forma_pagamento, planos(nome, valor_mensal))")
         .in("status", ["pendente", "atrasado"]) 
         .order("vencimento", { ascending: true });
       if (vencDe) q = q.gte("vencimento", vencDe);
@@ -820,12 +823,50 @@ function CarneSection() {
   });
 
 
+  const gerarCob = useServerFn(criarCobranca);
+  const [gerandoBol, setGerandoBol] = useState(false);
+
   async function gerar() {
     const { data } = await refetch();
     const list = (data ?? []) as any[];
     if (list.length === 0) { toast.error("Nenhuma parcela com os filtros."); return; }
     imprimirCarnes(list);
   }
+
+  async function gerarBoletos() {
+    const { data } = await refetch();
+    const list = (data ?? []) as any[];
+    const alvos = list.filter((r) => {
+      const fp = r.associados?.forma_pagamento;
+      return fp === "boleto" || fp === "pix" || fp === "boleto_pix";
+    });
+    if (alvos.length === 0) {
+      toast.error("Nenhuma parcela de associado com forma de pagamento boleto/PIX nos filtros.");
+      return;
+    }
+    setGerandoBol(true);
+    let ok = 0, jaGer = 0, erro = 0;
+    const links: { nome: string; comp: string; url: string | null }[] = [];
+    for (const r of alvos) {
+      if (r.cobranca_id) {
+        jaGer++;
+        links.push({ nome: r.associados?.nome ?? "", comp: r.competencia, url: r.link_boleto });
+        continue;
+      }
+      try {
+        const res: any = await gerarCob({ data: { mensalidade_id: r.id } });
+        ok++;
+        links.push({ nome: r.associados?.nome ?? "", comp: r.competencia, url: res?.linkBoleto ?? null });
+      } catch (e: any) {
+        erro++;
+        console.error("Erro cobrança", r.id, e?.message);
+      }
+    }
+    setGerandoBol(false);
+    toast.success(`Boletos: ${ok} gerado(s), ${jaGer} já existente(s), ${erro} erro(s)`);
+    imprimirLinksBoletos(links);
+  }
+
 
   return (
     <Card className="border-border/60 shadow-soft">
@@ -877,14 +918,18 @@ function CarneSection() {
           <div className="space-y-2"><Label>Vencimento até</Label><Input type="date" value={vencAte} onChange={(e) => setVencAte(e.target.value)} /></div>
           <div className="space-y-2"><Label>Dia de pagamento</Label><Input type="number" min="1" max="31" value={diaPag} onChange={(e) => setDiaPag(e.target.value)} placeholder="Ex: 10" /></div>
         </div>
-        <div>
+        <div className="flex flex-wrap gap-2">
           <Button onClick={gerar} disabled={isLoading}>
             <BookOpen className="mr-2 h-4 w-4" />Gerar carnês
           </Button>
+          <Button variant="outline" onClick={gerarBoletos} disabled={isLoading || gerandoBol}>
+            <FileText className="mr-2 h-4 w-4" />{gerandoBol ? "Gerando boletos..." : "Gerar boletos (boleto/PIX)"}
+          </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Gera uma página por parcela com os dados do associado, valor, vencimento e código de identificação. Filtre por associado para imprimir o carnê individual.
+          <b>Gerar carnês</b>: imprime carnê tradicional. <b>Gerar boletos</b>: emite cobranças (boleto + PIX) apenas para associados com forma de pagamento boleto ou PIX, usando a integração bancária ativa em Configurações.
         </p>
+
         {rows.length > 0 && (
           <div className="rounded border border-border px-3 py-2 text-sm">
             <b>{rows.length}</b> parcelas no último filtro aplicado.
@@ -893,6 +938,26 @@ function CarneSection() {
       </CardContent>
     </Card>
   );
+}
+
+function imprimirLinksBoletos(list: { nome: string; comp: string; url: string | null }[]) {
+  const w = window.open("", "_blank", "width=800,height=800");
+  if (!w) { toast.error("Permita pop-ups para visualizar os boletos."); return; }
+  const rows = list.map((l, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${l.nome}</td>
+      <td>${l.comp}</td>
+      <td>${l.url ? `<a href="${l.url}" target="_blank" rel="noopener">Abrir boleto/PIX</a>` : '<span style="color:#999">Sem link</span>'}</td>
+    </tr>`).join("");
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Boletos gerados</title>
+    <style>body{font-family:system-ui,sans-serif;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px 10px;text-align:left}th{background:#f5f5f5}a{color:#0a58ca}</style>
+    </head><body>
+    <h2>Boletos gerados (${list.length})</h2>
+    <p>Clique em cada link para abrir o boleto/PIX no provedor.</p>
+    <table><thead><tr><th>#</th><th>Associado</th><th>Competência</th><th>Boleto/PIX</th></tr></thead><tbody>${rows}</tbody></table>
+    </body></html>`);
+  w.document.close();
 }
 
 function imprimirCarnes(list: any[]) {
