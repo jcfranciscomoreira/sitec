@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { secretName } from "@/lib/cobranca/providers";
 
 export const Route = createFileRoute("/api/public/webhooks/cobranca/$provedor")({
   server: {
