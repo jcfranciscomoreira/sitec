@@ -940,6 +940,26 @@ function CarneSection() {
   );
 }
 
+function imprimirLinksBoletos(list: { nome: string; comp: string; url: string | null }[]) {
+  const w = window.open("", "_blank", "width=800,height=800");
+  if (!w) { toast.error("Permita pop-ups para visualizar os boletos."); return; }
+  const rows = list.map((l, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${l.nome}</td>
+      <td>${l.comp}</td>
+      <td>${l.url ? `<a href="${l.url}" target="_blank" rel="noopener">Abrir boleto/PIX</a>` : '<span style="color:#999">Sem link</span>'}</td>
+    </tr>`).join("");
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Boletos gerados</title>
+    <style>body{font-family:system-ui,sans-serif;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px 10px;text-align:left}th{background:#f5f5f5}a{color:#0a58ca}</style>
+    </head><body>
+    <h2>Boletos gerados (${list.length})</h2>
+    <p>Clique em cada link para abrir o boleto/PIX no provedor.</p>
+    <table><thead><tr><th>#</th><th>Associado</th><th>Competência</th><th>Boleto/PIX</th></tr></thead><tbody>${rows}</tbody></table>
+    </body></html>`);
+  w.document.close();
+}
+
 function imprimirCarnes(list: any[]) {
   const w = window.open("", "_blank", "width=900,height=800");
   if (!w) { toast.error("Permita pop-ups."); return; }
