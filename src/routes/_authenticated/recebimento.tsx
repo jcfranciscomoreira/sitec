@@ -17,6 +17,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useServerFn } from "@tanstack/react-start";
+import { criarCobranca } from "@/lib/cobranca.functions";
+import { FileText } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/recebimento")({
   head: () => ({ meta: [{ title: "Recebimento — Memorial" }] }),
