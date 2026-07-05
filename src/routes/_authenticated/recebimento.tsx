@@ -776,7 +776,7 @@ function CarneSection() {
     queryFn: async () => {
       let q = supabase
         .from("mensalidades")
-        .select("*, associados!inner(id, nome, codigo, cidade, endereco, estado, cpf, dia_vencimento, planos(nome, valor_mensal))")
+        .select("*, associados!inner(id, nome, codigo, cidade, endereco, estado, cpf, dia_vencimento, forma_pagamento, planos(nome, valor_mensal))")
         .in("status", ["pendente", "atrasado"]) 
         .order("vencimento", { ascending: true });
       if (vencDe) q = q.gte("vencimento", vencDe);
