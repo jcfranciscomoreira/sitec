@@ -129,6 +129,7 @@ function VendasPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ open: boolean; pin: Partial<Pin> | null }>({ open: false, pin: null });
   const [viewPin, setViewPin] = useState<Pin | null>(null);
+  const [soloPinId, setSoloPinId] = useState<string | null>(null);
   const [municipioFiltro, setMunicipioFiltro] = useState<string>("__auto__");
   const [statusFiltro, setStatusFiltro] = useState<string>("__all__");
   const [meMunicipio, setMeMunicipio] = useState<string | null>(null);
