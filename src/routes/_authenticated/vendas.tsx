@@ -551,7 +551,7 @@ function VendasPage() {
       },
       (err) => {
         if (err?.code === 1) {
-          toast.error("Permissão negada. Habilite a localização nas configurações do navegador/sistema.");
+          showLocationDeniedToast();
         } else {
           toast.error("Não foi possível obter localização");
         }
