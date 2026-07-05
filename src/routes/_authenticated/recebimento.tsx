@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, BookOpen, Plus, Printer, ArrowLeft, History, Eye, Users, Pencil, Trash2, Smartphone, ClipboardCheck, Undo2 } from "lucide-react";
+import { CheckCircle2, BookOpen, Plus, Printer, ArrowLeft, History, Eye, Users, Pencil, Trash2, Smartphone, ClipboardCheck, Undo2, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -1117,6 +1117,30 @@ function MobileRecebimentoSection() {
   }, [aReceberRaw, meus, filtroModo, filtroDia, filtroDe, filtroAte, filtroAssociado, hoje]);
 
 
+  const associadoIdsAR = useMemo(
+    () => Array.from(new Set((aReceberRaw as any[]).map((m: any) => m.associado_id).filter(Boolean))),
+    [aReceberRaw],
+  );
+  const { data: pinsPorAssoc = {} } = useQuery<Record<string, { lat: number; lng: number; nome: string }>>({
+    queryKey: ["vendas-pins-associados", associadoIdsAR],
+    enabled: associadoIdsAR.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendas_pins")
+        .select("associado_id, latitude, longitude, nome")
+        .in("associado_id", associadoIdsAR as string[]);
+      if (error) throw error;
+      const map: Record<string, { lat: number; lng: number; nome: string }> = {};
+      (data ?? []).forEach((p: any) => {
+        if (p.associado_id && !map[p.associado_id]) {
+          map[p.associado_id] = { lat: Number(p.latitude), lng: Number(p.longitude), nome: p.nome };
+        }
+      });
+      return map;
+    },
+  });
+
+
   const { data: cidades = [] } = useQuery({
     queryKey: ["cidades-cobrador", cobradorId],
     enabled: !!cobradorId,
@@ -1330,6 +1354,19 @@ function MobileRecebimentoSection() {
                         <TableCell>{fmtDate(m._efetivo)}</TableCell>
                         <TableCell className="text-right">{brl(Number(m.valor))}</TableCell>
                         <TableCell className="text-right whitespace-nowrap">
+                          {pinsPorAssoc[m.associado_id] && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              title={`Ver ${pinsPorAssoc[m.associado_id].nome} no mapa`}
+                              onClick={() => {
+                                const p = pinsPorAssoc[m.associado_id];
+                                window.open(`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`, "_blank");
+                              }}
+                            >
+                              <MapPin className="h-4 w-4 text-primary" />
+                            </Button>
+                          )}
                           <Button size="sm" variant="ghost" onClick={() => { setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>Receber</Button>
                           <Button size="sm" variant="ghost" onClick={() => { setReagendar(m); setReagData(""); }}>Reagendar</Button>
                         </TableCell>
