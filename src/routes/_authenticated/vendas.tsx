@@ -98,6 +98,22 @@ function loadGoogleMaps(): Promise<void> {
   return mapsLoading;
 }
 
+function getLocationHelpUrl(): string {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/i.test(ua)) return "https://support.apple.com/pt-br/HT207092";
+  if (/Android/i.test(ua)) return "https://support.google.com/chrome/answer/142065?hl=pt-BR&co=GENIE.Platform%3DAndroid";
+  return "https://support.google.com/chrome/answer/142065?hl=pt-BR&co=GENIE.Platform%3DDesktop";
+}
+
+function showLocationDeniedToast() {
+  const url = getLocationHelpUrl();
+  toast.error("Acesso à localização negado. Habilite nas configurações do navegador/sistema.", {
+    duration: 10000,
+    action: { label: "Como autorizar", onClick: () => window.open(url, "_blank", "noopener") },
+  });
+}
+
+
 function VendasPage() {
   const router = useRouter();
   const mapDivRef = useRef<HTMLDivElement>(null);
