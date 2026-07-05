@@ -8,12 +8,19 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, Copy, KeyRound } from "lucide-react";
+import { Loader2, CheckCircle2, Copy, KeyRound, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { PROVIDERS, getProvider, secretName, type ProviderMeta } from "@/lib/cobranca/providers";
+import { PROVIDERS, getProvider, type ProviderMeta } from "@/lib/cobranca/providers";
 import { listIntegracoes, saveIntegracao, testarConexao } from "@/lib/cobranca.functions";
 
-type IntegRow = { id: string; provedor: string; ambiente: string; ativo: boolean; config_json: Record<string, any> };
+type IntegRow = {
+  id: string;
+  provedor: string;
+  ambiente: string;
+  ativo: boolean;
+  config_json: Record<string, any>;
+  secret_keys: string[];
+};
 
 export function IntegracaoBancariaConfig() {
   const list = useServerFn(listIntegracoes);
@@ -25,6 +32,9 @@ export function IntegracaoBancariaConfig() {
   const [ambiente, setAmbiente] = useState<"sandbox" | "producao">("sandbox");
   const [ativo, setAtivo] = useState(false);
   const [config, setConfig] = useState<Record<string, string>>({});
+  const [secrets, setSecrets] = useState<Record<string, string>>({});
+  const [secretsRemove, setSecretsRemove] = useState<string[]>([]);
+  const [configuredKeys, setConfiguredKeys] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
@@ -47,21 +57,30 @@ export function IntegracaoBancariaConfig() {
       setAmbiente((existing.ambiente as any) || "sandbox");
       setAtivo(!!existing.ativo);
       setConfig((existing.config_json ?? {}) as Record<string, string>);
+      setConfiguredKeys(existing.secret_keys ?? []);
     } else {
-      setAmbiente("sandbox"); setAtivo(false); setConfig({});
+      setAmbiente("sandbox"); setAtivo(false); setConfig({}); setConfiguredKeys([]);
     }
+    setSecrets({});
+    setSecretsRemove([]);
   }, [selectedSlug, rows]);
 
   async function handleSave() {
     setSaving(true);
     try {
-      // Só campos não-secretos vão pro DB
       const nonSecret: Record<string, string> = {};
       for (const f of meta.fields) {
         if (!f.secret && config[f.key] !== undefined) nonSecret[f.key] = config[f.key];
       }
-      await save({ data: { provedor: selectedSlug, ambiente, ativo, config_json: nonSecret } });
-      toast.success("Integração salva");
+      await save({ data: {
+        provedor: selectedSlug,
+        ambiente,
+        ativo,
+        config_json: nonSecret,
+        secrets,
+        secrets_remove: secretsRemove,
+      } });
+      toast.success("Integração salva com segurança");
       await reload();
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(false); }
@@ -159,18 +178,28 @@ export function IntegracaoBancariaConfig() {
       <Card>
         <CardHeader>
           <CardTitle>Credenciais</CardTitle>
-          <CardDescription>
-            Campos marcados com <KeyRound className="inline h-3 w-3" /> são armazenados como segredos criptografados no Lovable Cloud, nunca no banco de dados. Para (re)definir um segredo, use o botão ao lado do campo.
+          <CardDescription className="flex items-start gap-2">
+            <ShieldCheck className="mt-0.5 h-4 w-4 text-success" />
+            <span>
+              Os campos marcados com <KeyRound className="inline h-3 w-3" /> são criptografados com AES‑256‑GCM antes de serem gravados no banco e nunca são devolvidos ao navegador. Deixe em branco para manter o valor atual.
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {meta.fields.map((f) => (
             <FieldRow
               key={f.key}
-              providerSlug={selectedSlug}
               field={f}
-              value={config[f.key] ?? ""}
-              onChange={(v) => setConfig((c) => ({ ...c, [f.key]: v }))}
+              value={f.secret ? (secrets[f.key] ?? "") : (config[f.key] ?? "")}
+              configured={f.secret && configuredKeys.includes(f.key) && !secretsRemove.includes(f.key)}
+              onChange={(v) => {
+                if (f.secret) setSecrets((s) => ({ ...s, [f.key]: v }));
+                else setConfig((c) => ({ ...c, [f.key]: v }));
+              }}
+              onClear={f.secret ? () => {
+                setSecrets((s) => { const n = { ...s }; delete n[f.key]; return n; });
+                setSecretsRemove((r) => r.includes(f.key) ? r : [...r, f.key]);
+              } : undefined}
             />
           ))}
 
@@ -191,47 +220,43 @@ export function IntegracaoBancariaConfig() {
   );
 }
 
-function FieldRow({ providerSlug, field, value, onChange }: {
-  providerSlug: string;
+function FieldRow({ field, value, configured, onChange, onClear }: {
   field: ProviderMeta["fields"][number];
   value: string;
+  configured?: boolean;
   onChange: (v: string) => void;
+  onClear?: () => void;
 }) {
-  if (field.secret) {
-    const name = secretName(providerSlug, field.key);
-    return (
-      <div className="space-y-2">
-        <Label className="flex items-center gap-1">
-          <KeyRound className="h-3 w-3" /> {field.label} {field.required && <span className="text-destructive">*</span>}
-        </Label>
-        <div className="flex items-center gap-2 rounded-md border bg-muted p-3">
-          <code className="flex-1 truncate text-xs">{name}</code>
-          <Button size="sm" variant="outline" type="button"
-            onClick={() => {
-              // Dispara diálogo de secrets do Lovable — usa o link universal
-              window.dispatchEvent(new CustomEvent("lovable:add-secret", { detail: { name } }));
-              toast.info("Peça ao Lovable para configurar o segredo: “" + name + "”");
-            }}>
-            Configurar segredo
-          </Button>
-        </div>
-        {field.helper && <p className="text-xs text-muted-foreground">{field.helper}</p>}
-      </div>
-    );
-  }
+  const placeholder = field.secret && configured
+    ? "•••••••••• (salvo — digite para substituir)"
+    : field.placeholder;
   return (
     <div className="space-y-2">
-      <Label>{field.label} {field.required && <span className="text-destructive">*</span>}</Label>
-      {field.type === "textarea" ? (
-        <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} placeholder={field.placeholder} />
-      ) : (
-        <Input
-          type={field.type === "password" ? "password" : "text"}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
-        />
-      )}
+      <Label className="flex items-center gap-1">
+        {field.secret && <KeyRound className="h-3 w-3" />}
+        {field.label} {field.required && <span className="text-destructive">*</span>}
+        {field.secret && configured && (
+          <Badge variant="outline" className="ml-2 h-5 text-[10px]">criptografado no banco</Badge>
+        )}
+      </Label>
+      <div className="flex items-center gap-2">
+        {field.type === "textarea" ? (
+          <Textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} placeholder={placeholder} />
+        ) : (
+          <Input
+            type={field.secret || field.type === "password" ? "password" : "text"}
+            autoComplete="off"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+          />
+        )}
+        {field.secret && configured && onClear && (
+          <Button type="button" size="sm" variant="ghost" onClick={onClear} title="Remover valor salvo">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
       {field.helper && <p className="text-xs text-muted-foreground">{field.helper}</p>}
     </div>
   );
