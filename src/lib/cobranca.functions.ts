@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getProvider, secretName } from "@/lib/cobranca/providers";
+import { getProvider } from "@/lib/cobranca/providers";
 
 async function assertAdmin(ctx: any) {
   const { data } = await ctx.supabase
@@ -9,22 +9,21 @@ async function assertAdmin(ctx: any) {
   if (!data) throw new Error("Apenas administradores podem alterar a integração bancária");
 }
 
-// Lê o registro de integração ativo (ou por provedor) + resolve secrets do env
+// Lê o registro de integração + decripta segredos (armazenados no banco)
 async function loadIntegracao(provedor: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { decryptJson } = await import("@/lib/cobranca/crypto.server");
   const { data, error } = await supabaseAdmin
     .from("integracao_bancaria").select("*").eq("provedor", provedor).maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error(`Integração ${provedor} não configurada`);
   const meta = getProvider(provedor);
   if (!meta) throw new Error(`Provedor desconhecido: ${provedor}`);
-  const secrets: Record<string, string> = {};
-  for (const f of meta.fields) {
-    if (f.secret) {
-      const name = secretName(provedor, f.key);
-      const val = process.env[name];
-      if (val) secrets[f.key] = val;
-    }
+  let secrets: Record<string, string> = {};
+  try {
+    secrets = decryptJson((data as any).secrets_encrypted);
+  } catch (e: any) {
+    throw new Error("Falha ao decriptar segredos: " + e.message);
   }
   return { row: data, secrets, meta };
 }
@@ -33,9 +32,23 @@ export const listIntegracoes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { data, error } = await context.supabase
-      .from("integracao_bancaria").select("id, provedor, ambiente, ativo, config_json, updated_at");
+      .from("integracao_bancaria")
+      .select("id, provedor, ambiente, ativo, config_json, secrets_encrypted, updated_at");
     if (error) throw new Error(error.message);
-    return data ?? [];
+    // Nunca devolvemos segredos para o cliente — só a lista de chaves configuradas.
+    let decrypt: ((s: string | null) => Record<string, string>) | null = null;
+    try {
+      const mod = await import("@/lib/cobranca/crypto.server");
+      decrypt = mod.decryptJson;
+    } catch { /* sem chave configurada */ }
+    return (data ?? []).map((r: any) => {
+      let secret_keys: string[] = [];
+      if (decrypt && r.secrets_encrypted) {
+        try { secret_keys = Object.keys(decrypt(r.secrets_encrypted)); } catch { secret_keys = []; }
+      }
+      const { secrets_encrypted, ...rest } = r;
+      return { ...rest, secret_keys };
+    });
   });
 
 const saveSchema = z.object({
@@ -43,6 +56,10 @@ const saveSchema = z.object({
   ambiente: z.enum(["sandbox", "producao"]),
   ativo: z.boolean(),
   config_json: z.record(z.string(), z.any()).default({}),
+  // Novos valores de segredo digitados pelo usuário. Só sobrescreve o que vier preenchido.
+  secrets: z.record(z.string(), z.string()).default({}),
+  // Chaves de segredo que o usuário quer apagar
+  secrets_remove: z.array(z.string()).default([]),
 });
 
 export const saveIntegracao = createServerFn({ method: "POST" })
@@ -51,7 +68,19 @@ export const saveIntegracao = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    // Se ativar este, desativa os outros (apenas um por vez)
+    const { encryptJson, decryptJson } = await import("@/lib/cobranca/crypto.server");
+
+    // Carrega segredos existentes para mesclar
+    const { data: existing } = await supabaseAdmin
+      .from("integracao_bancaria").select("secrets_encrypted").eq("provedor", data.provedor).maybeSingle();
+    let currentSecrets: Record<string, string> = {};
+    try { currentSecrets = decryptJson((existing as any)?.secrets_encrypted ?? null); } catch { currentSecrets = {}; }
+    for (const [k, v] of Object.entries(data.secrets)) {
+      if (typeof v === "string" && v.length > 0) currentSecrets[k] = v;
+    }
+    for (const k of data.secrets_remove) delete currentSecrets[k];
+    const secrets_encrypted = Object.keys(currentSecrets).length > 0 ? encryptJson(currentSecrets) : null;
+
     if (data.ativo) {
       await supabaseAdmin.from("integracao_bancaria").update({ ativo: false }).neq("provedor", data.provedor);
     }
@@ -60,6 +89,7 @@ export const saveIntegracao = createServerFn({ method: "POST" })
       ambiente: data.ambiente,
       ativo: data.ativo,
       config_json: data.config_json,
+      secrets_encrypted,
     }, { onConflict: "provedor" });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -75,7 +105,7 @@ export const testarConexao = createServerFn({ method: "POST" })
     if (data.provedor === "asaas") {
       const { testarConexaoAsaas } = await import("@/lib/cobranca/asaas.server");
       const apiKey = secrets["api_key"];
-      if (!apiKey) throw new Error("API Key não configurada. Cadastre o secret e tente novamente.");
+      if (!apiKey) throw new Error("API Key não configurada. Preencha o campo e salve antes de testar.");
       await testarConexaoAsaas({ apiKey, ambiente: row.ambiente as any });
       return { ok: true, mensagem: "Conexão OK — credenciais válidas." };
     }
@@ -86,7 +116,6 @@ export const criarCobranca = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ mensalidade_id: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    // Carrega mensalidade + associado
     const { data: m, error: me } = await context.supabase
       .from("mensalidades")
       .select("id, valor, vencimento, competencia, cobranca_id, associados(id, nome, cpf, email, telefone, forma_pagamento)")
@@ -101,7 +130,6 @@ export const criarCobranca = createServerFn({ method: "POST" })
       throw new Error("Forma de pagamento do associado não é boleto nem PIX.");
     }
 
-    // Provedor ativo
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: integ } = await supabaseAdmin
       .from("integracao_bancaria").select("*").eq("ativo", true).maybeSingle();

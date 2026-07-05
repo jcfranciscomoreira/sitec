@@ -1,0 +1,1 @@
+ALTER TABLE public.integracao_bancaria ADD COLUMN IF NOT EXISTS secrets_encrypted text;

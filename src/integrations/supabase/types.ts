@@ -453,6 +453,7 @@ export type Database = {
           id: string
           provedor: string
           secret_ref: string | null
+          secrets_encrypted: string | null
           updated_at: string
           webhook_secret: string | null
         }
@@ -464,6 +465,7 @@ export type Database = {
           id?: string
           provedor: string
           secret_ref?: string | null
+          secrets_encrypted?: string | null
           updated_at?: string
           webhook_secret?: string | null
         }
@@ -475,6 +477,7 @@ export type Database = {
           id?: string
           provedor?: string
           secret_ref?: string | null
+          secrets_encrypted?: string | null
           updated_at?: string
           webhook_secret?: string | null
         }
