@@ -823,12 +823,50 @@ function CarneSection() {
   });
 
 
+  const gerarCob = useServerFn(criarCobranca);
+  const [gerandoBol, setGerandoBol] = useState(false);
+
   async function gerar() {
     const { data } = await refetch();
     const list = (data ?? []) as any[];
     if (list.length === 0) { toast.error("Nenhuma parcela com os filtros."); return; }
     imprimirCarnes(list);
   }
+
+  async function gerarBoletos() {
+    const { data } = await refetch();
+    const list = (data ?? []) as any[];
+    const alvos = list.filter((r) => {
+      const fp = r.associados?.forma_pagamento;
+      return fp === "boleto" || fp === "pix" || fp === "boleto_pix";
+    });
+    if (alvos.length === 0) {
+      toast.error("Nenhuma parcela de associado com forma de pagamento boleto/PIX nos filtros.");
+      return;
+    }
+    setGerandoBol(true);
+    let ok = 0, jaGer = 0, erro = 0;
+    const links: { nome: string; comp: string; url: string | null }[] = [];
+    for (const r of alvos) {
+      if (r.cobranca_id) {
+        jaGer++;
+        links.push({ nome: r.associados?.nome ?? "", comp: r.competencia, url: r.link_boleto });
+        continue;
+      }
+      try {
+        const res: any = await gerarCob({ data: { mensalidade_id: r.id } });
+        ok++;
+        links.push({ nome: r.associados?.nome ?? "", comp: r.competencia, url: res?.linkBoleto ?? null });
+      } catch (e: any) {
+        erro++;
+        console.error("Erro cobrança", r.id, e?.message);
+      }
+    }
+    setGerandoBol(false);
+    toast.success(`Boletos: ${ok} gerado(s), ${jaGer} já existente(s), ${erro} erro(s)`);
+    imprimirLinksBoletos(links);
+  }
+
 
   return (
     <Card className="border-border/60 shadow-soft">
