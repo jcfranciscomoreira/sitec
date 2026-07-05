@@ -26,6 +26,7 @@ import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authen
 import { Route as AuthenticatedCentrosCustoRouteImport } from './routes/_authenticated/centros-custo'
 import { Route as AuthenticatedAssociadosListaRouteImport } from './routes/_authenticated/associados-lista'
 import { Route as AuthenticatedAssociadosRouteImport } from './routes/_authenticated/associados'
+import { Route as ApiPublicWebhooksCobrancaProvedorRouteImport } from './routes/api/public/webhooks/cobranca.$provedor'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -117,6 +118,12 @@ const AuthenticatedAssociadosRoute = AuthenticatedAssociadosRouteImport.update({
   path: '/associados',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicWebhooksCobrancaProvedorRoute =
+  ApiPublicWebhooksCobrancaProvedorRouteImport.update({
+    id: '/api/public/webhooks/cobranca/$provedor',
+    path: '/api/public/webhooks/cobranca/$provedor',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/api/public/webhooks/cobranca/$provedor': typeof ApiPublicWebhooksCobrancaProvedorRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -153,6 +161,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/api/public/webhooks/cobranca/$provedor': typeof ApiPublicWebhooksCobrancaProvedorRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -173,6 +182,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
   '/_authenticated/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/api/public/webhooks/cobranca/$provedor': typeof ApiPublicWebhooksCobrancaProvedorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -193,6 +203,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
+    | '/api/public/webhooks/cobranca/$provedor'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -211,6 +222,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
+    | '/api/public/webhooks/cobranca/$provedor'
   id:
     | '__root__'
     | '/'
@@ -230,12 +242,14 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/_authenticated/vendas'
     | '/_authenticated/vendas-relatorio'
+    | '/api/public/webhooks/cobranca/$provedor'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicWebhooksCobrancaProvedorRoute: typeof ApiPublicWebhooksCobrancaProvedorRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -359,6 +373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAssociadosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/webhooks/cobranca/$provedor': {
+      id: '/api/public/webhooks/cobranca/$provedor'
+      path: '/api/public/webhooks/cobranca/$provedor'
+      fullPath: '/api/public/webhooks/cobranca/$provedor'
+      preLoaderRoute: typeof ApiPublicWebhooksCobrancaProvedorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -403,6 +424,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicWebhooksCobrancaProvedorRoute:
+    ApiPublicWebhooksCobrancaProvedorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
