@@ -435,7 +435,7 @@ function VendasPage() {
     for (const [id, m] of markersRef.current) {
       if (!seen.has(id)) { m.setMap(null); markersRef.current.delete(id); }
     }
-  }, [filteredPins]);
+  }, [filteredPins, soloPinId]);
 
   // Centraliza o mapa no município selecionado no filtro
   useEffect(() => {
