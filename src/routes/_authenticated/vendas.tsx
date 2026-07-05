@@ -775,7 +775,16 @@ function PinDialog({
   associados: Associado[];
 }) {
   const [form, setForm] = useState<Partial<Pin>>({});
-  useEffect(() => { setForm(state.pin ?? {}); }, [state.pin, state.open]);
+  const [assocSearch, setAssocSearch] = useState("");
+  useEffect(() => { setForm(state.pin ?? {}); setAssocSearch(""); }, [state.pin, state.open]);
+  const selectedAssoc = associados.find((a) => a.id === form.associado_id);
+  const assocMatches = (() => {
+    const q = assocSearch.trim().toLowerCase();
+    if (!q) return [];
+    return associados
+      .filter((a) => a.nome.toLowerCase().includes(q) || String(a.codigo).includes(q))
+      .slice(0, 15);
+  })();
 
   return (
     <Dialog open={state.open} onOpenChange={(o) => !o && onClose()}>
@@ -884,18 +893,39 @@ function PinDialog({
             </div>
             <div>
               <Label>Vincular associado</Label>
-              <Select
-                value={form.associado_id ?? "none"}
-                onValueChange={(v) => setForm({ ...form, associado_id: v === "none" ? null : v })}
-              >
-                <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {associados.slice(0, 200).map((a) => (
-                    <SelectItem key={a.id} value={a.id}>#{a.codigo} — {a.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {selectedAssoc ? (
+                <div className="flex items-center justify-between gap-2 rounded-md border p-2 text-sm">
+                  <span className="truncate">#{selectedAssoc.codigo} — {selectedAssoc.nome}</span>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setForm({ ...form, associado_id: null })}>
+                    Remover
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Input
+                    placeholder="Digite nome ou código..."
+                    value={assocSearch}
+                    onChange={(e) => setAssocSearch(e.target.value)}
+                  />
+                  {assocSearch && (
+                    <div className="mt-1 max-h-48 overflow-y-auto rounded-md border">
+                      {assocMatches.length === 0 && (
+                        <div className="p-2 text-xs text-muted-foreground">Nenhum associado</div>
+                      )}
+                      {assocMatches.map((a) => (
+                        <button
+                          key={a.id}
+                          type="button"
+                          className="w-full px-2 py-1.5 text-left text-xs hover:bg-muted"
+                          onClick={() => { setForm({ ...form, associado_id: a.id }); setAssocSearch(""); }}
+                        >
+                          #{a.codigo} — {a.nome}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
           <div>
