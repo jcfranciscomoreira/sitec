@@ -645,6 +645,12 @@ function VendasPage() {
                     onClick={() => {
                       mapRef.current?.panTo({ lat: p.latitude, lng: p.longitude });
                       mapRef.current?.setZoom(17);
+                      const google = (window as any).google;
+                      const marker = markersRef.current.get(p.id);
+                      if (marker && google?.maps) {
+                        marker.setAnimation(google.maps.Animation.BOUNCE);
+                        setTimeout(() => marker.setAnimation?.(null), 1500);
+                      }
                       setViewPin(p);
                     }}
                     className="w-full rounded-md border p-2 text-left hover:bg-accent"
