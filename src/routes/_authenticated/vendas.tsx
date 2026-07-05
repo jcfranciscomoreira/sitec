@@ -524,12 +524,22 @@ function VendasPage() {
     if (!navigator.geolocation) return toast.error("Geolocalização indisponível");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        mapRef.current?.panTo({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        updateMeMarker(here, pos.coords.accuracy);
+        mapRef.current?.panTo(here);
         mapRef.current?.setZoom(16);
       },
-      () => toast.error("Não foi possível obter localização"),
+      (err) => {
+        if (err?.code === 1) {
+          toast.error("Permissão negada. Habilite a localização nas configurações do navegador/sistema.");
+        } else {
+          toast.error("Não foi possível obter localização");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   }
+
 
   return (
     <AppShell
