@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle2, ExternalLink, Copy, KeyRound } from "lucide-react";
+import { Loader2, CheckCircle2, Copy, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { PROVIDERS, getProvider, secretName, type ProviderMeta } from "@/lib/cobranca/providers";
 import { listIntegracoes, saveIntegracao, testarConexao } from "@/lib/cobranca.functions";
