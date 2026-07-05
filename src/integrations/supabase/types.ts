@@ -444,17 +444,61 @@ export type Database = {
           },
         ]
       }
+      integracao_bancaria: {
+        Row: {
+          ambiente: string
+          ativo: boolean
+          config_json: Json
+          created_at: string
+          id: string
+          provedor: string
+          secret_ref: string | null
+          updated_at: string
+          webhook_secret: string | null
+        }
+        Insert: {
+          ambiente?: string
+          ativo?: boolean
+          config_json?: Json
+          created_at?: string
+          id?: string
+          provedor: string
+          secret_ref?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Update: {
+          ambiente?: string
+          ativo?: boolean
+          config_json?: Json
+          created_at?: string
+          id?: string
+          provedor?: string
+          secret_ref?: string | null
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
       mensalidades: {
         Row: {
           agente_recebimento: string | null
           associado_id: string
+          cobranca_id: string | null
+          cobranca_provedor: string | null
+          cobranca_status: string | null
           codigo: number
+          codigo_barras: string | null
           competencia: string
           created_at: string
           data_pagamento: string | null
           forma_pagamento: string | null
           id: string
+          linha_digitavel: string | null
+          link_boleto: string | null
           observacoes: string | null
+          pix_copia_cola: string | null
+          qr_code_base64: string | null
           reagendamento_data: string | null
           status: Database["public"]["Enums"]["status_mensalidade"]
           updated_at: string
@@ -464,13 +508,21 @@ export type Database = {
         Insert: {
           agente_recebimento?: string | null
           associado_id: string
+          cobranca_id?: string | null
+          cobranca_provedor?: string | null
+          cobranca_status?: string | null
           codigo?: number
+          codigo_barras?: string | null
           competencia: string
           created_at?: string
           data_pagamento?: string | null
           forma_pagamento?: string | null
           id?: string
+          linha_digitavel?: string | null
+          link_boleto?: string | null
           observacoes?: string | null
+          pix_copia_cola?: string | null
+          qr_code_base64?: string | null
           reagendamento_data?: string | null
           status?: Database["public"]["Enums"]["status_mensalidade"]
           updated_at?: string
@@ -480,13 +532,21 @@ export type Database = {
         Update: {
           agente_recebimento?: string | null
           associado_id?: string
+          cobranca_id?: string | null
+          cobranca_provedor?: string | null
+          cobranca_status?: string | null
           codigo?: number
+          codigo_barras?: string | null
           competencia?: string
           created_at?: string
           data_pagamento?: string | null
           forma_pagamento?: string | null
           id?: string
+          linha_digitavel?: string | null
+          link_boleto?: string | null
           observacoes?: string | null
+          pix_copia_cola?: string | null
+          qr_code_base64?: string | null
           reagendamento_data?: string | null
           status?: Database["public"]["Enums"]["status_mensalidade"]
           updated_at?: string
@@ -791,6 +851,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webhook_logs: {
+        Row: {
+          created_at: string
+          erro: string | null
+          evento: string | null
+          id: string
+          mensalidade_id: string | null
+          payload: Json
+          processado: boolean
+          provedor: string
+        }
+        Insert: {
+          created_at?: string
+          erro?: string | null
+          evento?: string | null
+          id?: string
+          mensalidade_id?: string | null
+          payload: Json
+          processado?: boolean
+          provedor: string
+        }
+        Update: {
+          created_at?: string
+          erro?: string | null
+          evento?: string | null
+          id?: string
+          mensalidade_id?: string | null
+          payload?: Json
+          processado?: boolean
+          provedor?: string
+        }
+        Relationships: []
       }
     }
     Views: {
