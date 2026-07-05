@@ -628,6 +628,14 @@ function VendasPage() {
             </div>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Pontos ({filteredPins.length})</h3>
+              {soloPinId && (
+                <button
+                  onClick={() => setSoloPinId(null)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Mostrar todos
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap gap-1 text-xs">
               {STATUS_OPTIONS.map((s) => (
