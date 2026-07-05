@@ -302,6 +302,57 @@ function FinanceiroPage() {
           </DialogContent>
         </Dialog>
       )}
+
+      {cobrancaOpen && (
+        <Dialog open onOpenChange={(v) => !v && setCobrancaOpen(null)}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle className="font-serif">Cobrança — {cobrancaOpen.associados?.nome}</DialogTitle></DialogHeader>
+            <div className="space-y-3 text-sm">
+              <div className="rounded-md bg-muted p-3">
+                <p><span className="text-muted-foreground">Competência:</span> <span className="capitalize">{competenciaLabel(cobrancaOpen.competencia)}</span></p>
+                <p><span className="text-muted-foreground">Valor:</span> <strong>{brl(cobrancaOpen.valor)}</strong></p>
+                <p><span className="text-muted-foreground">Vencimento:</span> {fmtDate(cobrancaOpen.vencimento)}</p>
+                <p><span className="text-muted-foreground">Status:</span> {cobrancaOpen.cobranca_status ?? "—"}</p>
+              </div>
+
+              {cobrancaOpen.qr_code_base64 && (
+                <div className="flex flex-col items-center gap-2 rounded-md border p-3">
+                  <p className="text-xs font-medium text-muted-foreground">QR Code PIX</p>
+                  <img src={`data:image/png;base64,${cobrancaOpen.qr_code_base64}`} alt="QR Code PIX" className="h-48 w-48" />
+                </div>
+              )}
+              {cobrancaOpen.pix_copia_cola && (
+                <div className="space-y-1">
+                  <Label className="text-xs">PIX copia e cola</Label>
+                  <div className="flex gap-2">
+                    <Input readOnly value={cobrancaOpen.pix_copia_cola} className="font-mono text-xs" />
+                    <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(cobrancaOpen.pix_copia_cola!); toast.success("Copiado"); }}><Copy className="h-3 w-3" /></Button>
+                  </div>
+                </div>
+              )}
+              {cobrancaOpen.linha_digitavel && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Linha digitável do boleto</Label>
+                  <div className="flex gap-2">
+                    <Input readOnly value={cobrancaOpen.linha_digitavel} className="font-mono text-xs" />
+                    <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(cobrancaOpen.linha_digitavel!); toast.success("Copiado"); }}><Copy className="h-3 w-3" /></Button>
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {cobrancaOpen.link_boleto && (
+                  <Button asChild variant="outline" size="sm">
+                    <a href={cobrancaOpen.link_boleto} target="_blank" rel="noreferrer"><ExternalLink className="mr-1 h-3 w-3" />Abrir boleto</a>
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" onClick={() => sincCob.mutate(cobrancaOpen.id)} disabled={sincCob.isPending}>
+                  {sincCob.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <RefreshCw className="mr-1 h-3 w-3" />}Sincronizar status
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </AppShell>
   );
 }
