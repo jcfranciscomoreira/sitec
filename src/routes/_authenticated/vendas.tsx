@@ -218,8 +218,14 @@ function VendasPage() {
           navigator.geolocation.getCurrentPosition(
             (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
             (err) => {
-              if (isMobile && err?.code === err?.PERMISSION_DENIED) {
-                toast.error("Acesso à localização negado.");
+              if (err?.code === 1) {
+                toast.error("Acesso à localização negado. Habilite nas configurações do navegador/sistema.", {
+                  action: { label: "Tentar de novo", onClick: () => centerOnMe() },
+                });
+              } else if (isMobile) {
+                toast("Toque em 'Minha localização' para autorizar o acesso.", {
+                  action: { label: "Autorizar", onClick: () => centerOnMe() },
+                });
               }
               resolve(null);
             },
