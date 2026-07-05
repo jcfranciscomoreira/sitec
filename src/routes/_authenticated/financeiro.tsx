@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { Plus, CheckCircle2, FileText } from "lucide-react";
+import { Plus, CheckCircle2, FileText, QrCode, Copy, ExternalLink, RefreshCw, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
+import { criarCobranca, sincronizarCobranca } from "@/lib/cobranca.functions";
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
   head: () => ({ meta: [{ title: "Financeiro — Memorial" }] }),
@@ -24,7 +26,10 @@ type Mensalidade = {
   id: string; associado_id: string; competencia: string; valor: number;
   vencimento: string; data_pagamento: string | null; forma_pagamento: string | null;
   status: "pendente" | "pago" | "atrasado" | "cancelado"; observacoes: string | null;
-  associados?: { nome: string; codigo: number } | null;
+  cobranca_id: string | null; cobranca_provedor: string | null; cobranca_status: string | null;
+  linha_digitavel: string | null; codigo_barras: string | null;
+  pix_copia_cola: string | null; qr_code_base64: string | null; link_boleto: string | null;
+  associados?: { nome: string; codigo: number; forma_pagamento: string | null } | null;
 };
 
 function FinanceiroPage() {
