@@ -397,7 +397,8 @@ function VendasPage() {
     const google = (window as any).google;
     if (!google) return;
     const seen = new Set<string>();
-    for (const pin of filteredPins) {
+    const visiblePins = soloPinId ? filteredPins.filter((p) => p.id === soloPinId) : filteredPins;
+    for (const pin of visiblePins) {
       seen.add(pin.id);
       const existing = markersRef.current.get(pin.id);
       const statusDef = STATUS_OPTIONS.find((s) => s.value === pin.status) ?? STATUS_OPTIONS[0];
