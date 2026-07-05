@@ -1354,6 +1354,19 @@ function MobileRecebimentoSection() {
                         <TableCell>{fmtDate(m._efetivo)}</TableCell>
                         <TableCell className="text-right">{brl(Number(m.valor))}</TableCell>
                         <TableCell className="text-right whitespace-nowrap">
+                          {pinsPorAssoc[m.associado_id] && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              title={`Ver ${pinsPorAssoc[m.associado_id].nome} no mapa`}
+                              onClick={() => {
+                                const p = pinsPorAssoc[m.associado_id];
+                                window.open(`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`, "_blank");
+                              }}
+                            >
+                              <MapPin className="h-4 w-4 text-primary" />
+                            </Button>
+                          )}
                           <Button size="sm" variant="ghost" onClick={() => { setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>Receber</Button>
                           <Button size="sm" variant="ghost" onClick={() => { setReagendar(m); setReagData(""); }}>Reagendar</Button>
                         </TableCell>
