@@ -1117,6 +1117,30 @@ function MobileRecebimentoSection() {
   }, [aReceberRaw, meus, filtroModo, filtroDia, filtroDe, filtroAte, filtroAssociado, hoje]);
 
 
+  const associadoIdsAR = useMemo(
+    () => Array.from(new Set((aReceberRaw as any[]).map((m: any) => m.associado_id).filter(Boolean))),
+    [aReceberRaw],
+  );
+  const { data: pinsPorAssoc = {} } = useQuery<Record<string, { lat: number; lng: number; nome: string }>>({
+    queryKey: ["vendas-pins-associados", associadoIdsAR],
+    enabled: associadoIdsAR.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vendas_pins")
+        .select("associado_id, latitude, longitude, nome")
+        .in("associado_id", associadoIdsAR as string[]);
+      if (error) throw error;
+      const map: Record<string, { lat: number; lng: number; nome: string }> = {};
+      (data ?? []).forEach((p: any) => {
+        if (p.associado_id && !map[p.associado_id]) {
+          map[p.associado_id] = { lat: Number(p.latitude), lng: Number(p.longitude), nome: p.nome };
+        }
+      });
+      return map;
+    },
+  });
+
+
   const { data: cidades = [] } = useQuery({
     queryKey: ["cidades-cobrador", cobradorId],
     enabled: !!cobradorId,
