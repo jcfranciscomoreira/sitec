@@ -200,11 +200,29 @@ function VendasPage() {
         if (cancelled || !mapDivRef.current) return;
         const google = (window as any).google;
         if (!google?.maps) return;
-        const initialFix = await new Promise<{ lat: number; lng: number; accuracy?: number } | null>((resolve) => {
+        const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+        const initialFix = await new Promise<{ lat: number; lng: number; accuracy?: number } | null>(async (resolve) => {
           if (!navigator.geolocation) return resolve(null);
+          if (isMobile) {
+            try {
+              const perm = await (navigator as any).permissions?.query?.({ name: "geolocation" });
+              if (perm?.state === "denied") {
+                toast.error("Permissão de localização negada. Habilite nas configurações do navegador.");
+                return resolve(null);
+              }
+              if (perm?.state !== "granted") {
+                toast.info("Permita o acesso à sua localização para ver pontos próximos.");
+              }
+            } catch {}
+          }
           navigator.geolocation.getCurrentPosition(
             (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
-            () => resolve(null),
+            (err) => {
+              if (isMobile && err?.code === err?.PERMISSION_DENIED) {
+                toast.error("Acesso à localização negado.");
+              }
+              resolve(null);
+            },
             { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 },
           );
         });
