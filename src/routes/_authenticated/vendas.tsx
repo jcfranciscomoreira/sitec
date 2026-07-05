@@ -129,6 +129,7 @@ function VendasPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ open: boolean; pin: Partial<Pin> | null }>({ open: false, pin: null });
   const [viewPin, setViewPin] = useState<Pin | null>(null);
+  const [soloPinId, setSoloPinId] = useState<string | null>(null);
   const [municipioFiltro, setMunicipioFiltro] = useState<string>("__auto__");
   const [statusFiltro, setStatusFiltro] = useState<string>("__all__");
   const [meMunicipio, setMeMunicipio] = useState<string | null>(null);
@@ -396,7 +397,8 @@ function VendasPage() {
     const google = (window as any).google;
     if (!google) return;
     const seen = new Set<string>();
-    for (const pin of filteredPins) {
+    const visiblePins = soloPinId ? filteredPins.filter((p) => p.id === soloPinId) : filteredPins;
+    for (const pin of visiblePins) {
       seen.add(pin.id);
       const existing = markersRef.current.get(pin.id);
       const statusDef = STATUS_OPTIONS.find((s) => s.value === pin.status) ?? STATUS_OPTIONS[0];
@@ -433,7 +435,7 @@ function VendasPage() {
     for (const [id, m] of markersRef.current) {
       if (!seen.has(id)) { m.setMap(null); markersRef.current.delete(id); }
     }
-  }, [filteredPins]);
+  }, [filteredPins, soloPinId]);
 
   // Centraliza o mapa no município selecionado no filtro
   useEffect(() => {
@@ -626,6 +628,14 @@ function VendasPage() {
             </div>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">Pontos ({filteredPins.length})</h3>
+              {soloPinId && (
+                <button
+                  onClick={() => setSoloPinId(null)}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Mostrar todos
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap gap-1 text-xs">
               {STATUS_OPTIONS.map((s) => (
@@ -643,15 +653,9 @@ function VendasPage() {
                   <button
                     key={p.id}
                     onClick={() => {
+                      setSoloPinId(p.id);
                       mapRef.current?.panTo({ lat: p.latitude, lng: p.longitude });
                       mapRef.current?.setZoom(17);
-                      const google = (window as any).google;
-                      const marker = markersRef.current.get(p.id);
-                      if (marker && google?.maps) {
-                        marker.setAnimation(google.maps.Animation.BOUNCE);
-                        setTimeout(() => marker.setAnimation?.(null), 1500);
-                      }
-                      setViewPin(p);
                     }}
                     className="w-full rounded-md border p-2 text-left hover:bg-accent"
                   >
