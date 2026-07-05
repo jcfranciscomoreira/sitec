@@ -41,13 +41,13 @@ function FinanceiroPage() {
   const { data: lista = [], isLoading } = useQuery({
     queryKey: ["mensalidades", statusFilter],
     queryFn: async () => {
-      let q = supabase.from("mensalidades").select("*, associados(nome, codigo)").order("vencimento", { ascending: false });
+      let q = supabase.from("mensalidades").select("*, associados(nome, codigo, forma_pagamento)").order("vencimento", { ascending: false });
       if (statusFilter !== "todos") q = q.eq("status", statusFilter as any);
       const { data, error } = await q.limit(200);
       if (error) throw error;
       // atualizar atrasadas em memória (display)
       const hoje = new Date().toISOString().slice(0, 10);
-      return (data as Mensalidade[]).map((m) => {
+      return (data as unknown as Mensalidade[]).map((m) => {
         if (m.status === "pendente" && m.vencimento < hoje) return { ...m, status: "atrasado" as const };
         return m;
       });
