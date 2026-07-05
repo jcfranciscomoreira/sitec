@@ -918,14 +918,18 @@ function CarneSection() {
           <div className="space-y-2"><Label>Vencimento até</Label><Input type="date" value={vencAte} onChange={(e) => setVencAte(e.target.value)} /></div>
           <div className="space-y-2"><Label>Dia de pagamento</Label><Input type="number" min="1" max="31" value={diaPag} onChange={(e) => setDiaPag(e.target.value)} placeholder="Ex: 10" /></div>
         </div>
-        <div>
+        <div className="flex flex-wrap gap-2">
           <Button onClick={gerar} disabled={isLoading}>
             <BookOpen className="mr-2 h-4 w-4" />Gerar carnês
           </Button>
+          <Button variant="outline" onClick={gerarBoletos} disabled={isLoading || gerandoBol}>
+            <FileText className="mr-2 h-4 w-4" />{gerandoBol ? "Gerando boletos..." : "Gerar boletos (boleto/PIX)"}
+          </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Gera uma página por parcela com os dados do associado, valor, vencimento e código de identificação. Filtre por associado para imprimir o carnê individual.
+          <b>Gerar carnês</b>: imprime carnê tradicional. <b>Gerar boletos</b>: emite cobranças (boleto + PIX) apenas para associados com forma de pagamento boleto ou PIX, usando a integração bancária ativa em Configurações.
         </p>
+
         {rows.length > 0 && (
           <div className="rounded border border-border px-3 py-2 text-sm">
             <b>{rows.length}</b> parcelas no último filtro aplicado.
