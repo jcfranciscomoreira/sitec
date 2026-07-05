@@ -115,6 +115,29 @@ function FinanceiroPage() {
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
 
+  const [cobrancaOpen, setCobrancaOpen] = useState<Mensalidade | null>(null);
+  const criarCobrancaFn = useServerFn(criarCobranca);
+  const sincronizarFn = useServerFn(sincronizarCobranca);
+  const gerarCob = useMutation({
+    mutationFn: async (id: string) => await criarCobrancaFn({ data: { mensalidade_id: id } }),
+    onSuccess: async (_r, id) => {
+      await qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      toast.success("Cobrança gerada");
+      // reabre com dados atualizados
+      const { data } = await supabase.from("mensalidades").select("*, associados(nome, codigo, forma_pagamento)").eq("id", id).maybeSingle();
+      if (data) setCobrancaOpen(data as unknown as Mensalidade);
+    },
+    onError: (e: any) => toast.error("Erro ao gerar cobrança", { description: e.message }),
+  });
+  const sincCob = useMutation({
+    mutationFn: async (id: string) => await sincronizarFn({ data: { mensalidade_id: id } }),
+    onSuccess: (r: any) => {
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      toast.success(r?.pago ? "Pagamento confirmado" : `Status: ${r?.status ?? "consultado"}`);
+    },
+    onError: (e: any) => toast.error("Erro", { description: e.message }),
+  });
+
   const totalRecebido = lista.filter((m) => m.status === "pago").reduce((s, m) => s + Number(m.valor), 0);
   const totalAReceber = lista.filter((m) => m.status !== "pago" && m.status !== "cancelado").reduce((s, m) => s + Number(m.valor), 0);
 
