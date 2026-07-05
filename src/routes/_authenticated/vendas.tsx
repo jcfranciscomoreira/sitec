@@ -98,6 +98,22 @@ function loadGoogleMaps(): Promise<void> {
   return mapsLoading;
 }
 
+function getLocationHelpUrl(): string {
+  const ua = navigator.userAgent;
+  if (/iPhone|iPad|iPod/i.test(ua)) return "https://support.apple.com/pt-br/HT207092";
+  if (/Android/i.test(ua)) return "https://support.google.com/chrome/answer/142065?hl=pt-BR&co=GENIE.Platform%3DAndroid";
+  return "https://support.google.com/chrome/answer/142065?hl=pt-BR&co=GENIE.Platform%3DDesktop";
+}
+
+function showLocationDeniedToast() {
+  const url = getLocationHelpUrl();
+  toast.error("Acesso à localização negado. Habilite nas configurações do navegador/sistema.", {
+    duration: 10000,
+    action: { label: "Como autorizar", onClick: () => window.open(url, "_blank", "noopener") },
+  });
+}
+
+
 function VendasPage() {
   const router = useRouter();
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -207,7 +223,7 @@ function VendasPage() {
             try {
               const perm = await (navigator as any).permissions?.query?.({ name: "geolocation" });
               if (perm?.state === "denied") {
-                toast.error("Permissão de localização negada. Habilite nas configurações do navegador.");
+                showLocationDeniedToast();
                 return resolve(null);
               }
               if (perm?.state !== "granted") {
@@ -219,9 +235,7 @@ function VendasPage() {
             (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy }),
             (err) => {
               if (err?.code === 1) {
-                toast.error("Acesso à localização negado. Habilite nas configurações do navegador/sistema.", {
-                  action: { label: "Tentar de novo", onClick: () => centerOnMe() },
-                });
+                showLocationDeniedToast();
               } else if (isMobile) {
                 toast("Toque em 'Minha localização' para autorizar o acesso.", {
                   action: { label: "Autorizar", onClick: () => centerOnMe() },
@@ -537,7 +551,7 @@ function VendasPage() {
       },
       (err) => {
         if (err?.code === 1) {
-          toast.error("Permissão negada. Habilite a localização nas configurações do navegador/sistema.");
+          showLocationDeniedToast();
         } else {
           toast.error("Não foi possível obter localização");
         }
