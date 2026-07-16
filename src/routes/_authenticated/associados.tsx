@@ -871,7 +871,12 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
             </div>
           </div>
           {!form && (
-            <Button onClick={() => setCreating(true)}><Plus className="mr-2 h-4 w-4" />Nova parcela</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={reimprimirTodosCarnes} disabled={mens.length === 0}>
+                <BookOpen className="mr-2 h-4 w-4" />Reimprimir carnês (pendentes)
+              </Button>
+              <Button onClick={() => setCreating(true)}><Plus className="mr-2 h-4 w-4" />Nova parcela</Button>
+            </div>
           )}
         </div>
 
