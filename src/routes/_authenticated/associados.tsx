@@ -978,6 +978,34 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
                 <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
+                    {m.status !== "cancelado" && (
+                      <Button
+                        size="icon" variant="ghost" title="Reimprimir carnê desta parcela"
+                        onClick={() => imprimirCarnesAssociado(associado as any, [m] as any)}
+                      >
+                        <BookOpen className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {m.status !== "pago" && m.status !== "cancelado" && (
+                      m.link_boleto || m.pix_copia_cola ? (
+                        <Button
+                          size="icon" variant="ghost" title="Abrir boleto/PIX existente"
+                          onClick={() => m.link_boleto ? window.open(m.link_boleto, "_blank", "noopener") : navigator.clipboard.writeText(m.pix_copia_cola).then(() => toast.success("PIX copiado"))}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          size="icon" variant="ghost" title="Emitir boleto/PIX"
+                          onClick={() => emitirBoleto.mutate(m.id)}
+                          disabled={emitirBoleto.isPending}
+                        >
+                          {emitirBoleto.isPending && emitirBoleto.variables === m.id
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <FileText className="h-4 w-4" />}
+                        </Button>
+                      )
+                    )}
                     {m.status === "pago" && (
                       <Button size="icon" variant="ghost" title="Gerar comprovante" onClick={() => gerarComprovante(associado, m)}>
                         <Receipt className="h-4 w-4" />
