@@ -27,13 +27,15 @@ export const MODULES: AppModule[] = [
   { group: "Associados", key: "dashboard", label: "Painel", url: "/dashboard", icon: LayoutDashboard },
   { group: "Associados", key: "associados", label: "Associados", url: "/associados", icon: Users },
   { group: "Associados", key: "planos", label: "Planos", url: "/planos", icon: FileText },
-  { group: "Associados", key: "financeiro", label: "Mensalidades", url: "/financeiro", icon: Wallet },
+  { group: "Associados", key: "financeiro", label: "Mensalidades", url: "/financeiro", icon: Wallet, tabs: [
+    { key: "mensalidades", label: "Mensalidades" },
+    { key: "carne", label: "Gerar carnês em massa" },
+  ] },
   { group: "Associados", key: "recebimento", label: "Recebimento", url: "/recebimento", icon: HandCoins, tabs: [
     { key: "mobile", label: "Recebimento mobile" },
     { key: "conciliar", label: "Conciliação (supervisor)" },
     { key: "baixa", label: "Baixa por agente" },
     { key: "historico", label: "Histórico de baixas" },
-    { key: "carne", label: "Gerar carnês em massa" },
     { key: "cobradores", label: "Cadastro de cobradores" },
   ] },
   { group: "Gestão Financeira", key: "empresa-financeiro", label: "Painel Financeiro", url: "/empresa-financeiro", icon: Building2 },
