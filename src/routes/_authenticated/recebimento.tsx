@@ -768,8 +768,45 @@ function HistoricoSection() {
         </Dialog>
       )}
     </Card>
+
+    <Card className="border-border/60 shadow-soft">
+      <CardHeader><CardTitle className="font-serif flex items-center gap-2"><CheckCircle2 className="h-4 w-4" />Todas as baixas (mensalidades pagas)</CardTitle></CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Pagamento</TableHead>
+              <TableHead>Associado</TableHead>
+              <TableHead>Competência</TableHead>
+              <TableHead>Vencimento</TableHead>
+              <TableHead>Forma</TableHead>
+              <TableHead className="text-right">Valor</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loadingBaixas && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {!loadingBaixas && baixas.length === 0 && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Nenhuma baixa registrada.</TableCell></TableRow>}
+            {baixas.map((b: any) => (
+              <TableRow key={b.id}>
+                <TableCell>{fmtDate(b.data_pagamento)}</TableCell>
+                <TableCell>
+                  <div className="font-medium">{b.associados?.nome ?? "—"}</div>
+                  <div className="text-xs text-muted-foreground">#{String(b.associados?.codigo ?? "").padStart(4, "0")}</div>
+                </TableCell>
+                <TableCell className="capitalize">{competenciaLabel(b.competencia)}</TableCell>
+                <TableCell>{fmtDate(b.vencimento)}</TableCell>
+                <TableCell className="capitalize">{b.forma_pagamento ?? "—"}</TableCell>
+                <TableCell className="text-right text-success font-medium">{brl(Number(b.valor))}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+    </div>
   );
 }
+
 
 
 // ============= Recebimento Mobile (Cobrador) =============
