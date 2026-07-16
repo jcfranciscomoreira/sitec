@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard, MapPin, BookOpen, FileText, ExternalLink, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
+import { criarCobranca } from "@/lib/cobranca.functions";
+import { imprimirCarnesAssociado } from "@/lib/carne-print";
 
 export const Route = createFileRoute("/_authenticated/associados")({
   head: () => ({ meta: [{ title: "Associados — Memorial" }] }),
