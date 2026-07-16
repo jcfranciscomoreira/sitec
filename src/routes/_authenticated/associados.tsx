@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard, MapPin, BookOpen, FileText, ExternalLink, Loader2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
+import { criarCobranca } from "@/lib/cobranca.functions";
+import { imprimirCarnesAssociado } from "@/lib/carne-print";
 
 export const Route = createFileRoute("/_authenticated/associados")({
   head: () => ({ meta: [{ title: "Associados — Memorial" }] }),
@@ -810,6 +813,22 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
   const totalPago = mens.filter((m) => m.status === "pago").reduce((s, m) => s + Number(m.valor), 0);
   const totalAberto = mens.filter((m) => m.status !== "pago" && m.status !== "cancelado").reduce((s, m) => s + Number(m.valor), 0);
 
+  const criarCobrancaFn = useServerFn(criarCobranca);
+  const emitirBoleto = useMutation({
+    mutationFn: async (id: string) => await criarCobrancaFn({ data: { mensalidade_id: id } }),
+    onSuccess: async (res: any) => {
+      await qc.invalidateQueries({ queryKey: ["mensalidades-associado", associado.id] });
+      toast.success("Boleto/PIX gerado");
+      if (res?.linkBoleto) window.open(res.linkBoleto, "_blank", "noopener");
+    },
+    onError: (e: any) => toast.error("Erro ao emitir boleto", { description: e.message }),
+  });
+
+  function reimprimirTodosCarnes() {
+    const pendentes = mens.filter((m) => m.status === "pendente" || m.status === "atrasado");
+    imprimirCarnesAssociado(associado as any, pendentes as any);
+  }
+
   function novaParcelaDefaults() {
     const hoje = new Date();
     // próximo mês a partir da última competência, ou mês corrente
@@ -852,7 +871,12 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
             </div>
           </div>
           {!form && (
-            <Button onClick={() => setCreating(true)}><Plus className="mr-2 h-4 w-4" />Nova parcela</Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={reimprimirTodosCarnes} disabled={mens.length === 0}>
+                <BookOpen className="mr-2 h-4 w-4" />Reimprimir carnês (pendentes)
+              </Button>
+              <Button onClick={() => setCreating(true)}><Plus className="mr-2 h-4 w-4" />Nova parcela</Button>
+            </div>
           )}
         </div>
 
@@ -954,6 +978,34 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
                 <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
+                    {m.status !== "cancelado" && (
+                      <Button
+                        size="icon" variant="ghost" title="Reimprimir carnê desta parcela"
+                        onClick={() => imprimirCarnesAssociado(associado as any, [m] as any)}
+                      >
+                        <BookOpen className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {m.status !== "pago" && m.status !== "cancelado" && (
+                      m.link_boleto || m.pix_copia_cola ? (
+                        <Button
+                          size="icon" variant="ghost" title="Abrir boleto/PIX existente"
+                          onClick={() => m.link_boleto ? window.open(m.link_boleto, "_blank", "noopener") : navigator.clipboard.writeText(m.pix_copia_cola).then(() => toast.success("PIX copiado"))}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          size="icon" variant="ghost" title="Emitir boleto/PIX"
+                          onClick={() => emitirBoleto.mutate(m.id)}
+                          disabled={emitirBoleto.isPending}
+                        >
+                          {emitirBoleto.isPending && emitirBoleto.variables === m.id
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <FileText className="h-4 w-4" />}
+                        </Button>
+                      )
+                    )}
                     {m.status === "pago" && (
                       <Button size="icon" variant="ghost" title="Gerar comprovante" onClick={() => gerarComprovante(associado, m)}>
                         <Receipt className="h-4 w-4" />
