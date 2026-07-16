@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "authenticated read active cobradores (safe columns via view)" ON public.cobradores;
