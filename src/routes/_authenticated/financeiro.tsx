@@ -145,42 +145,42 @@ function FinanceiroPage() {
 
   const currentMonth = new Date().toISOString().slice(0, 7);
 
+  const gerarMensalidadesDialog = (
+    <Dialog open={openGerar} onOpenChange={setOpenGerar}>
+      <DialogTrigger asChild>
+        <Button><Plus className="mr-2 h-4 w-4" />Gerar mensalidades</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle className="font-serif">Gerar mensalidades</DialogTitle></DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            gerar.mutate({ inicio: String(fd.get("inicio")), fim: String(fd.get("fim")) });
+          }}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Mês inicial</Label>
+              <Input name="inicio" type="month" defaultValue={currentMonth} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Mês final</Label>
+              <Input name="fim" type="month" defaultValue={currentMonth} required />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Cria uma mensalidade pendente por mês no intervalo selecionado, para cada associado ativo com plano. Lançamentos duplicados são ignorados.</p>
+          <DialogFooter><Button type="submit" disabled={gerar.isPending}>{gerar.isPending ? "Gerando..." : "Gerar"}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <AppShell
       title="Financeiro"
       subtitle="Controle de mensalidades e recebimentos"
-      actions={
-        <Dialog open={openGerar} onOpenChange={setOpenGerar}>
-          <DialogTrigger asChild>
-            <Button><Plus className="mr-2 h-4 w-4" />Gerar mensalidades</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle className="font-serif">Gerar mensalidades</DialogTitle></DialogHeader>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const fd = new FormData(e.currentTarget);
-                gerar.mutate({ inicio: String(fd.get("inicio")), fim: String(fd.get("fim")) });
-              }}
-              className="space-y-4"
-            >
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>Mês inicial</Label>
-                  <Input name="inicio" type="month" defaultValue={currentMonth} required />
-                </div>
-                <div className="space-y-2">
-                  <Label>Mês final</Label>
-                  <Input name="fim" type="month" defaultValue={currentMonth} required />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">Cria uma mensalidade pendente por mês no intervalo selecionado, para cada associado ativo com plano. Lançamentos duplicados são ignorados.</p>
-              <DialogFooter><Button type="submit" disabled={gerar.isPending}>{gerar.isPending ? "Gerando..." : "Gerar"}</Button></DialogFooter>
-            </form>
-          </DialogContent>
-
-        </Dialog>
-      }
     >
       <Tabs defaultValue="mensalidades" className="w-full">
         <TabsList>
@@ -189,6 +189,9 @@ function FinanceiroPage() {
         </TabsList>
 
         <TabsContent value="mensalidades" className="mt-4 space-y-6">
+          <div className="flex justify-end">
+            {gerarMensalidadesDialog}
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="border-border/60 shadow-soft">
               <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Recebido (filtro atual)</CardTitle></CardHeader>
@@ -199,84 +202,14 @@ function FinanceiroPage() {
               <CardContent><div className="font-serif text-3xl font-semibold text-gold">{brl(totalAReceber)}</div></CardContent>
             </Card>
           </div>
-
-          <Card className="border-border/60 shadow-soft">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="font-serif">Mensalidades</CardTitle>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os status</SelectItem>
-                  <SelectItem value="pendente">Pendentes</SelectItem>
-                  <SelectItem value="pago">Pagas</SelectItem>
-                  <SelectItem value="cancelado">Canceladas</SelectItem>
-                </SelectContent>
-              </Select>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Associado</TableHead>
-                    <TableHead>Competência</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Pagamento</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
-                  {!isLoading && lista.length === 0 && (
-                    <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                      <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                      Nenhuma mensalidade. Use "Gerar mensalidades" para criar as do mês.
-                    </TableCell></TableRow>
-                  )}
-                  {lista.map((m) => (
-                    <TableRow key={m.id}>
-                      <TableCell>
-                        <div className="font-medium">{m.associados?.nome ?? "—"}</div>
-                        <div className="text-xs text-muted-foreground">#{String(m.associados?.codigo ?? "").padStart(4, "0")}</div>
-                      </TableCell>
-                      <TableCell className="capitalize">{competenciaLabel(m.competencia)}</TableCell>
-                      <TableCell>{fmtDate(m.vencimento)}</TableCell>
-                      <TableCell className="font-medium">{brl(m.valor)}</TableCell>
-                      <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
-                      <TableCell><StatusBadge status={m.status} /></TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          {m.status !== "pago" && m.status !== "cancelado" && !m.cobranca_id &&
-                            ["boleto", "pix", "boleto_pix"].includes(m.associados?.forma_pagamento ?? "") && (
-                              <Button size="sm" variant="outline" onClick={() => gerarCob.mutate(m.id)} disabled={gerarCob.isPending}>
-                                {gerarCob.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-                              </Button>
-                          )}
-                          {m.cobranca_id && (
-                            <Button size="sm" variant="outline" onClick={() => setCobrancaOpen(m)}>
-                              <QrCode className="mr-1 h-4 w-4" />Boleto/PIX
-                            </Button>
-                          )}
-                          {m.status !== "pago" && m.status !== "cancelado" && (
-                            <Button size="sm" variant="outline" onClick={() => setPayOpen(m)}>
-                              <CheckCircle2 className="mr-1 h-4 w-4" />Receber
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="carne" className="mt-4">
           <CarneSection />
         </TabsContent>
       </Tabs>
+
+
 
 
       {payOpen && (
