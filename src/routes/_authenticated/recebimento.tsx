@@ -659,11 +659,27 @@ function HistoricoSection() {
         .select("*")
         .order("data_recebimento", { ascending: false })
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(500);
       if (error) throw error;
       return data ?? [];
     },
   });
+
+  const { data: baixas = [], isLoading: loadingBaixas } = useQuery({
+    queryKey: ["baixas-mensalidades"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("id, competencia, valor, vencimento, data_pagamento, forma_pagamento, associados(nome, codigo)")
+        .eq("status", "pago")
+        .not("data_pagamento", "is", null)
+        .order("data_pagamento", { ascending: false })
+        .limit(1000);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
 
   return (
     <Card className="border-border/60 shadow-soft">
