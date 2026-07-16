@@ -682,7 +682,9 @@ function HistoricoSection() {
 
 
   return (
+    <div className="space-y-6">
     <Card className="border-border/60 shadow-soft">
+
       <CardHeader><CardTitle className="font-serif flex items-center gap-2"><History className="h-4 w-4" />Histórico de baixas</CardTitle></CardHeader>
       <CardContent>
         <Table>
