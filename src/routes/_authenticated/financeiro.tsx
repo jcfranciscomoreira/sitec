@@ -95,7 +95,16 @@ function FinanceiroPage() {
       qc.invalidateQueries({ queryKey: ["mensalidades"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       setOpenGerar(false);
-      toast.success(`Mensalidades geradas`, { description: `${r.inseridas} novas em ${r.meses} mês(es) (${r.tentadas} tentadas).` });
+      const jaExistentes = Math.max(0, r.tentadas - r.inseridas);
+      if (r.inseridas === 0) {
+        toast.info("Nenhuma mensalidade nova", {
+          description: `Todas as ${r.tentadas} parcelas já existiam para o período. Use a aba “Gerar carnês em massa” para reimprimir/reemitir boletos.`,
+        });
+      } else {
+        toast.success("Mensalidades geradas", {
+          description: `${r.inseridas} nova(s) · ${jaExistentes} já existente(s) · ${r.meses} mês(es).`,
+        });
+      }
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
