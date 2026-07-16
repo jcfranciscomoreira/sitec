@@ -1,16 +1,41 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { BookOpen, FileText } from "lucide-react";
+import { BookOpen, FileText, CheckCircle2, AlertCircle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
 import { criarCobranca } from "@/lib/cobranca.functions";
+
+type ResumoItem = {
+  mensalidade_id: string;
+  nome: string;
+  competencia: string;
+  status: "ok" | "existente" | "erro";
+  mensagem?: string;
+  url?: string | null;
+};
+
+type Resumo = {
+  tipo: "carne" | "boleto";
+  quandoISO: string;
+  totalFiltrado: number;
+  processadas: number;
+  ok: number;
+  jaExistentes: number;
+  erros: number;
+  itens: ResumoItem[];
+  filtros: { cidade: string; associadoId: string; vencDe: string; vencAte: string; diaPag: string };
+};
 
 export function CarneSection() {
   const [cidade, setCidade] = useState<string>("todas");
@@ -18,6 +43,8 @@ export function CarneSection() {
   const [vencDe, setVencDe] = useState("");
   const [vencAte, setVencAte] = useState("");
   const [diaPag, setDiaPag] = useState<string>("");
+  const [confirmaAcao, setConfirmaAcao] = useState<null | "carne" | "boleto">(null);
+  const [resumo, setResumo] = useState<Resumo | null>(null);
 
   const { data: rows = [], isLoading, refetch } = useQuery({
     queryKey: ["carne-rows", cidade, associadoId, vencDe, vencAte, diaPag],
@@ -73,12 +100,39 @@ export function CarneSection() {
 
   const gerarCob = useServerFn(criarCobranca);
   const [gerandoBol, setGerandoBol] = useState(false);
+  const [gerandoCarne, setGerandoCarne] = useState(false);
+
+  function filtrosSnapshot() {
+    return { cidade, associadoId, vencDe, vencAte, diaPag };
+  }
 
   async function gerar() {
-    const { data } = await refetch();
-    const list = (data ?? []) as any[];
-    if (list.length === 0) { toast.error("Nenhuma parcela com os filtros."); return; }
-    imprimirCarnes(list);
+    setGerandoCarne(true);
+    try {
+      const { data } = await refetch();
+      const list = (data ?? []) as any[];
+      if (list.length === 0) { toast.error("Nenhuma parcela com os filtros."); return; }
+      imprimirCarnes(list);
+      setResumo({
+        tipo: "carne",
+        quandoISO: new Date().toISOString(),
+        totalFiltrado: list.length,
+        processadas: list.length,
+        ok: list.length,
+        jaExistentes: 0,
+        erros: 0,
+        itens: list.map((r) => ({
+          mensalidade_id: r.id,
+          nome: r.associados?.nome ?? "",
+          competencia: r.competencia,
+          status: "ok" as const,
+        })),
+        filtros: filtrosSnapshot(),
+      });
+      toast.success(`${list.length} carnê(s) enviado(s) para impressão.`);
+    } finally {
+      setGerandoCarne(false);
+    }
   }
 
   async function gerarBoletos() {
@@ -93,97 +147,235 @@ export function CarneSection() {
       return;
     }
     setGerandoBol(true);
+    const itens: ResumoItem[] = [];
     let ok = 0, jaGer = 0, erro = 0;
-    const links: { nome: string; comp: string; url: string | null }[] = [];
     for (const r of alvos) {
       if (r.cobranca_id) {
         jaGer++;
-        links.push({ nome: r.associados?.nome ?? "", comp: r.competencia, url: r.link_boleto });
+        itens.push({
+          mensalidade_id: r.id, nome: r.associados?.nome ?? "",
+          competencia: r.competencia, status: "existente", url: r.link_boleto,
+        });
         continue;
       }
       try {
         const res: any = await gerarCob({ data: { mensalidade_id: r.id } });
         ok++;
-        links.push({ nome: r.associados?.nome ?? "", comp: r.competencia, url: res?.linkBoleto ?? null });
+        itens.push({
+          mensalidade_id: r.id, nome: r.associados?.nome ?? "",
+          competencia: r.competencia, status: "ok", url: res?.linkBoleto ?? null,
+        });
       } catch (e: any) {
         erro++;
-        console.error("Erro cobrança", r.id, e?.message);
+        itens.push({
+          mensalidade_id: r.id, nome: r.associados?.nome ?? "",
+          competencia: r.competencia, status: "erro", mensagem: e?.message ?? "Erro",
+        });
       }
     }
     setGerandoBol(false);
+    setResumo({
+      tipo: "boleto",
+      quandoISO: new Date().toISOString(),
+      totalFiltrado: list.length,
+      processadas: alvos.length,
+      ok, jaExistentes: jaGer, erros: erro,
+      itens,
+      filtros: filtrosSnapshot(),
+    });
     toast.success(`Boletos: ${ok} gerado(s), ${jaGer} já existente(s), ${erro} erro(s)`);
-    imprimirLinksBoletos(links);
+    imprimirLinksBoletos(itens.map((i) => ({ nome: i.nome, comp: i.competencia, url: i.url ?? null })));
+  }
+
+  async function confirmarAcao() {
+    const acao = confirmaAcao;
+    setConfirmaAcao(null);
+    if (acao === "carne") await gerar();
+    else if (acao === "boleto") await gerarBoletos();
+  }
+
+  async function precarregar() {
+    // garante que a contagem esteja atualizada antes de abrir a confirmação
+    await refetch();
   }
 
   return (
+    <>
+      <Card className="border-border/60 shadow-soft">
+        <CardHeader><CardTitle className="font-serif flex items-center gap-2"><BookOpen className="h-4 w-4" />Carnês em massa</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-6">
+            <div className="space-y-2">
+              <Label>Cidade</Label>
+              <Select value={cidade} onValueChange={(v) => { setCidade(v); setAssociadoId("todos"); }}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas</SelectItem>
+                  {cidadesData.map((c: string) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>Associado (nome, código ou CPF)</Label>
+              <Input
+                value={assocBusca}
+                onChange={(e) => { setAssocBusca(e.target.value); setAssociadoId("todos"); }}
+                placeholder="Digite ao menos 2 caracteres"
+              />
+              {associadoId !== "todos" ? (
+                <div className="flex items-center justify-between rounded border border-border px-2 py-1 text-xs">
+                  <span>
+                    Selecionado: <b>{(associadosData as any[]).find((a) => a.id === associadoId)?.nome ?? assocBusca}</b>
+                  </span>
+                  <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => setAssociadoId("todos")}>Limpar</button>
+                </div>
+              ) : assocBusca.trim().length >= 2 && (associadosData as any[]).length > 0 ? (
+                <div className="max-h-40 overflow-auto rounded border border-border text-sm">
+                  {(associadosData as any[]).map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      className="block w-full px-2 py-1 text-left hover:bg-muted"
+                      onClick={() => setAssociadoId(a.id)}
+                    >
+                      #{String(a.codigo ?? "").padStart(4, "0")} — {a.nome}
+                      {a.cpf ? <span className="text-xs text-muted-foreground"> · {a.cpf}</span> : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="space-y-2"><Label>Vencimento de</Label><Input type="date" value={vencDe} onChange={(e) => setVencDe(e.target.value)} /></div>
+            <div className="space-y-2"><Label>Vencimento até</Label><Input type="date" value={vencAte} onChange={(e) => setVencAte(e.target.value)} /></div>
+            <div className="space-y-2"><Label>Dia de pagamento</Label><Input type="number" min="1" max="31" value={diaPag} onChange={(e) => setDiaPag(e.target.value)} placeholder="Ex: 10" /></div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={async () => { await precarregar(); setConfirmaAcao("carne"); }} disabled={isLoading || gerandoCarne}>
+              <BookOpen className="mr-2 h-4 w-4" />{gerandoCarne ? "Gerando..." : "Gerar carnês"}
+            </Button>
+            <Button variant="outline" onClick={async () => { await precarregar(); setConfirmaAcao("boleto"); }} disabled={isLoading || gerandoBol}>
+              <FileText className="mr-2 h-4 w-4" />{gerandoBol ? "Gerando boletos..." : "Gerar boletos (boleto/PIX)"}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            <b>Gerar carnês</b>: imprime carnê tradicional. <b>Gerar boletos</b>: emite cobranças (boleto + PIX) apenas para associados com forma de pagamento boleto ou PIX, usando a integração bancária ativa em Configurações.
+          </p>
+
+          {rows.length > 0 && (
+            <div className="rounded border border-border px-3 py-2 text-sm">
+              <b>{rows.length}</b> parcelas no último filtro aplicado.
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {resumo && <ResumoPanel resumo={resumo} onFechar={() => setResumo(null)} />}
+
+      <AlertDialog open={!!confirmaAcao} onOpenChange={(v) => !v && setConfirmaAcao(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmaAcao === "carne" ? "Confirmar geração de carnês" : "Confirmar emissão de boletos"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>
+                  {confirmaAcao === "carne"
+                    ? `Serão impressos ${rows.length} carnê(s) com os filtros atuais.`
+                    : `Serão processadas até ${rows.filter((r: any) => ["boleto","pix","boleto_pix"].includes(r.associados?.forma_pagamento)).length} parcela(s) (associados com boleto/PIX).`}
+                </p>
+                <div className="rounded bg-muted p-2 text-xs">
+                  <div>Cidade: <b>{cidade === "todas" ? "Todas" : cidade}</b></div>
+                  <div>Associado: <b>{associadoId === "todos" ? "Todos" : ((associadosData as any[]).find((a) => a.id === associadoId)?.nome ?? assocBusca)}</b></div>
+                  <div>Vencimento: <b>{vencDe || "—"}</b> até <b>{vencAte || "—"}</b></div>
+                  <div>Dia de pagamento: <b>{diaPag || "—"}</b></div>
+                </div>
+                {confirmaAcao === "boleto" && (
+                  <p className="text-xs text-muted-foreground">
+                    Cobranças serão vinculadas às respectivas mensalidades no banco. Parcelas com cobrança já existente serão puladas.
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarAcao}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+function ResumoPanel({ resumo, onFechar }: { resumo: Resumo; onFechar: () => void }) {
+  const dt = new Date(resumo.quandoISO);
+  return (
     <Card className="border-border/60 shadow-soft">
-      <CardHeader><CardTitle className="font-serif flex items-center gap-2"><BookOpen className="h-4 w-4" />Carnês em massa</CardTitle></CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-6">
-          <div className="space-y-2">
-            <Label>Cidade</Label>
-            <Select value={cidade} onValueChange={(v) => { setCidade(v); setAssociadoId("todos"); }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas</SelectItem>
-                {cidadesData.map((c: string) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label>Associado (nome, código ou CPF)</Label>
-            <Input
-              value={assocBusca}
-              onChange={(e) => { setAssocBusca(e.target.value); setAssociadoId("todos"); }}
-              placeholder="Digite ao menos 2 caracteres"
-            />
-            {associadoId !== "todos" ? (
-              <div className="flex items-center justify-between rounded border border-border px-2 py-1 text-xs">
-                <span>
-                  Selecionado: <b>{(associadosData as any[]).find((a) => a.id === associadoId)?.nome ?? assocBusca}</b>
-                </span>
-                <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => setAssociadoId("todos")}>Limpar</button>
-              </div>
-            ) : assocBusca.trim().length >= 2 && (associadosData as any[]).length > 0 ? (
-              <div className="max-h-40 overflow-auto rounded border border-border text-sm">
-                {(associadosData as any[]).map((a) => (
-                  <button
-                    key={a.id}
-                    type="button"
-                    className="block w-full px-2 py-1 text-left hover:bg-muted"
-                    onClick={() => setAssociadoId(a.id)}
-                  >
-                    #{String(a.codigo ?? "").padStart(4, "0")} — {a.nome}
-                    {a.cpf ? <span className="text-xs text-muted-foreground"> · {a.cpf}</span> : null}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="space-y-2"><Label>Vencimento de</Label><Input type="date" value={vencDe} onChange={(e) => setVencDe(e.target.value)} /></div>
-          <div className="space-y-2"><Label>Vencimento até</Label><Input type="date" value={vencAte} onChange={(e) => setVencAte(e.target.value)} /></div>
-          <div className="space-y-2"><Label>Dia de pagamento</Label><Input type="number" min="1" max="31" value={diaPag} onChange={(e) => setDiaPag(e.target.value)} placeholder="Ex: 10" /></div>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="font-serif text-base flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 text-success" />
+          Recibo do processamento — {resumo.tipo === "carne" ? "Carnês" : "Boletos"}
+        </CardTitle>
+        <Button variant="ghost" size="sm" onClick={onFechar}>Fechar</Button>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+          <Metric label="Total no filtro" value={resumo.totalFiltrado} />
+          <Metric label="Processadas" value={resumo.processadas} />
+          <Metric label="Sucesso" value={resumo.ok} tone="success" />
+          <Metric label="Já existentes" value={resumo.jaExistentes} tone="muted" />
+          <Metric label="Erros" value={resumo.erros} tone={resumo.erros > 0 ? "danger" : "muted"} />
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={gerar} disabled={isLoading}>
-            <BookOpen className="mr-2 h-4 w-4" />Gerar carnês
-          </Button>
-          <Button variant="outline" onClick={gerarBoletos} disabled={isLoading || gerandoBol}>
-            <FileText className="mr-2 h-4 w-4" />{gerandoBol ? "Gerando boletos..." : "Gerar boletos (boleto/PIX)"}
-          </Button>
+        <div className="text-xs text-muted-foreground flex items-center gap-1">
+          <Clock className="h-3 w-3" />{dt.toLocaleString("pt-BR")}
         </div>
-        <p className="text-xs text-muted-foreground">
-          <b>Gerar carnês</b>: imprime carnê tradicional. <b>Gerar boletos</b>: emite cobranças (boleto + PIX) apenas para associados com forma de pagamento boleto ou PIX, usando a integração bancária ativa em Configurações.
-        </p>
-
-        {rows.length > 0 && (
-          <div className="rounded border border-border px-3 py-2 text-sm">
-            <b>{rows.length}</b> parcelas no último filtro aplicado.
-          </div>
-        )}
+        <div className="max-h-64 overflow-auto rounded border border-border">
+          <table className="w-full text-xs">
+            <thead className="bg-muted text-left">
+              <tr>
+                <th className="px-2 py-1">Associado</th>
+                <th className="px-2 py-1">Competência</th>
+                <th className="px-2 py-1">Status</th>
+                <th className="px-2 py-1">Link / Erro</th>
+              </tr>
+            </thead>
+            <tbody>
+              {resumo.itens.map((i, idx) => (
+                <tr key={idx} className="border-t border-border">
+                  <td className="px-2 py-1">{i.nome}</td>
+                  <td className="px-2 py-1 capitalize">{competenciaLabel(i.competencia)}</td>
+                  <td className="px-2 py-1">
+                    {i.status === "ok" && <span className="text-success inline-flex items-center gap-1"><CheckCircle2 className="h-3 w-3" />OK</span>}
+                    {i.status === "existente" && <span className="text-muted-foreground">Já existente</span>}
+                    {i.status === "erro" && <span className="text-destructive inline-flex items-center gap-1"><AlertCircle className="h-3 w-3" />Erro</span>}
+                  </td>
+                  <td className="px-2 py-1">
+                    {i.url ? <a href={i.url} target="_blank" rel="noreferrer" className="text-primary underline">Abrir</a>
+                      : i.mensagem ? <span className="text-destructive">{i.mensagem}</span> : <span className="text-muted-foreground">—</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </CardContent>
     </Card>
+  );
+}
+
+function Metric({ label, value, tone }: { label: string; value: number; tone?: "success" | "danger" | "muted" }) {
+  const cls =
+    tone === "success" ? "text-success"
+    : tone === "danger" ? "text-destructive"
+    : tone === "muted" ? "text-muted-foreground"
+    : "text-foreground";
+  return (
+    <div className="rounded border border-border px-3 py-2">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`font-serif text-xl font-semibold ${cls}`}>{value}</div>
+    </div>
   );
 }
 
