@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { CheckCircle2, BookOpen, Plus, Printer, ArrowLeft, History, Eye, Users, Pencil, Trash2, Smartphone, ClipboardCheck, Undo2, MapPin } from "lucide-react";
+import { CheckCircle2, Plus, Printer, ArrowLeft, History, Eye, Users, Pencil, Trash2, Smartphone, ClipboardCheck, Undo2, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -17,9 +17,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
-import { useServerFn } from "@tanstack/react-start";
-import { criarCobranca } from "@/lib/cobranca.functions";
-import { FileText } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/recebimento")({
   head: () => ({ meta: [{ title: "Recebimento — Memorial" }] }),
