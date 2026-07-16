@@ -25,7 +25,7 @@ export const Route = createFileRoute("/_authenticated/recebimento")({
 
 function RecebimentoPage() {
   const { canTab, loading: permsLoading } = usePermissions();
-  type TabKey = "baixa" | "carne" | "historico" | "cobradores" | "mobile" | "conciliar";
+  type TabKey = "baixa" | "historico" | "cobradores" | "mobile" | "conciliar";
   const [tab, setTab] = useState<TabKey>("baixa");
   const show = (k: TabKey) => permsLoading || canTab("recebimento", k);
 
@@ -52,11 +52,6 @@ function RecebimentoPage() {
             <History className="mr-2 h-4 w-4" />Histórico de baixas
           </Button>
         )}
-        {show("carne") && (
-          <Button variant={tab === "carne" ? "default" : "outline"} onClick={() => setTab("carne")}>
-            <BookOpen className="mr-2 h-4 w-4" />Gerar carnês em massa
-          </Button>
-        )}
         {show("cobradores") && (
           <Button variant={tab === "cobradores" ? "default" : "outline"} onClick={() => setTab("cobradores")}>
             <Users className="mr-2 h-4 w-4" />Cadastro de cobradores
@@ -68,7 +63,7 @@ function RecebimentoPage() {
       {tab === "conciliar" && show("conciliar") && <ConciliacaoSection />}
       {tab === "baixa" && show("baixa") && <BaixaWizard />}
       {tab === "historico" && show("historico") && <HistoricoSection />}
-      {tab === "carne" && show("carne") && <CarneSection />}
+      
       {tab === "cobradores" && show("cobradores") && <CobradoresSection />}
     </AppShell>
   );
