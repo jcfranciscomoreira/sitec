@@ -813,6 +813,22 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
   const totalPago = mens.filter((m) => m.status === "pago").reduce((s, m) => s + Number(m.valor), 0);
   const totalAberto = mens.filter((m) => m.status !== "pago" && m.status !== "cancelado").reduce((s, m) => s + Number(m.valor), 0);
 
+  const criarCobrancaFn = useServerFn(criarCobranca);
+  const emitirBoleto = useMutation({
+    mutationFn: async (id: string) => await criarCobrancaFn({ data: { mensalidade_id: id } }),
+    onSuccess: async (res: any) => {
+      await qc.invalidateQueries({ queryKey: ["mensalidades-associado", associado.id] });
+      toast.success("Boleto/PIX gerado");
+      if (res?.linkBoleto) window.open(res.linkBoleto, "_blank", "noopener");
+    },
+    onError: (e: any) => toast.error("Erro ao emitir boleto", { description: e.message }),
+  });
+
+  function reimprimirTodosCarnes() {
+    const pendentes = mens.filter((m) => m.status === "pendente" || m.status === "atrasado");
+    imprimirCarnesAssociado(associado as any, pendentes as any);
+  }
+
   function novaParcelaDefaults() {
     const hoje = new Date();
     // próximo mês a partir da última competência, ou mês corrente
