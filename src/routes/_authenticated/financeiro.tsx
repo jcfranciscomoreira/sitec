@@ -182,88 +182,102 @@ function FinanceiroPage() {
         </Dialog>
       }
     >
-      <div className="mb-6 grid gap-4 md:grid-cols-2">
-        <Card className="border-border/60 shadow-soft">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Recebido (filtro atual)</CardTitle></CardHeader>
-          <CardContent><div className="font-serif text-3xl font-semibold text-success">{brl(totalRecebido)}</div></CardContent>
-        </Card>
-        <Card className="border-border/60 shadow-soft">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">A receber (filtro atual)</CardTitle></CardHeader>
-          <CardContent><div className="font-serif text-3xl font-semibold text-gold">{brl(totalAReceber)}</div></CardContent>
-        </Card>
-      </div>
+      <Tabs defaultValue="mensalidades" className="w-full">
+        <TabsList>
+          <TabsTrigger value="mensalidades">Mensalidades</TabsTrigger>
+          <TabsTrigger value="carne">Gerar carnês em massa</TabsTrigger>
+        </TabsList>
 
-      <Card className="border-border/60 shadow-soft">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="font-serif">Mensalidades</CardTitle>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os status</SelectItem>
-              <SelectItem value="pendente">Pendentes</SelectItem>
-              <SelectItem value="pago">Pagas</SelectItem>
-              <SelectItem value="cancelado">Canceladas</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Associado</TableHead>
-                <TableHead>Competência</TableHead>
-                <TableHead>Vencimento</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Pagamento</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
-              {!isLoading && lista.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                  <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                  Nenhuma mensalidade. Use "Gerar mensalidades" para criar as do mês.
-                </TableCell></TableRow>
-              )}
-              {lista.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell>
-                    <div className="font-medium">{m.associados?.nome ?? "—"}</div>
-                    <div className="text-xs text-muted-foreground">#{String(m.associados?.codigo ?? "").padStart(4, "0")}</div>
-                  </TableCell>
-                  <TableCell className="capitalize">{competenciaLabel(m.competencia)}</TableCell>
-                  <TableCell>{fmtDate(m.vencimento)}</TableCell>
-                  <TableCell className="font-medium">{brl(m.valor)}</TableCell>
-                  <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
-                  <TableCell><StatusBadge status={m.status} /></TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      {m.status !== "pago" && m.status !== "cancelado" && !m.cobranca_id &&
-                        ["boleto", "pix", "boleto_pix"].includes(m.associados?.forma_pagamento ?? "") && (
-                          <Button size="sm" variant="outline" onClick={() => gerarCob.mutate(m.id)} disabled={gerarCob.isPending}>
-                            {gerarCob.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-                          </Button>
-                      )}
-                      {m.cobranca_id && (
-                        <Button size="sm" variant="outline" onClick={() => setCobrancaOpen(m)}>
-                          <QrCode className="mr-1 h-4 w-4" />Boleto/PIX
-                        </Button>
-                      )}
-                      {m.status !== "pago" && m.status !== "cancelado" && (
-                        <Button size="sm" variant="outline" onClick={() => setPayOpen(m)}>
-                          <CheckCircle2 className="mr-1 h-4 w-4" />Receber
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        <TabsContent value="mensalidades" className="mt-4 space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card className="border-border/60 shadow-soft">
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Recebido (filtro atual)</CardTitle></CardHeader>
+              <CardContent><div className="font-serif text-3xl font-semibold text-success">{brl(totalRecebido)}</div></CardContent>
+            </Card>
+            <Card className="border-border/60 shadow-soft">
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">A receber (filtro atual)</CardTitle></CardHeader>
+              <CardContent><div className="font-serif text-3xl font-semibold text-gold">{brl(totalAReceber)}</div></CardContent>
+            </Card>
+          </div>
+
+          <Card className="border-border/60 shadow-soft">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="font-serif">Mensalidades</CardTitle>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="pendente">Pendentes</SelectItem>
+                  <SelectItem value="pago">Pagas</SelectItem>
+                  <SelectItem value="cancelado">Canceladas</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Associado</TableHead>
+                    <TableHead>Competência</TableHead>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Pagamento</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+                  {!isLoading && lista.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                      <FileText className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                      Nenhuma mensalidade. Use "Gerar mensalidades" para criar as do mês.
+                    </TableCell></TableRow>
+                  )}
+                  {lista.map((m) => (
+                    <TableRow key={m.id}>
+                      <TableCell>
+                        <div className="font-medium">{m.associados?.nome ?? "—"}</div>
+                        <div className="text-xs text-muted-foreground">#{String(m.associados?.codigo ?? "").padStart(4, "0")}</div>
+                      </TableCell>
+                      <TableCell className="capitalize">{competenciaLabel(m.competencia)}</TableCell>
+                      <TableCell>{fmtDate(m.vencimento)}</TableCell>
+                      <TableCell className="font-medium">{brl(m.valor)}</TableCell>
+                      <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
+                      <TableCell><StatusBadge status={m.status} /></TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          {m.status !== "pago" && m.status !== "cancelado" && !m.cobranca_id &&
+                            ["boleto", "pix", "boleto_pix"].includes(m.associados?.forma_pagamento ?? "") && (
+                              <Button size="sm" variant="outline" onClick={() => gerarCob.mutate(m.id)} disabled={gerarCob.isPending}>
+                                {gerarCob.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+                              </Button>
+                          )}
+                          {m.cobranca_id && (
+                            <Button size="sm" variant="outline" onClick={() => setCobrancaOpen(m)}>
+                              <QrCode className="mr-1 h-4 w-4" />Boleto/PIX
+                            </Button>
+                          )}
+                          {m.status !== "pago" && m.status !== "cancelado" && (
+                            <Button size="sm" variant="outline" onClick={() => setPayOpen(m)}>
+                              <CheckCircle2 className="mr-1 h-4 w-4" />Receber
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="carne" className="mt-4">
+          <CarneSection />
+        </TabsContent>
+      </Tabs>
+
 
       {payOpen && (
         <Dialog open onOpenChange={(v) => !v && setPayOpen(null)}>
