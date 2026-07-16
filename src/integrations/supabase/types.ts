@@ -96,6 +96,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "associados_cobrador_id_fkey"
+            columns: ["cobrador_id"]
+            isOneToOne: false
+            referencedRelation: "cobradores_publicos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "associados_plano_id_fkey"
             columns: ["plano_id"]
             isOneToOne: false
@@ -697,6 +704,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "recebimentos_pendentes_cobrador_id_fkey"
+            columns: ["cobrador_id"]
+            isOneToOne: false
+            referencedRelation: "cobradores_publicos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "recebimentos_pendentes_mensalidade_id_fkey"
             columns: ["mensalidade_id"]
             isOneToOne: false
@@ -890,7 +904,27 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      cobradores_publicos: {
+        Row: {
+          ativo: boolean | null
+          id: string | null
+          nome: string | null
+          user_id: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          id?: string | null
+          nome?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          id?: string | null
+          nome?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
