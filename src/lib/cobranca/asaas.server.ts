@@ -14,6 +14,7 @@ async function asaasFetch(creds: AsaasCreds, path: string, init?: RequestInit) {
     ...init,
     headers: {
       "Content-Type": "application/json",
+      "User-Agent": "SITEC-Cobranca/1.0",
       access_token: creds.apiKey,
       ...(init?.headers as Record<string, string> | undefined),
     },
