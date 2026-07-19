@@ -189,11 +189,13 @@ function ContasPage() {
                   e.preventDefault();
                   const fd = new FormData(e.currentTarget);
                   const cc = String(fd.get("centro_custo_id") || "");
+                  const fil = String(fd.get("filial_id") || "");
                   save.mutate({
                     tipo: fd.get("tipo") as "entrada" | "saida",
                     descricao: String(fd.get("descricao")),
                     categoria: String(fd.get("categoria") || "") || null,
                     centro_custo_id: cc || null,
+                    filial_id: fil && fil !== "matriz" ? fil : null,
                     valor: Number(fd.get("valor")),
                     data_emissao: String(fd.get("data_emissao")),
                     vencimento: String(fd.get("vencimento")),
