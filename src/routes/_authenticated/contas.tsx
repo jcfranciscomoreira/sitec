@@ -300,7 +300,7 @@ function ContasPage() {
               <TableRow>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Descrição</TableHead>
-                <TableHead>Centro</TableHead>
+                <TableHead className="hidden sm:table-cell">Centro</TableHead>
                 <TableHead>Vencimento</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
