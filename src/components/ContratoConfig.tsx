@@ -72,13 +72,19 @@ export function ContratoConfigTab() {
 
   function reset() {
     if (editorRef.current) editorRef.current.innerHTML = DEFAULT_CONTRATO_HTML;
+    setInitialHtml(DEFAULT_CONTRATO_HTML);
     toast.info("Modelo restaurado (não salvo)");
   }
 
   function togglePreview() {
-    if (!preview && editorRef.current) setPreviewHtml(editorRef.current.innerHTML);
+    if (!preview && editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      setPreviewHtml(html);
+      setInitialHtml(html);
+    }
     setPreview((p) => !p);
   }
+
 
   return (
     <Card>
