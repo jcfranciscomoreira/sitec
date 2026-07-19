@@ -223,6 +223,13 @@ function Dashboard() {
           </div>
         </div>
       )}
+
+      <FilialDetalhesDialog
+        filial={detalheFilial}
+        inicio={inicio}
+        fimExclusivo={fimExclusivo}
+        onClose={() => setDetalheFilial(null)}
+      />
     </AppShell>
   );
 }
