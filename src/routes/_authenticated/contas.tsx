@@ -28,6 +28,7 @@ type Conta = {
   descricao: string;
   categoria: string | null;
   centro_custo_id: string | null;
+  filial_id: string | null;
   valor: number;
   data_emissao: string;
   vencimento: string;
