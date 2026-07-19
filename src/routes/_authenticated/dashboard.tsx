@@ -138,6 +138,7 @@ function Dashboard() {
     { label: "Receita de planos", value: brl(data?.receitaPlanos ?? 0), sub: "Mensalidades quitadas no período", icon: TrendingUp, tone: "text-success" },
     { label: "Outras entradas", value: brl(data?.outrasReceitas ?? 0), sub: "Entradas financeiras no período", icon: Wallet, tone: "text-gold" },
     { label: "Total recebido", value: brl(data?.totalRecebido ?? 0), sub: "Planos + outras entradas", icon: CircleDollarSign, tone: "text-primary" },
+    { label: "Total de despesas", value: brl(data?.totalDespesas ?? 0), sub: "Saídas pagas no período", icon: AlertTriangle, tone: "text-destructive" },
     { label: "Pendentes", value: data?.pendentes ?? 0, sub: "Aguardando pagamento", icon: CircleDollarSign, tone: "text-gold" },
     { label: "Em atraso", value: data?.atrasadas ?? 0, sub: "Inadimplência ativa", icon: AlertTriangle, tone: "text-destructive" },
   ];
