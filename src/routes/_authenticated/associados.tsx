@@ -297,6 +297,7 @@ function AssociadosPage() {
       status: (fd.get("status") as any) || "ativo",
       forma_pagamento: (formaPag || null) as any,
       cobrador_id: formaPag === "cobrador" ? (cobradorId || null) : null,
+      filial_id: filialId === "matriz" ? null : (filialId || null),
       observacoes: get("observacoes"),
       _pendingDeps: editing?.id ? undefined : pendingDeps,
     });
