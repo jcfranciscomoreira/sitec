@@ -34,6 +34,7 @@ type Mensalidade = {
   id: string; codigo: number | null; associado_id: string; competencia: string;
   vencimento: string; valor: number; status: string;
   data_pagamento: string | null; forma_pagamento: string | null;
+  agente_recebimento: string | null;
 };
 type Conta = {
   id: string; tipo: string; descricao: string; valor: number;
@@ -41,6 +42,7 @@ type Conta = {
   centro_custo_id: string | null;
 };
 type Centro = { id: string; nome: string };
+type Cobrador = { id: string; nome: string };
 
 function RelatoriosPage() {
   const { canTab, isAdmin } = usePermissions();
@@ -50,6 +52,7 @@ function RelatoriosPage() {
   const [mensalidades, setMensalidades] = useState<Mensalidade[]>([]);
   const [contas, setContas] = useState<Conta[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
+  const [cobradores, setCobradores] = useState<Cobrador[]>([]);
   const [loading, setLoading] = useState(true);
 
   const today = new Date();
@@ -60,18 +63,20 @@ function RelatoriosPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [a, p, m, c, cc] = await Promise.all([
+      const [a, p, m, c, cc, cb] = await Promise.all([
         supabase.from("associados").select("id, codigo, nome, cpf, telefone, cidade, estado, status, plano_id, data_adesao, data_nascimento, forma_pagamento").order("nome"),
         supabase.from("planos").select("id, nome, valor_mensal").order("nome"),
-        supabase.from("mensalidades").select("id, codigo, associado_id, competencia, vencimento, valor, status, data_pagamento, forma_pagamento"),
+        supabase.from("mensalidades").select("id, codigo, associado_id, competencia, vencimento, valor, status, data_pagamento, forma_pagamento, agente_recebimento"),
         supabase.from("contas_financeiras").select("id, tipo, descricao, valor, vencimento, data_pagamento, status, centro_custo_id"),
         supabase.from("centros_custo").select("id, nome"),
+        supabase.from("cobradores").select("id, nome").eq("ativo", true).order("nome"),
       ]);
       setAssociados((a.data ?? []) as Associado[]);
       setPlanos((p.data ?? []) as Plano[]);
       setMensalidades((m.data ?? []) as Mensalidade[]);
       setContas((c.data ?? []) as Conta[]);
       setCentros((cc.data ?? []) as Centro[]);
+      setCobradores((cb.data ?? []) as Cobrador[]);
       setLoading(false);
     })();
   }, []);
@@ -113,7 +118,7 @@ function RelatoriosPage() {
           </TabsContent>
           <TabsContent value="recebimentos" className="mt-4">
             <RecebimentosReport
-              mensalidades={mensalidades} assocNome={assocNome}
+              mensalidades={mensalidades} assocNome={assocNome} cobradores={cobradores}
               dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo}
               loading={loading}
             />
@@ -379,18 +384,22 @@ function MensalidadesReport({ mensalidades, assocNome, dateFrom, dateTo, setDate
   );
 }
 
-function RecebimentosReport({ mensalidades, assocNome, dateFrom, dateTo, setDateFrom, setDateTo, loading }: {
-  mensalidades: Mensalidade[]; assocNome: (id: string) => string;
+function RecebimentosReport({ mensalidades, assocNome, cobradores, dateFrom, dateTo, setDateFrom, setDateTo, loading }: {
+  mensalidades: Mensalidade[]; assocNome: (id: string) => string; cobradores: Cobrador[];
   dateFrom: string; dateTo: string; setDateFrom: (s: string) => void; setDateTo: (s: string) => void;
   loading: boolean;
 }) {
   const [forma, setForma] = useState("__all__");
+  const [cobradorId, setCobradorId] = useState("__all__");
+  const cobradorNome = cobradores.find((c) => c.id === cobradorId)?.nome ?? "";
+
   const filtered = useMemo(() => mensalidades.filter((m) => {
     if (m.status !== "pago" || !m.data_pagamento) return false;
     if (m.data_pagamento < dateFrom || m.data_pagamento > dateTo) return false;
     if (forma !== "__all__" && (m.forma_pagamento ?? "") !== forma) return false;
+    if (forma === "cobrador" && cobradorId !== "__all__" && m.agente_recebimento !== cobradorNome) return false;
     return true;
-  }), [mensalidades, dateFrom, dateTo, forma]);
+  }), [mensalidades, dateFrom, dateTo, forma, cobradorId, cobradorNome]);
 
   const total = filtered.reduce((s, m) => s + Number(m.valor), 0);
   const porForma = useMemo(() => {
@@ -402,19 +411,19 @@ function RecebimentosReport({ mensalidades, assocNome, dateFrom, dateTo, setDate
     return acc;
   }, [filtered]);
 
-  const headers = ["Data Pgto", "Código", "Associado", "Vencimento", "Valor", "Forma"];
+  const headers = ["Data Pgto", "Código", "Associado", "Vencimento", "Valor", "Forma", "Agente"];
   const rows = filtered.map((m) => [
     fmtDate(m.data_pagamento!), m.codigo ?? "", assocNome(m.associado_id),
-    fmtDate(m.vencimento), brl(m.valor), m.forma_pagamento ?? "—",
+    fmtDate(m.vencimento), brl(m.valor), m.forma_pagamento ?? "—", m.agente_recebimento ?? "—",
   ]);
 
   return (
     <div className="space-y-3">
-      <Card><CardContent className="grid gap-3 p-4 md:grid-cols-4">
+      <Card><CardContent className="grid gap-3 p-4 md:grid-cols-5">
         <DateRange dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo} />
         <div>
           <Label className="text-xs">Forma de pagamento</Label>
-          <Select value={forma} onValueChange={setForma}>
+          <Select value={forma} onValueChange={(v) => { setForma(v); setCobradorId("__all__"); }}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="__all__">Todas</SelectItem>
@@ -423,9 +432,22 @@ function RecebimentosReport({ mensalidades, assocNome, dateFrom, dateTo, setDate
               <SelectItem value="boleto">Boleto</SelectItem>
               <SelectItem value="cartao">Cartão</SelectItem>
               <SelectItem value="carne">Carnê</SelectItem>
+              <SelectItem value="cobrador">Cobrador</SelectItem>
             </SelectContent>
           </Select>
         </div>
+        {forma === "cobrador" && (
+          <div>
+            <Label className="text-xs">Cobrador</Label>
+            <Select value={cobradorId} onValueChange={setCobradorId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">Todos os cobradores</SelectItem>
+                {cobradores.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="flex items-end gap-2">
           <Button size="sm" variant="outline" onClick={() => printReport("Relatório de Recebimentos", `${dateFrom} a ${dateTo} — Total ${brl(total)}`, headers, rows)}>
             <Printer className="mr-2 h-4 w-4" /> Imprimir
@@ -469,6 +491,7 @@ function RecebimentosReport({ mensalidades, assocNome, dateFrom, dateTo, setDate
                 <TableCell>{fmtDate(m.vencimento)}</TableCell>
                 <TableCell>{brl(m.valor)}</TableCell>
                 <TableCell className="capitalize">{m.forma_pagamento ?? "—"}</TableCell>
+                <TableCell>{m.agente_recebimento ?? "—"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
