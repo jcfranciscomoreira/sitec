@@ -66,13 +66,14 @@ function RelatoriosPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [a, p, m, c, cc, cb] = await Promise.all([
-        supabase.from("associados").select("id, codigo, nome, cpf, telefone, cidade, estado, status, plano_id, data_adesao, data_nascimento, forma_pagamento").order("nome"),
+      const [a, p, m, c, cc, cb, fi] = await Promise.all([
+        supabase.from("associados").select("id, codigo, nome, cpf, telefone, cidade, estado, status, plano_id, data_adesao, data_nascimento, forma_pagamento, filial_id").order("nome"),
         supabase.from("planos").select("id, nome, valor_mensal").order("nome"),
         supabase.from("mensalidades").select("id, codigo, associado_id, competencia, vencimento, valor, status, data_pagamento, forma_pagamento, agente_recebimento"),
         supabase.from("contas_financeiras").select("id, tipo, descricao, valor, vencimento, data_pagamento, status, centro_custo_id"),
         supabase.from("centros_custo").select("id, nome"),
         supabase.from("cobradores").select("id, nome").eq("ativo", true).order("nome"),
+        supabase.from("filiais").select("id, nome").eq("ativo", true).order("nome"),
       ]);
       setAssociados((a.data ?? []) as Associado[]);
       setPlanos((p.data ?? []) as Plano[]);
@@ -80,6 +81,7 @@ function RelatoriosPage() {
       setContas((c.data ?? []) as Conta[]);
       setCentros((cc.data ?? []) as Centro[]);
       setCobradores((cb.data ?? []) as Cobrador[]);
+      setFiliais((fi.data ?? []) as Filial[]);
       setLoading(false);
     })();
   }, []);
