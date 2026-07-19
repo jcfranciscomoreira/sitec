@@ -42,9 +42,7 @@ function daysAgoIso(n: number) {
 function Dashboard() {
   const [inicio, setInicio] = useState<string>(daysAgoIso(30));
   const [fim, setFim] = useState<string>(todayIso());
-
-
-
+  const [detalheFilial, setDetalheFilial] = useState<{ id: string; nome: string } | null>(null);
 
   const monthOptions = useMemo(() => buildMonthOptions(12), []);
   const aplicarMes = (value: string) => {
