@@ -34,6 +34,7 @@ type Mensalidade = {
   id: string; codigo: number | null; associado_id: string; competencia: string;
   vencimento: string; valor: number; status: string;
   data_pagamento: string | null; forma_pagamento: string | null;
+  agente_recebimento: string | null;
 };
 type Conta = {
   id: string; tipo: string; descricao: string; valor: number;
@@ -41,6 +42,7 @@ type Conta = {
   centro_custo_id: string | null;
 };
 type Centro = { id: string; nome: string };
+type Cobrador = { id: string; nome: string };
 
 function RelatoriosPage() {
   const { canTab, isAdmin } = usePermissions();
