@@ -88,7 +88,12 @@ function Dashboard() {
       ]);
 
       const receitaPlanos = (pagasPer.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
-      const outrasReceitas = (entradasPer.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
+      const outrasReceitas = (entradasPer.data ?? [])
+        .filter((r: any) => {
+          const d = r.data_pagamento ?? r.vencimento;
+          return d && d >= inicio && d < fimExclusivo;
+        })
+        .reduce((s, r: any) => s + Number(r.valor), 0);
 
       return {
         ativos: assocAtivos.count ?? 0,
