@@ -269,6 +269,17 @@ function AssociadosReport({ associados, planos, filiais, planoNome, loading }: {
           </Select>
         </div>
         <div>
+          <Label className="text-xs">Filial</Label>
+          <Select value={filialId} onValueChange={setFilialId}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Todas</SelectItem>
+              <SelectItem value="matriz">Matriz</SelectItem>
+              {filiais.map((f) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
           <Label className="text-xs">Cidade</Label>
           <Input value={cidade} onChange={(e) => setCidade(e.target.value)} list="rel-cidades" />
           <datalist id="rel-cidades">{cidades.map((c) => <option key={c} value={c} />)}</datalist>
