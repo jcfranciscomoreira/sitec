@@ -112,7 +112,7 @@ function RelatoriosPage() {
           </TabsList>
 
           <TabsContent value="associados" className="mt-4">
-            <AssociadosReport associados={associados} planos={planos} planoNome={planoNome} loading={loading} />
+            <AssociadosReport associados={associados} planos={planos} filiais={filiais} planoNome={planoNome} loading={loading} />
           </TabsContent>
           <TabsContent value="mensalidades" className="mt-4">
             <MensalidadesReport
