@@ -301,7 +301,7 @@ function FilialDetalhesDialog({
           <p className="text-xs text-muted-foreground">Período: {inicio} até {fimExclusivo} (exclusivo)</p>
         </DialogHeader>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground p-4">Carregando...</p>
+          <div className="p-2"><SkeletonTable rows={6} cols={4} /></div>
         ) : (
           <Tabs defaultValue="receitas">
             <TabsList className="flex w-full flex-wrap h-auto gap-1">
