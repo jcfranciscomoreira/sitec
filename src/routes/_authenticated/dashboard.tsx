@@ -75,7 +75,7 @@ function Dashboard() {
         return d.toISOString().slice(0, 10);
       })();
 
-      const [assocAtivos, assocInativos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer, saidasPer, novosMes, novosHoje, filiaisList] = await Promise.all([
+      const [assocAtivos, assocInativos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer, saidasPer, saidasPendentesPer, novosMes, novosHoje, filiaisList] = await Promise.all([
         supabase.from("associados").select("*", { count: "exact", head: true }).eq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }).neq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }),
@@ -84,6 +84,7 @@ function Dashboard() {
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).in("status", ["pendente", "atrasado"]).lt("vencimento", hojeIso),
         supabase.from("contas_financeiras").select("valor,data_pagamento,vencimento,filial_id").eq("tipo", "entrada").eq("status", "pago"),
         supabase.from("contas_financeiras").select("valor,data_pagamento,vencimento,filial_id").eq("tipo", "saida").eq("status", "pago"),
+        supabase.from("contas_financeiras").select("valor,data_pagamento,vencimento").eq("tipo", "saida").eq("status", "pendente"),
         supabase.from("associados").select("*", { count: "exact", head: true }).gte("created_at", inicioMesIso).lt("created_at", proxMes),
         supabase.from("associados").select("*", { count: "exact", head: true }).gte("created_at", hojeIso).lt("created_at", amanhaIso),
         supabase.from("filiais").select("id, nome").order("nome"),
@@ -96,6 +97,7 @@ function Dashboard() {
       };
       const outrasReceitas = (entradasPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
       const totalDespesas = (saidasPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
+      const despesasPendentes = (saidasPendentesPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
 
       // Por filial (Matriz não é exibida)
       const filiais = (filiaisList.data as { id: string; nome: string }[]) ?? [];
@@ -118,6 +120,7 @@ function Dashboard() {
         receitaPlanos,
         outrasReceitas,
         totalDespesas,
+        despesasPendentes,
         totalRecebido: receitaPlanos + outrasReceitas,
         pendentes: pendentes.count ?? 0,
         atrasadas: atrasadas.count ?? 0,
@@ -137,7 +140,7 @@ function Dashboard() {
     { label: "Receita de planos", value: brl(data?.receitaPlanos ?? 0), sub: "Mensalidades quitadas no período", icon: TrendingUp, tone: "text-success" },
     { label: "Outras entradas", value: brl(data?.outrasReceitas ?? 0), sub: "Entradas financeiras no período", icon: Wallet, tone: "text-gold" },
     { label: "Total recebido", value: brl(data?.totalRecebido ?? 0), sub: "Planos + outras entradas", icon: CircleDollarSign, tone: "text-primary" },
-    { label: "Total de despesas", value: brl(data?.totalDespesas ?? 0), sub: "Saídas pagas no período", icon: AlertTriangle, tone: "text-destructive" },
+    { label: "Total de despesas", value: brl(data?.totalDespesas ?? 0), sub: `Saídas pagas no período${data?.despesasPendentes ? ` • Pendentes: ${brl(data.despesasPendentes)}` : ""}`, icon: AlertTriangle, tone: "text-destructive" },
     { label: "Pendentes", value: data?.pendentes ?? 0, sub: "Aguardando pagamento", icon: CircleDollarSign, tone: "text-gold" },
     { label: "Em atraso", value: data?.atrasadas ?? 0, sub: "Inadimplência ativa", icon: AlertTriangle, tone: "text-destructive" },
   ];
