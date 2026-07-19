@@ -1134,7 +1134,7 @@ function MobileRecebimentoSection() {
                               <MapPin className="h-4 w-4 text-primary" />
                             </Button>
                           )}
-                          <Button size="sm" variant="ghost" onClick={() => { setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>Receber</Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setPreview(m); setValor(String(Number(m.valor))); }}>Receber</Button>
                           <Button size="sm" variant="ghost" onClick={() => { setReagendar(m); setReagData(""); }}>Reagendar</Button>
                         </TableCell>
                       </TableRow>
@@ -1153,24 +1153,20 @@ function MobileRecebimentoSection() {
           )}
         </div>
 
-
-
-        <div className="grid gap-3 md:grid-cols-[1fr_180px]">
-          <div className="space-y-2"><Label>Código da parcela</Label><Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ex: 1024" inputMode="numeric" /></div>
-          <div className="space-y-2"><Label>Valor recebido (R$)</Label><Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" min="0" /></div>
-        </div>
-
         {preview && (
-          <div className={`rounded border px-3 py-2 text-sm flex flex-wrap gap-x-6 gap-y-1 ${(preview as any).status === "pago" ? "border-destructive/40 bg-destructive/5" : "border-primary/40 bg-primary/5"}`}>
-            <span><span className="text-muted-foreground">Código:</span> <b>#{(preview as any).codigo}</b></span>
-            <span><span className="text-muted-foreground">Associado:</span> <b>{(preview as any).associados?.nome}</b></span>
-            <span><span className="text-muted-foreground">Vencimento:</span> <b>{fmtDate((preview as any).vencimento)}</b></span>
-            <span><span className="text-muted-foreground">Valor:</span> <b>{brl(Number((preview as any).valor))}</b></span>
-            <span className="capitalize"><span className="text-muted-foreground">Status:</span> <b>{(preview as any).status}</b></span>
-          </div>
-        )}
-        {!preview && previewErr && codigo && (
-          <div className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">{previewErr}</div>
+          <>
+            <div className="space-y-2 md:w-[180px]">
+              <Label>Valor recebido (R$)</Label>
+              <Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" min="0" />
+            </div>
+            <div className={`rounded border px-3 py-2 text-sm flex flex-wrap gap-x-6 gap-y-1 ${(preview as any).status === "pago" ? "border-destructive/40 bg-destructive/5" : "border-primary/40 bg-primary/5"}`}>
+              <span><span className="text-muted-foreground">Código:</span> <b>#{(preview as any).codigo}</b></span>
+              <span><span className="text-muted-foreground">Associado:</span> <b>{(preview as any).associados?.nome}</b></span>
+              <span><span className="text-muted-foreground">Vencimento:</span> <b>{fmtDate((preview as any).vencimento)}</b></span>
+              <span><span className="text-muted-foreground">Valor:</span> <b>{brl(Number((preview as any).valor))}</b></span>
+              <span className="capitalize"><span className="text-muted-foreground">Status:</span> <b>{(preview as any).status}</b></span>
+            </div>
+          </>
         )}
 
         <div className="space-y-2"><Label>Observações (opcional)</Label><Textarea rows={2} value={obs} onChange={(e) => setObs(e.target.value)} /></div>
