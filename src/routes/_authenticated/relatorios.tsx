@@ -44,6 +44,7 @@ type Conta = {
 };
 type Centro = { id: string; nome: string };
 type Cobrador = { id: string; nome: string };
+type Filial = { id: string; nome: string };
 
 function RelatoriosPage() {
   const { canTab, isAdmin } = usePermissions();
