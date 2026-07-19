@@ -245,7 +245,7 @@ function AssociadosReport({ associados, planos, filiais, planoNome, loading }: {
 
   return (
     <div className="space-y-3">
-      <Card><CardContent className="grid gap-3 p-4 md:grid-cols-4">
+      <Card><CardContent className="grid gap-3 p-4 md:grid-cols-5">
         <div>
           <Label className="text-xs">Status</Label>
           <Select value={status} onValueChange={setStatus}>
