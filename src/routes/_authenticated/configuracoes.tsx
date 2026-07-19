@@ -57,6 +57,9 @@ function ConfiguracoesPage() {
 function IdentidadeVisual() {
   const [nome, setNome] = useState("");
   const [subtitulo, setSubtitulo] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [endereco, setEndereco] = useState("");
+  const [telefone, setTelefone] = useState("");
   const [logo, setLogo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
