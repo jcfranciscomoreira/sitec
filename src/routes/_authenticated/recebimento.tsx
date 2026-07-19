@@ -774,11 +774,9 @@ function MobileRecebimentoSection() {
   const [cobradorId, setCobradorId] = useState<string>("");
   const [cobradorNome, setCobradorNome] = useState<string>("");
   const [cobradorLocked, setCobradorLocked] = useState<boolean>(false);
-  const [codigo, setCodigo] = useState("");
   const [valor, setValor] = useState("");
   const [obs, setObs] = useState("");
   const [preview, setPreview] = useState<any | null>(null);
-  const [previewErr, setPreviewErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [filtroModo, setFiltroModo] = useState<"hoje" | "dia" | "periodo" | "cidade">("hoje");
   const [filtroDia, setFiltroDia] = useState<string>(new Date().toISOString().slice(0, 10));
