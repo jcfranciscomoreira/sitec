@@ -315,6 +315,7 @@ function AssociadosReport({ associados, planos, filiais, planoNome, loading }: {
                 <TableCell>{a.cpf ?? "—"}</TableCell>
                 <TableCell>{a.telefone ?? "—"}</TableCell>
                 <TableCell>{a.cidade ?? "—"}{a.estado ? `/${a.estado}` : ""}</TableCell>
+                <TableCell>{filialNome(a.filial_id)}</TableCell>
                 <TableCell>{planoNome(a.plano_id)}</TableCell>
                 <TableCell><Badge variant="secondary">{a.status}</Badge></TableCell>
                 <TableCell>{fmtDate(a.data_adesao)}</TableCell>
