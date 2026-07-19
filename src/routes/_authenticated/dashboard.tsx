@@ -190,6 +190,37 @@ function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {(data?.porFilial?.length ?? 0) > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-3 font-serif text-lg text-foreground">Receitas e despesas por filial</h2>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {data!.porFilial.map((f) => (
+              <Card key={f.nome} className="border-border/60 shadow-soft">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{f.nome}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Receitas</span>
+                    <span className="font-serif text-lg font-semibold text-success">{brl(f.receitas)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Despesas</span>
+                    <span className="font-serif text-lg font-semibold text-destructive">{brl(f.despesas)}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t pt-2">
+                    <span className="text-xs text-muted-foreground">Resultado</span>
+                    <span className={`font-serif text-lg font-semibold ${f.receitas - f.despesas >= 0 ? "text-primary" : "text-destructive"}`}>
+                      {brl(f.receitas - f.despesas)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </AppShell>
   );
 }
