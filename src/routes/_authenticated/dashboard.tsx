@@ -75,7 +75,7 @@ function Dashboard() {
         return d.toISOString().slice(0, 10);
       })();
 
-      const [assocAtivos, assocInativos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer, saidasPer, novosMes, novosHoje, filiaisList] = await Promise.all([
+      const [assocAtivos, assocInativos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer, saidasPer, saidasPendentesPer, novosMes, novosHoje, filiaisList] = await Promise.all([
         supabase.from("associados").select("*", { count: "exact", head: true }).eq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }).neq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }),
@@ -84,6 +84,7 @@ function Dashboard() {
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).in("status", ["pendente", "atrasado"]).lt("vencimento", hojeIso),
         supabase.from("contas_financeiras").select("valor,data_pagamento,vencimento,filial_id").eq("tipo", "entrada").eq("status", "pago"),
         supabase.from("contas_financeiras").select("valor,data_pagamento,vencimento,filial_id").eq("tipo", "saida").eq("status", "pago"),
+        supabase.from("contas_financeiras").select("valor,data_pagamento,vencimento").eq("tipo", "saida").eq("status", "pendente"),
         supabase.from("associados").select("*", { count: "exact", head: true }).gte("created_at", inicioMesIso).lt("created_at", proxMes),
         supabase.from("associados").select("*", { count: "exact", head: true }).gte("created_at", hojeIso).lt("created_at", amanhaIso),
         supabase.from("filiais").select("id, nome").order("nome"),
