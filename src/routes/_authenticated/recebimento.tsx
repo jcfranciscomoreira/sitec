@@ -952,24 +952,6 @@ function MobileRecebimentoSection() {
     qc.invalidateQueries({ queryKey: ["receb-mobile-areceber"] });
   }
 
-  useEffect(() => {
-    const cod = Number(codigo.trim());
-    if (!cod || !Number.isFinite(cod)) { setPreview(null); setPreviewErr(""); return; }
-    let cancel = false;
-    const t = setTimeout(async () => {
-      const { data, error } = await supabase
-        .from("mensalidades")
-        .select("id, codigo, competencia, vencimento, valor, status, associado_id, associados!inner(nome, codigo)")
-        .eq("codigo", cod)
-        .maybeSingle();
-      if (cancel) return;
-      if (error || !data) { setPreview(null); setPreviewErr("Parcela não encontrada"); return; }
-      setPreview(data);
-      setPreviewErr("");
-      setValor((cur) => cur || String(Number((data as any).valor)));
-    }, 250);
-    return () => { cancel = true; clearTimeout(t); };
-  }, [codigo]);
 
   async function registrar() {
     if (!cobradorId || !cobradorNome) { toast.error("Selecione o cobrador."); return; }
