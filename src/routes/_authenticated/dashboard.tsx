@@ -97,6 +97,7 @@ function Dashboard() {
       };
       const outrasReceitas = (entradasPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
       const totalDespesas = (saidasPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
+      const despesasPendentes = (saidasPendentesPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
 
       // Por filial (Matriz não é exibida)
       const filiais = (filiaisList.data as { id: string; nome: string }[]) ?? [];
@@ -119,6 +120,7 @@ function Dashboard() {
         receitaPlanos,
         outrasReceitas,
         totalDespesas,
+        despesasPendentes,
         totalRecebido: receitaPlanos + outrasReceitas,
         pendentes: pendentes.count ?? 0,
         atrasadas: atrasadas.count ?? 0,
