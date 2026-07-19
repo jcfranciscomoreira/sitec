@@ -383,6 +383,18 @@ function AssociadosPage() {
                     </Select>
                   </div>
                 )}
+                <div className="space-y-2 col-span-2">
+                  <Label>Unidade</Label>
+                  <Select value={filialId} onValueChange={setFilialId}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="matriz">Matriz</SelectItem>
+                      {filiais.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>Filial — {f.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2 col-span-2"><Label>Observações</Label><Textarea name="observacoes" rows={2} defaultValue={editing?.observacoes ?? ""} /></div>
               </div>
               <DialogFooter>
