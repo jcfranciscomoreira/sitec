@@ -24,7 +24,7 @@ export type AppModule = {
  *   - Nas permissões individuais por usuário
  */
 export const MODULES: AppModule[] = [
-  { group: "Associados", key: "dashboard", label: "Painel", url: "/dashboard", icon: LayoutDashboard },
+  { group: "Dashboard", key: "dashboard", label: "Painel", url: "/dashboard", icon: LayoutDashboard },
   { group: "Associados", key: "associados", label: "Associados", url: "/associados", icon: Users },
   { group: "Associados", key: "planos", label: "Planos", url: "/planos", icon: FileText },
   { group: "Associados", key: "financeiro", label: "Mensalidades", url: "/financeiro", icon: Wallet, tabs: [
