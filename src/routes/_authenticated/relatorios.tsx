@@ -310,7 +310,7 @@ function AssociadosReport({ associados, planos, filiais, planoNome, loading }: {
             {headers.map((h) => <TableHead key={h}>{h}</TableHead>)}
           </TableRow></TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={headers.length} className="p-3"><SkeletonTable rows={5} cols={headers.length} /></TableCell></TableRow>}
             {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Sem registros</TableCell></TableRow>}
             {filtered.map((a) => (
               <TableRow key={a.id}>
@@ -392,7 +392,7 @@ function MensalidadesReport({ mensalidades, assocNome, dateFrom, dateTo, setDate
         <Table>
           <TableHeader><TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={headers.length} className="p-3"><SkeletonTable rows={5} cols={headers.length} /></TableCell></TableRow>}
             {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Sem registros</TableCell></TableRow>}
             {filtered.map((m) => (
               <TableRow key={m.id}>
@@ -509,7 +509,7 @@ function RecebimentosReport({ mensalidades, assocNome, cobradores, dateFrom, dat
         <Table>
           <TableHeader><TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={headers.length} className="p-3"><SkeletonTable rows={5} cols={headers.length} /></TableCell></TableRow>}
             {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Sem registros</TableCell></TableRow>}
             {filtered.map((m) => (
               <TableRow key={m.id}>
@@ -604,7 +604,7 @@ function FinanceiroReport({ contas, centroNome, dateFrom, dateTo, setDateFrom, s
         <Table>
           <TableHeader><TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={headers.length} className="p-3"><SkeletonTable rows={5} cols={headers.length} /></TableCell></TableRow>}
             {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Sem registros</TableCell></TableRow>}
             {filtered.map((c) => (
               <TableRow key={c.id}>
@@ -659,7 +659,7 @@ function PlanosReport({ associados, planos, loading }: { associados: Associado[]
         <Table>
           <TableHeader><TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={headers.length} className="p-3"><SkeletonTable rows={5} cols={headers.length} /></TableCell></TableRow>}
             {!loading && rows.length === 0 && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Sem planos</TableCell></TableRow>}
             {rows.map((r) => (
               <TableRow key={r.id}>
@@ -724,7 +724,7 @@ function AniversariantesReport({ associados, loading }: { associados: Associado[
         <Table>
           <TableHeader><TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={headers.length} className="p-3"><SkeletonTable rows={5} cols={headers.length} /></TableCell></TableRow>}
             {!loading && filtered.length === 0 && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Sem aniversariantes</TableCell></TableRow>}
             {filtered.map((a) => (
               <TableRow key={a.id}>
@@ -796,7 +796,7 @@ function InadimplenciaReport({ mensalidades, associados, planoNome, loading }: {
         <Table>
           <TableHeader><TableRow>{headers.map((h) => <TableHead key={h}>{h}</TableHead>)}</TableRow></TableHeader>
           <TableBody>
-            {loading && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {loading && <TableRow><TableCell colSpan={headers.length} className="p-3"><SkeletonTable rows={5} cols={headers.length} /></TableCell></TableRow>}
             {!loading && porAssociado.length === 0 && <TableRow><TableCell colSpan={headers.length} className="text-center text-sm text-muted-foreground">Nenhum inadimplente 🎉</TableCell></TableRow>}
             {porAssociado.map((r) => (
               <TableRow key={r.id}>
