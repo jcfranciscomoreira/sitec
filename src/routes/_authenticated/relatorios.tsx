@@ -37,7 +37,7 @@ type Mensalidade = {
 };
 type Conta = {
   id: string; tipo: string; descricao: string; valor: number;
-  data_vencimento: string; data_pagamento: string | null; status: string;
+  vencimento: string; data_pagamento: string | null; status: string;
   centro_custo_id: string | null;
 };
 type Centro = { id: string; nome: string };
@@ -64,7 +64,7 @@ function RelatoriosPage() {
         supabase.from("associados").select("id, codigo, nome, cpf, telefone, cidade, estado, status, plano_id, data_adesao, data_nascimento, forma_pagamento").order("nome"),
         supabase.from("planos").select("id, nome, valor_mensal").order("nome"),
         supabase.from("mensalidades").select("id, codigo, associado_id, competencia, vencimento, valor, status, data_pagamento, forma_pagamento"),
-        supabase.from("contas_financeiras").select("id, tipo, descricao, valor, data_vencimento, data_pagamento, status, centro_custo_id"),
+        supabase.from("contas_financeiras").select("id, tipo, descricao, valor, vencimento, data_pagamento, status, centro_custo_id"),
         supabase.from("centros_custo").select("id, nome"),
       ]);
       setAssociados((a.data ?? []) as Associado[]);
@@ -487,7 +487,7 @@ function FinanceiroReport({ contas, centroNome, dateFrom, dateTo, setDateFrom, s
   const [status, setStatus] = useState("__all__");
 
   const filtered = useMemo(() => contas.filter((c) => {
-    const ref = c.data_pagamento ?? c.data_vencimento;
+    const ref = c.data_pagamento ?? c.vencimento;
     if (ref < dateFrom || ref > dateTo) return false;
     if (tipo !== "__all__" && c.tipo !== tipo) return false;
     if (status !== "__all__" && c.status !== status) return false;
@@ -500,7 +500,7 @@ function FinanceiroReport({ contas, centroNome, dateFrom, dateTo, setDateFrom, s
   const headers = ["Tipo", "Descrição", "Centro de Custo", "Vencimento", "Pagamento", "Valor", "Status"];
   const rows = filtered.map((c) => [
     c.tipo, c.descricao, centroNome(c.centro_custo_id),
-    fmtDate(c.data_vencimento), c.data_pagamento ? fmtDate(c.data_pagamento) : "—",
+    fmtDate(c.vencimento), c.data_pagamento ? fmtDate(c.data_pagamento) : "—",
     brl(c.valor), c.status,
   ]);
 
@@ -560,7 +560,7 @@ function FinanceiroReport({ contas, centroNome, dateFrom, dateTo, setDateFrom, s
                 <TableCell className="capitalize">{c.tipo}</TableCell>
                 <TableCell className="font-medium">{c.descricao}</TableCell>
                 <TableCell>{centroNome(c.centro_custo_id)}</TableCell>
-                <TableCell>{fmtDate(c.data_vencimento)}</TableCell>
+                <TableCell>{fmtDate(c.vencimento)}</TableCell>
                 <TableCell>{c.data_pagamento ? fmtDate(c.data_pagamento) : "—"}</TableCell>
                 <TableCell>{brl(c.valor)}</TableCell>
                 <TableCell><Badge variant="secondary">{c.status}</Badge></TableCell>
