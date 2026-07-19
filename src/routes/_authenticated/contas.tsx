@@ -328,7 +328,7 @@ function ContasPage() {
                     <div className="font-medium">{c.descricao}</div>
                     <div className="text-xs text-muted-foreground">{c.fornecedor_cliente || c.categoria || "—"}</div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{c.centros_custo?.nome ?? "—"}</TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">{c.centros_custo?.nome ?? "—"}</TableCell>
                   <TableCell>{fmtDate(c.vencimento)}</TableCell>
                   <TableCell className="font-medium">{brl(c.valor)}</TableCell>
                   <TableCell><StatusBadge status={c.status} /></TableCell>
