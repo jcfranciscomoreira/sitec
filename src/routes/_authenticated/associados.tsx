@@ -88,6 +88,7 @@ function AssociadosPage() {
   const [pendingDeps, setPendingDeps] = useState<PendingDep[]>([]);
   const [formaPag, setFormaPag] = useState<string>("");
   const [cobradorId, setCobradorId] = useState<string>("");
+  const [filialId, setFilialId] = useState<string>("matriz");
 
   const { data: cobradores = [] } = useQuery({
     queryKey: ["cobradores-ativos"],
@@ -98,9 +99,19 @@ function AssociadosPage() {
     },
   });
 
+  const { data: filiais = [] } = useQuery({
+    queryKey: ["filiais-ativas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("filiais").select("id, nome").eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data as { id: string; nome: string }[];
+    },
+  });
+
   useEffect(() => {
     setFormaPag(editing?.forma_pagamento ?? "");
     setCobradorId(editing?.cobrador_id ?? "");
+    setFilialId(editing?.filial_id ?? "matriz");
   }, [editing]);
 
   const { data: associados = [], isLoading } = useQuery({
