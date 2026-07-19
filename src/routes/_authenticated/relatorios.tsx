@@ -213,26 +213,33 @@ function DateRange(props: {
 
 /* ---------- Relatórios individuais ---------- */
 
-function AssociadosReport({ associados, planos, planoNome, loading }: {
-  associados: Associado[]; planos: Plano[]; planoNome: (id: string | null) => string; loading: boolean;
+function AssociadosReport({ associados, planos, filiais, planoNome, loading }: {
+  associados: Associado[]; planos: Plano[]; filiais: Filial[]; planoNome: (id: string | null) => string; loading: boolean;
 }) {
   const [status, setStatus] = useState("__all__");
   const [planoId, setPlanoId] = useState("__all__");
   const [cidade, setCidade] = useState("");
+  const [filialId, setFilialId] = useState("__all__");
 
   const cidades = useMemo(() => Array.from(new Set(associados.map((a) => a.cidade).filter(Boolean) as string[])).sort(), [associados]);
+  const filialNome = (id: string | null) => id ? (filiais.find((f) => f.id === id)?.nome ?? "—") : "Matriz";
 
   const filtered = useMemo(() => associados.filter((a) => {
     if (status !== "__all__" && a.status !== status) return false;
     if (planoId !== "__all__" && a.plano_id !== planoId) return false;
     if (cidade && !(a.cidade ?? "").toLowerCase().includes(cidade.toLowerCase())) return false;
+    if (filialId !== "__all__") {
+      if (filialId === "matriz" && a.filial_id) return false;
+      if (filialId !== "matriz" && a.filial_id !== filialId) return false;
+    }
     return true;
-  }), [associados, status, planoId, cidade]);
+  }), [associados, status, planoId, cidade, filialId]);
 
-  const headers = ["Código", "Nome", "CPF", "Telefone", "Cidade/UF", "Plano", "Status", "Adesão"];
+  const headers = ["Código", "Nome", "CPF", "Telefone", "Cidade/UF", "Filial", "Plano", "Status", "Adesão"];
   const rows = filtered.map((a) => [
     a.codigo, a.nome, a.cpf ?? "", a.telefone ?? "",
     `${a.cidade ?? ""}${a.estado ? "/" + a.estado : ""}`,
+    filialNome(a.filial_id),
     planoNome(a.plano_id), a.status, fmtDate(a.data_adesao),
   ]);
 
