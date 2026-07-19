@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, FileText, Wallet, HandCoins,
-  Building2, Receipt, Layers, MapPin, BarChart3, Shield,
+  Building2, Receipt, Layers, MapPin, BarChart3, Shield, FileBarChart,
 } from "lucide-react";
 
 export type AppModuleTab = { key: string; label: string };
@@ -44,6 +44,15 @@ export const MODULES: AppModule[] = [
   { group: "Vendas", key: "vendas", label: "Mapa de Vendas", url: "/vendas", icon: MapPin },
   { group: "Vendas", key: "crm", label: "CRM (Kanban)", url: "/crm", icon: Layers },
   { group: "Vendas", key: "vendas-relatorio", label: "Relatório de Vendas", url: "/vendas-relatorio", icon: BarChart3 },
+  { group: "Administração", key: "relatorios", label: "Relatórios", url: "/relatorios", icon: FileBarChart, tabs: [
+    { key: "associados", label: "Associados" },
+    { key: "mensalidades", label: "Mensalidades" },
+    { key: "recebimentos", label: "Recebimentos" },
+    { key: "financeiro", label: "Financeiro" },
+    { key: "planos", label: "Planos" },
+    { key: "aniversariantes", label: "Aniversariantes" },
+    { key: "inadimplencia", label: "Inadimplência" },
+  ] },
   { group: "Administração", key: "usuarios", label: "Usuários", url: "/usuarios", icon: Shield },
 ];
 
