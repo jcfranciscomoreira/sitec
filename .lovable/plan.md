@@ -1,61 +1,60 @@
 
-# Integração Bancária — Boleto, PIX e Compensação Automática
+# Responsividade mobile do sistema
 
-## O que vai ser entregue
+Objetivo: garantir que todas as telas do sistema funcionem bem em celulares (≤ 640px), sem quebra de layout, scroll horizontal, botões cortados ou tabelas ilegíveis.
 
-**1. Nova aba "Integração Bancária" em Configurações**
-- Você escolhe o provedor num dropdown (começamos com os que têm API pública documentada e webhook de compensação):
-  - **Asaas** (recomendado — mais simples)
-  - **Mercado Pago**
-  - **Banco Inter** (requer certificado .pfx)
-  - **Sicoob** (requer certificado)
-  - **Genérico / Outro** (só armazena credenciais; emissão manual)
-- Formulário dinâmico: os campos aparecem conforme o provedor escolhido (API Key, Client ID/Secret, certificado, carteira, conta, etc.).
-- Botão **"Testar conexão"** que valida as credenciais chamando o endpoint de saúde de cada provedor.
-- Passo a passo em tela para cada provedor: onde tirar a API Key, como cadastrar o webhook, qual URL colar no painel do banco.
-- Opção sandbox/produção.
+## Escopo (apenas frontend/apresentação)
 
-**2. Botão "Gerar boleto/PIX" nas mensalidades**
-- No módulo Financeiro, ao lado de cada mensalidade pendente cujo associado tem forma de pagamento **boleto** ou **pix**, aparece o botão "Gerar cobrança".
-- Ao clicar: chama o provedor configurado, salva `id_cobranca`, `linha_digitavel`, `codigo_barras`, `pix_copia_cola`, `qr_code_base64`, `link_boleto` na mensalidade.
-- Diálogo mostra o boleto + QR Code + botão copiar linha digitável / código PIX / baixar PDF.
-- Botão "Gerar em lote" para todas as pendentes do mês.
+Não altera regras de negócio, queries, RLS, nem estrutura de dados. Só CSS/JSX de apresentação.
 
-**3. Compensação automática via webhook**
-- Endpoint público `/api/public/webhooks/cobranca/{provedor}` que recebe a notificação de pagamento do banco.
-- Verifica assinatura/token do webhook.
-- Localiza a mensalidade pelo `id_cobranca`, marca como **paga**, grava `data_pagamento`, `forma_pagamento`, valor recebido.
-- Log de webhooks recebidos em nova tabela `webhook_logs` para auditoria.
+## 1. Shell e navegação
 
-## Estrutura técnica
+- `src/components/AppShell.tsx`: sidebar vira **drawer** em mobile (menu hambúrguer no topo), conteúdo ocupa 100% da largura. Header com título/subtítulo empilha e trunca em telas pequenas.
+- `UserMenu` e ações de topo: garantir `shrink-0` e `min-w-0` no bloco de título (padrão do guia de responsive-layout).
 
-**Banco de dados (migration):**
-- Tabela `integracao_bancaria`: `provedor`, `ambiente` (sandbox/producao), `config_json` (campos não-secretos), `ativo`, `webhook_secret`.
-- Credenciais sensíveis (API keys, client secrets, senhas de certificado) vão em **secrets** do Lovable Cloud, nunca no banco.
-- Colunas novas em `mensalidades`: `cobranca_id`, `cobranca_provedor`, `linha_digitavel`, `codigo_barras`, `pix_copia_cola`, `qr_code_base64`, `link_boleto`, `cobranca_status`.
-- Tabela `webhook_logs`: `provedor`, `payload`, `processado`, `erro`, `mensalidade_id`.
+## 2. Painel (`dashboard.tsx`)
 
-**Server functions (`src/lib/cobranca.functions.ts`):**
-- `criarCobranca({ mensalidade_id })` — carrega config, chama o provedor certo, salva retorno.
-- `testarConexao({ provedor })` — valida credenciais.
-- `sincronizarCobranca({ mensalidade_id })` — consulta status manualmente (fallback caso webhook falhe).
+- Barra de filtros (Início / Fim / Mês): passa de `flex flex-wrap` para grid `grid-cols-2` em mobile, cada input `w-full` em vez de `w-44`/`w-52`.
+- Grid de KPIs: mantém `md:grid-cols-2 xl:grid-cols-3`, mas em mobile fica `grid-cols-1` (padrão) com padding reduzido nos cards e valores `text-2xl` em vez de `text-3xl`.
+- Cards de filial idem; botão "Ver detalhes" full width (já é).
+- `FilialDetalhesDialog`: `DialogContent` com `w-[95vw] max-w-3xl`, `TabsList` com scroll horizontal (`overflow-x-auto`), tabelas envolvidas em wrapper `overflow-x-auto` (já feito em `TabelaSimples`) + font menor em mobile.
 
-**Adaptadores por provedor** (`src/lib/cobranca/`):
-- `asaas.ts`, `mercadopago.ts`, `inter.ts`, `sicoob.ts` — cada um exporta `criar`, `consultar`, `validarWebhook`.
-- Interface comum permite adicionar novos bancos sem tocar no resto.
+## 3. Tabelas / listas
 
-**Server route (`src/routes/api/public/webhooks/cobranca.$provedor.ts`):**
-- POST público, valida assinatura, atualiza mensalidade, loga.
-- URL estável: `https://project--3e3c3d78-....lovable.app/api/public/webhooks/cobranca/asaas` — é essa que você cola no painel do banco.
+Aplicar padrão consistente às páginas com tabelas grandes:
+- `associados.tsx`, `associados-lista.tsx`, `planos.tsx`, `mensalidades` (dialog), `contas.tsx`, `centros-custo.tsx`, `financeiro.tsx`, `recebimento.tsx`, `relatorios.tsx`, `usuarios.tsx`, `vendas-relatorio.tsx`, `empresa-financeiro.tsx`.
 
-## O que preciso de você durante a implementação
+Padrão:
+- Envolver toda tabela em `<div className="overflow-x-auto -mx-4 px-4">` para permitir scroll horizontal sem quebrar a página.
+- Barras de filtro/ação: `flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end`, inputs `w-full sm:w-auto`.
+- Botões de ação por linha: agrupar em um único menu (ícone) em mobile via `DropdownMenu`, mantendo botões visíveis em `sm:` para cima. Onde já existem muitos botões (associados, mensalidades) isso é essencial.
+- Diálogos (`Dialog`, `Sheet`): usar `w-[95vw] max-w-... max-h-[90vh] overflow-y-auto`.
 
-Depois que a aba estiver pronta, você entra em Configurações → Integração Bancária, escolhe o provedor e cola as credenciais (aparece um formulário seguro do Lovable para as chaves secretas). O passo a passo dentro da aba explica onde tirar cada valor no painel de cada banco.
+## 4. Formulários
 
-## Fora de escopo desta entrega
+- Cadastros com grids `md:grid-cols-2` já colapsam para 1 coluna; padronizar campos com `w-full` e labels acima do campo.
+- Botões primários dos diálogos: `w-full sm:w-auto` e ordem invertida (primário embaixo em mobile) quando fizer sentido.
 
-- Registro de boleto direto no CIP/Bacen sem intermediário (exige homologação bancária de meses).
-- Conciliação de extrato bancário (OFX/CNAB) — só compensamos o que o webhook do provedor informar.
-- Geração de PDF do boleto no servidor (usamos o PDF que o próprio provedor retorna).
+## 5. Vendas / CRM / Mapa
 
-Aprove pra eu começar pela migration + aba de configuração, e depois o adaptador do primeiro provedor que você quiser ativar.
+- `vendas.tsx`: já é mobile-first, apenas ajustar altura do mapa para `h-[calc(100dvh-var(--header))]` e garantir controles com `touch-manipulation`.
+- `crm.tsx` (kanban): em mobile, colunas com `min-w-[85vw] snap-x` e wrapper `overflow-x-auto snap-mandatory` (uma coluna por vez com swipe), em vez de tentar comprimir tudo.
+
+## 6. Impressões / carteirinha / contrato
+
+Sem mudanças — já são HTML dedicados para print.
+
+## 7. Utilitários globais
+
+- `src/styles.css`: já tem `overflow-x: hidden` no body. Adicionar `-webkit-tap-highlight-color: transparent` e classe utilitária `.no-scrollbar` (para faixas horizontais).
+- Confirmar viewport meta em `__root.tsx` (`width=device-width, initial-scale=1, viewport-fit=cover`).
+
+## 8. Verificação
+
+Após implementação, rodar Playwright em viewport 390×844 (iPhone) e 360×780 (Android) e capturar screenshots das rotas principais:
+`/dashboard`, `/associados`, `/associados-lista`, `/contas`, `/financeiro`, `/recebimento`, `/relatorios`, `/vendas`, `/crm`, `/configuracoes`, `/usuarios`. Ajustar pontos que ainda apresentarem overflow ou botões cortados.
+
+## Fora de escopo
+
+- Nenhuma mudança em queries, migrations, RLS ou lógica de negócio.
+- Nenhum redesign visual — apenas adaptação de layout para telas pequenas mantendo o design atual.
