@@ -305,11 +305,14 @@ function ContasPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
-              {!isLoading && lista.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                  <Receipt className="mx-auto mb-2 h-8 w-8 opacity-40" />Nenhum lançamento encontrado.
-                </TableCell></TableRow>
+              {isLoading && (
+                <TableRow><TableCell colSpan={7} className="p-3"><SkeletonTable rows={5} cols={7} /></TableCell></TableRow>
+              )}
+              {!isLoading && isError && (
+                <TableRow><TableCell colSpan={7} className="p-3"><ErrorState onRetry={() => refetch()} /></TableCell></TableRow>
+              )}
+              {!isLoading && !isError && lista.length === 0 && (
+                <TableRow><TableCell colSpan={7} className="p-3"><EmptyState title="Nenhum lançamento" message="Cadastre uma nova entrada ou saída." icon={<Receipt className="h-8 w-8" />} /></TableCell></TableRow>
               )}
               {lista.map((c) => (
                 <TableRow key={c.id}>
