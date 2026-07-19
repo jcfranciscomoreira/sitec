@@ -593,13 +593,14 @@ function DependentesSection({ associado }: { associado: Associado }) {
     setEditingDep(d); setAdding(false); setFormStatus(d.status ?? "ativo");
   }
 
-  function imprimirDep(d: Dependente) {
-    const card = renderCarteirinhaCard({
+  async function imprimirDep(d: Dependente) {
+    const cfg = await loadCarteirinhaConfig();
+    const card = renderCarteirinhaHTML({
       codigo: `#${String(associado.codigo).padStart(4, "0")}`,
       nome: d.nome,
       plano: associado.planos?.nome ?? "Plano não vinculado",
       tipo: `Dependente · ${d.parentesco}`,
-    });
+    }, cfg);
     abrirJanelaCarteirinha(`Carteirinha — ${d.nome}`, card);
   }
 
