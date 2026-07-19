@@ -3,6 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { Plus, Pencil, Trash2, CheckCircle2, Printer, Receipt, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { SkeletonTable } from "@/components/ui/skeleton-table";
+import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -66,7 +69,7 @@ function ContasPage() {
     },
   });
 
-  const { data: lista = [], isLoading } = useQuery({
+  const { data: lista = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["contas", tipo, status],
     queryFn: async () => {
       let q = supabase.from("contas_financeiras").select("*, centros_custo(nome)").order("vencimento", { ascending: false });
@@ -291,13 +294,13 @@ function ContasPage() {
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Descrição</TableHead>
-                <TableHead>Centro</TableHead>
+                <TableHead className="hidden sm:table-cell">Centro</TableHead>
                 <TableHead>Vencimento</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
@@ -305,11 +308,14 @@ function ContasPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
-              {!isLoading && lista.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                  <Receipt className="mx-auto mb-2 h-8 w-8 opacity-40" />Nenhum lançamento encontrado.
-                </TableCell></TableRow>
+              {isLoading && (
+                <TableRow><TableCell colSpan={7} className="p-3"><SkeletonTable rows={5} cols={7} /></TableCell></TableRow>
+              )}
+              {!isLoading && isError && (
+                <TableRow><TableCell colSpan={7} className="p-3"><ErrorState onRetry={() => refetch()} /></TableCell></TableRow>
+              )}
+              {!isLoading && !isError && lista.length === 0 && (
+                <TableRow><TableCell colSpan={7} className="p-3"><EmptyState title="Nenhum lançamento" message="Cadastre uma nova entrada ou saída." icon={<Receipt className="h-8 w-8" />} /></TableCell></TableRow>
               )}
               {lista.map((c) => (
                 <TableRow key={c.id}>
@@ -322,7 +328,7 @@ function ContasPage() {
                     <div className="font-medium">{c.descricao}</div>
                     <div className="text-xs text-muted-foreground">{c.fornecedor_cliente || c.categoria || "—"}</div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{c.centros_custo?.nome ?? "—"}</TableCell>
+                  <TableCell className="hidden text-muted-foreground sm:table-cell">{c.centros_custo?.nome ?? "—"}</TableCell>
                   <TableCell>{fmtDate(c.vencimento)}</TableCell>
                   <TableCell className="font-medium">{brl(c.valor)}</TableCell>
                   <TableCell><StatusBadge status={c.status} /></TableCell>

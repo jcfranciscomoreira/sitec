@@ -11,6 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { SkeletonCard } from "@/components/ui/skeleton-card";
+import { SkeletonTable } from "@/components/ui/skeleton-table";
+import { ErrorState } from "@/components/ui/error-state";
+import { EmptyState } from "@/components/ui/empty-state";
 import { brl } from "@/lib/format";
 
 function buildMonthOptions(count = 12) {
@@ -61,7 +65,7 @@ function Dashboard() {
     return d.toISOString().slice(0, 10);
   }, [fim]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["dashboard", inicio, fimExclusivo],
     queryFn: async () => {
       const hojeIso = todayIso();
@@ -171,27 +175,33 @@ function Dashboard() {
 
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-        {cards.map((c) => (
-          <Card key={c.label} className="border-border/60 shadow-soft">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{c.label}</CardTitle>
-              <c.icon className={`h-5 w-5 ${c.tone}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="font-serif text-2xl font-semibold text-foreground sm:text-3xl">
-                {isLoading ? "—" : c.value}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
-              {c.linkStatus && (
-                <Button asChild size="sm" variant="outline" className="mt-3">
-                  <Link to="/associados-lista" search={{ status: c.linkStatus }}>Ver lista</Link>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {isError ? (
+        <ErrorState message="Verifique sua conexão e tente novamente." onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+          {cards.map((c) => (
+            <Card key={c.label} className="border-border/60 shadow-soft">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{c.label}</CardTitle>
+                <c.icon className={`h-5 w-5 ${c.tone}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="font-serif text-2xl font-semibold text-foreground sm:text-3xl">{c.value}</div>
+                <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
+                {c.linkStatus && (
+                  <Button asChild size="sm" variant="outline" className="mt-3 w-full sm:w-auto">
+                    <Link to="/associados-lista" search={{ status: c.linkStatus }}>Ver lista</Link>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {(data?.porFilial?.length ?? 0) > 0 && (
         <div className="mt-8">
@@ -285,13 +295,13 @@ function FilialDetalhesDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Detalhes — {filial?.nome}</DialogTitle>
           <p className="text-xs text-muted-foreground">Período: {inicio} até {fimExclusivo} (exclusivo)</p>
         </DialogHeader>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground p-4">Carregando...</p>
+          <div className="p-2"><SkeletonTable rows={6} cols={4} /></div>
         ) : (
           <Tabs defaultValue="receitas">
             <TabsList className="flex w-full flex-wrap h-auto gap-1">
@@ -338,7 +348,7 @@ function FilialDetalhesDialog({
 }
 
 function TabelaSimples({ cols, rows }: { cols: string[]; rows: (string | number)[][] }) {
-  if (rows.length === 0) return <p className="text-sm text-muted-foreground p-4">Sem lançamentos no período.</p>;
+  if (rows.length === 0) return <EmptyState title="Sem lançamentos" message="Nenhum lançamento no período selecionado." />;
   return (
     <div className="overflow-x-auto mt-2">
       <table className="w-full text-sm">
