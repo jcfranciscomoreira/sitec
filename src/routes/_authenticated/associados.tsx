@@ -198,9 +198,10 @@ function AssociadosPage() {
 
 
   async function imprimirRelatorio(a: Associado) {
-    const [{ data: deps }, { data: mens }] = await Promise.all([
+    const [{ data: deps }, { data: mens }, header] = await Promise.all([
       supabase.from("dependentes").select("*").eq("associado_id", a.id).order("nome"),
       supabase.from("mensalidades").select("*").eq("associado_id", a.id).order("competencia", { ascending: false }),
+      (await import("@/lib/print-header")).getEmpresaHeaderHTML(),
     ]);
     const w = window.open("", "_blank", "width=900,height=700");
     if (!w) { toast.error("Permita pop-ups para imprimir."); return; }
