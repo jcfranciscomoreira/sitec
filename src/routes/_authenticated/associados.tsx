@@ -198,9 +198,10 @@ function AssociadosPage() {
 
 
   async function imprimirRelatorio(a: Associado) {
-    const [{ data: deps }, { data: mens }] = await Promise.all([
+    const [{ data: deps }, { data: mens }, header] = await Promise.all([
       supabase.from("dependentes").select("*").eq("associado_id", a.id).order("nome"),
       supabase.from("mensalidades").select("*").eq("associado_id", a.id).order("competencia", { ascending: false }),
+      (await import("@/lib/print-header")).getEmpresaHeaderHTML(),
     ]);
     const w = window.open("", "_blank", "width=900,height=700");
     if (!w) { toast.error("Permita pop-ups para imprimir."); return; }
@@ -224,8 +225,9 @@ function AssociadosPage() {
         .meta{font-size:12px;color:#666;margin-bottom:16px}
         .totais{margin-top:12px;font-size:13px}
       </style></head><body>
+      ${header}
       <h1>Relatório do Associado</h1>
-      <div class="meta">Gerado em ${new Date().toLocaleString("pt-BR")} · Memorial</div>
+      <div class="meta">Gerado em ${new Date().toLocaleString("pt-BR")}</div>
       <h2>Dados cadastrais</h2>
       <table>
         ${linha("Código", `#${String(a.codigo).padStart(4, "0")}`)}
@@ -252,10 +254,11 @@ function AssociadosPage() {
 
   async function gerarContrato(a: Associado) {
     if (!a.plano_id) { toast.error("Associado sem plano vinculado."); return; }
-    const [{ data: plano }, { data: deps }, template] = await Promise.all([
+    const [{ data: plano }, { data: deps }, template, header] = await Promise.all([
       supabase.from("planos").select("*").eq("id", a.plano_id).maybeSingle(),
       supabase.from("dependentes").select("*").eq("associado_id", a.id).order("nome"),
       loadContratoTemplate(),
+      (await import("@/lib/print-header")).getEmpresaHeaderHTML(),
     ]);
     if (!plano) { toast.error("Plano não encontrado."); return; }
     const w = window.open("", "_blank", "width=900,height=800");
@@ -263,10 +266,11 @@ function AssociadosPage() {
     const body = renderContratoHTML(a as any, plano as any, (deps ?? []) as any, template);
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Contrato — ${a.nome}</title>
       <style>
-        body{margin:0;background:#fff}
+        body{margin:0;background:#fff;padding:24px}
         table{border-collapse:collapse}
         @media print{body{padding:0}}
       </style></head><body>
+      ${header}
       ${body}
       <script>window.onload=()=>{window.print();}</script>
       </body></html>`);

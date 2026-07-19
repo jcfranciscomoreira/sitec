@@ -1,13 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { Users, AlertTriangle, CircleDollarSign, TrendingUp, Wallet } from "lucide-react";
+import { Users, AlertTriangle, CircleDollarSign, TrendingUp, Wallet, Eye } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
 
@@ -40,9 +42,7 @@ function daysAgoIso(n: number) {
 function Dashboard() {
   const [inicio, setInicio] = useState<string>(daysAgoIso(30));
   const [fim, setFim] = useState<string>(todayIso());
-
-
-
+  const [detalheFilial, setDetalheFilial] = useState<{ id: string; nome: string } | null>(null);
 
   const monthOptions = useMemo(() => buildMonthOptions(12), []);
   const aplicarMes = (value: string) => {
@@ -214,12 +214,142 @@ function Dashboard() {
                       {brl(f.receitas - f.despesas)}
                     </span>
                   </div>
+                  <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => setDetalheFilial({ id: f.id, nome: f.nome })}>
+                    <Eye className="mr-2 h-4 w-4" />Ver detalhes
+                  </Button>
                 </CardContent>
               </Card>
             ))}
           </div>
         </div>
       )}
+
+      <FilialDetalhesDialog
+        filial={detalheFilial}
+        inicio={inicio}
+        fimExclusivo={fimExclusivo}
+        onClose={() => setDetalheFilial(null)}
+      />
     </AppShell>
+  );
+}
+
+function FilialDetalhesDialog({
+  filial, inicio, fimExclusivo, onClose,
+}: {
+  filial: { id: string; nome: string } | null;
+  inicio: string;
+  fimExclusivo: string;
+  onClose: () => void;
+}) {
+  const open = !!filial;
+  const { data, isLoading } = useQuery({
+    enabled: open,
+    queryKey: ["filial-detalhes", filial?.id, inicio, fimExclusivo],
+    queryFn: async () => {
+      const fid = filial!.id;
+      const [mens, entradas, saidas] = await Promise.all([
+        supabase
+          .from("mensalidades")
+          .select("valor, data_pagamento, competencia, associados!inner(nome, filial_id)")
+          .eq("status", "pago")
+          .gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo)
+          .eq("associados.filial_id", fid),
+        supabase
+          .from("contas_financeiras")
+          .select("descricao, valor, data_pagamento, vencimento")
+          .eq("tipo", "entrada").eq("status", "pago").eq("filial_id", fid),
+        supabase
+          .from("contas_financeiras")
+          .select("descricao, valor, data_pagamento, vencimento")
+          .eq("tipo", "saida").eq("status", "pago").eq("filial_id", fid),
+      ]);
+      const inRange = (r: any) => {
+        const d = r.data_pagamento ?? r.vencimento;
+        return d && d >= inicio && d < fimExclusivo;
+      };
+      return {
+        mens: (mens.data ?? []) as any[],
+        entradas: (entradas.data ?? []).filter(inRange) as any[],
+        saidas: (saidas.data ?? []).filter(inRange) as any[],
+      };
+    },
+  });
+
+  const receitasPlano = (data?.mens ?? []).reduce((s, r: any) => s + Number(r.valor), 0);
+  const outrasReceitas = (data?.entradas ?? []).reduce((s, r: any) => s + Number(r.valor), 0);
+  const totalDespesas = (data?.saidas ?? []).reduce((s, r: any) => s + Number(r.valor), 0);
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Detalhes — {filial?.nome}</DialogTitle>
+          <p className="text-xs text-muted-foreground">Período: {inicio} até {fimExclusivo} (exclusivo)</p>
+        </DialogHeader>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground p-4">Carregando...</p>
+        ) : (
+          <Tabs defaultValue="receitas">
+            <TabsList>
+              <TabsTrigger value="receitas">Receitas de planos ({brl(receitasPlano)})</TabsTrigger>
+              <TabsTrigger value="entradas">Outras entradas ({brl(outrasReceitas)})</TabsTrigger>
+              <TabsTrigger value="saidas">Despesas ({brl(totalDespesas)})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="receitas">
+              <TabelaSimples
+                cols={["Associado", "Competência", "Pagamento", "Valor"]}
+                rows={(data?.mens ?? []).map((r: any) => [
+                  r.associados?.nome ?? "—",
+                  r.competencia ?? "—",
+                  r.data_pagamento ?? "—",
+                  brl(Number(r.valor)),
+                ])}
+              />
+            </TabsContent>
+            <TabsContent value="entradas">
+              <TabelaSimples
+                cols={["Descrição", "Data", "Valor"]}
+                rows={(data?.entradas ?? []).map((r: any) => [
+                  r.descricao ?? "—",
+                  r.data_pagamento ?? r.vencimento ?? "—",
+                  brl(Number(r.valor)),
+                ])}
+              />
+            </TabsContent>
+            <TabsContent value="saidas">
+              <TabelaSimples
+                cols={["Descrição", "Data", "Valor"]}
+                rows={(data?.saidas ?? []).map((r: any) => [
+                  r.descricao ?? "—",
+                  r.data_pagamento ?? r.vencimento ?? "—",
+                  brl(Number(r.valor)),
+                ])}
+              />
+            </TabsContent>
+          </Tabs>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TabelaSimples({ cols, rows }: { cols: string[]; rows: (string | number)[][] }) {
+  if (rows.length === 0) return <p className="text-sm text-muted-foreground p-4">Sem lançamentos no período.</p>;
+  return (
+    <div className="overflow-x-auto mt-2">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b">{cols.map((c) => <th key={c} className="text-left p-2 font-medium text-muted-foreground">{c}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i} className="border-b last:border-0">
+              {r.map((cell, j) => <td key={j} className="p-2">{cell}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
