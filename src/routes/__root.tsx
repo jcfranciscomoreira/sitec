@@ -48,7 +48,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "theme-color", content: "#1a2a4a" },
       { title: "Memorial — Gestão de Planos Funerários" },
       { name: "description", content: "Sistema de gestão de associados, dependentes, planos e mensalidades para administradoras de planos funerários." },
       { property: "og:title", content: "Memorial — Gestão de Planos Funerários" },

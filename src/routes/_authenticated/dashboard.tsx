@@ -148,19 +148,19 @@ function Dashboard() {
 
   return (
     <AppShell title="Painel de controle" subtitle="Visão geral do seu plano funerário">
-      <div className="mb-4 flex flex-wrap items-end gap-3">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Início</Label>
-          <Input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} className="w-44" />
+          <Input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} className="w-full sm:w-44" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Fim</Label>
-          <Input type="date" value={fim} onChange={(e) => setFim(e.target.value)} className="w-44" />
+          <Input type="date" value={fim} onChange={(e) => setFim(e.target.value)} className="w-full sm:w-44" />
         </div>
-        <div className="space-y-1">
+        <div className="col-span-2 space-y-1 sm:col-span-1">
           <Label className="text-xs text-muted-foreground">Mês</Label>
           <Select onValueChange={aplicarMes}>
-            <SelectTrigger className="w-52"><SelectValue placeholder="Selecionar mês" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-52"><SelectValue placeholder="Selecionar mês" /></SelectTrigger>
             <SelectContent>
               {monthOptions.map((o) => (
                 <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
@@ -171,7 +171,7 @@ function Dashboard() {
 
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         {cards.map((c) => (
           <Card key={c.label} className="border-border/60 shadow-soft">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -179,7 +179,7 @@ function Dashboard() {
               <c.icon className={`h-5 w-5 ${c.tone}`} />
             </CardHeader>
             <CardContent>
-              <div className="font-serif text-3xl font-semibold text-foreground">
+              <div className="font-serif text-2xl font-semibold text-foreground sm:text-3xl">
                 {isLoading ? "—" : c.value}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
@@ -196,7 +196,7 @@ function Dashboard() {
       {(data?.porFilial?.length ?? 0) > 0 && (
         <div className="mt-8">
           <h2 className="mb-3 font-serif text-lg text-foreground">Receitas e despesas por filial</h2>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
             {data!.porFilial.map((f) => (
               <Card key={f.id} className="border-border/60 shadow-soft">
                 <CardHeader className="pb-2">
@@ -294,10 +294,10 @@ function FilialDetalhesDialog({
           <p className="text-sm text-muted-foreground p-4">Carregando...</p>
         ) : (
           <Tabs defaultValue="receitas">
-            <TabsList>
-              <TabsTrigger value="receitas">Receitas de planos ({brl(receitasPlano)})</TabsTrigger>
-              <TabsTrigger value="entradas">Outras entradas ({brl(outrasReceitas)})</TabsTrigger>
-              <TabsTrigger value="saidas">Despesas ({brl(totalDespesas)})</TabsTrigger>
+            <TabsList className="flex w-full flex-wrap h-auto gap-1">
+              <TabsTrigger value="receitas" className="text-xs sm:text-sm">Receitas de planos ({brl(receitasPlano)})</TabsTrigger>
+              <TabsTrigger value="entradas" className="text-xs sm:text-sm">Outras entradas ({brl(outrasReceitas)})</TabsTrigger>
+              <TabsTrigger value="saidas" className="text-xs sm:text-sm">Despesas ({brl(totalDespesas)})</TabsTrigger>
             </TabsList>
             <TabsContent value="receitas">
               <TabelaSimples
