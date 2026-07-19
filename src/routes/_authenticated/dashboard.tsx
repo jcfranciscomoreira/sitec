@@ -294,10 +294,10 @@ function FilialDetalhesDialog({
           <p className="text-sm text-muted-foreground p-4">Carregando...</p>
         ) : (
           <Tabs defaultValue="receitas">
-            <TabsList>
-              <TabsTrigger value="receitas">Receitas de planos ({brl(receitasPlano)})</TabsTrigger>
-              <TabsTrigger value="entradas">Outras entradas ({brl(outrasReceitas)})</TabsTrigger>
-              <TabsTrigger value="saidas">Despesas ({brl(totalDespesas)})</TabsTrigger>
+            <TabsList className="flex w-full flex-wrap h-auto gap-1">
+              <TabsTrigger value="receitas" className="text-xs sm:text-sm">Receitas de planos ({brl(receitasPlano)})</TabsTrigger>
+              <TabsTrigger value="entradas" className="text-xs sm:text-sm">Outras entradas ({brl(outrasReceitas)})</TabsTrigger>
+              <TabsTrigger value="saidas" className="text-xs sm:text-sm">Despesas ({brl(totalDespesas)})</TabsTrigger>
             </TabsList>
             <TabsContent value="receitas">
               <TabelaSimples
