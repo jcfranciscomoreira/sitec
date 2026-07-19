@@ -28,7 +28,7 @@ function ConfiguracoesPage() {
     <AppShell title="Configurações" subtitle="Personalização e integrações do sistema">
       <Tabs defaultValue="identidade" className="w-full">
         <TabsList className="flex-wrap h-auto">
-          <TabsTrigger value="identidade">Identidade visual</TabsTrigger>
+          <TabsTrigger value="identidade">Configuração da Empresa</TabsTrigger>
           <TabsTrigger value="filiais">Filiais</TabsTrigger>
           <TabsTrigger value="carteirinha">Carteirinha</TabsTrigger>
           <TabsTrigger value="contrato">Contrato padrão</TabsTrigger>
