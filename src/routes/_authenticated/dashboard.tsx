@@ -295,7 +295,7 @@ function FilialDetalhesDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Detalhes — {filial?.nome}</DialogTitle>
           <p className="text-xs text-muted-foreground">Período: {inicio} até {fimExclusivo} (exclusivo)</p>
