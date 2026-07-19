@@ -44,6 +44,15 @@ export const MODULES: AppModule[] = [
   { group: "Vendas", key: "vendas", label: "Mapa de Vendas", url: "/vendas", icon: MapPin },
   { group: "Vendas", key: "crm", label: "CRM (Kanban)", url: "/crm", icon: Layers },
   { group: "Vendas", key: "vendas-relatorio", label: "Relatório de Vendas", url: "/vendas-relatorio", icon: BarChart3 },
+  { group: "Administração", key: "relatorios", label: "Relatórios", url: "/relatorios", icon: FileBarChart, tabs: [
+    { key: "associados", label: "Associados" },
+    { key: "mensalidades", label: "Mensalidades" },
+    { key: "recebimentos", label: "Recebimentos" },
+    { key: "financeiro", label: "Financeiro" },
+    { key: "planos", label: "Planos" },
+    { key: "aniversariantes", label: "Aniversariantes" },
+    { key: "inadimplencia", label: "Inadimplência" },
+  ] },
   { group: "Administração", key: "usuarios", label: "Usuários", url: "/usuarios", icon: Shield },
 ];
 
