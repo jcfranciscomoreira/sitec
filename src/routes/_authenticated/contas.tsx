@@ -175,7 +175,7 @@ function ContasPage() {
 
   return (
     <AppShell
-      title="Contas a Pagar e Receber"
+      title="Entradas e Saidas"
       subtitle="Lançamentos de entradas e saídas"
       actions={
         <div className="flex gap-2">
