@@ -254,10 +254,11 @@ function AssociadosPage() {
 
   async function gerarContrato(a: Associado) {
     if (!a.plano_id) { toast.error("Associado sem plano vinculado."); return; }
-    const [{ data: plano }, { data: deps }, template] = await Promise.all([
+    const [{ data: plano }, { data: deps }, template, header] = await Promise.all([
       supabase.from("planos").select("*").eq("id", a.plano_id).maybeSingle(),
       supabase.from("dependentes").select("*").eq("associado_id", a.id).order("nome"),
       loadContratoTemplate(),
+      (await import("@/lib/print-header")).getEmpresaHeaderHTML(),
     ]);
     if (!plano) { toast.error("Plano não encontrado."); return; }
     const w = window.open("", "_blank", "width=900,height=800");
@@ -265,10 +266,11 @@ function AssociadosPage() {
     const body = renderContratoHTML(a as any, plano as any, (deps ?? []) as any, template);
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Contrato — ${a.nome}</title>
       <style>
-        body{margin:0;background:#fff}
+        body{margin:0;background:#fff;padding:24px}
         table{border-collapse:collapse}
         @media print{body{padding:0}}
       </style></head><body>
+      ${header}
       ${body}
       <script>window.onload=()=>{window.print();}</script>
       </body></html>`);
