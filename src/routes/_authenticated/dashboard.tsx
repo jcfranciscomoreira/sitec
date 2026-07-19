@@ -97,20 +97,19 @@ function Dashboard() {
       const outrasReceitas = (entradasPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
       const totalDespesas = (saidasPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
 
-      // Por filial
+      // Por filial (Matriz não é exibida)
       const filiais = (filiaisList.data as { id: string; nome: string }[]) ?? [];
-      const bucket = new Map<string, { nome: string; receitas: number; despesas: number }>();
-      bucket.set("matriz", { nome: "Matriz", receitas: 0, despesas: 0 });
-      for (const f of filiais) bucket.set(f.id, { nome: f.nome, receitas: 0, despesas: 0 });
+      const bucket = new Map<string, { id: string; nome: string; receitas: number; despesas: number }>();
+      for (const f of filiais) bucket.set(f.id, { id: f.id, nome: f.nome, receitas: 0, despesas: 0 });
       const bump = (key: string | null | undefined, field: "receitas" | "despesas", v: number) => {
-        const k = key ?? "matriz";
-        const b = bucket.get(k) ?? bucket.get("matriz")!;
-        b[field] += v;
+        if (!key || key === "matriz") return;
+        const b = bucket.get(key);
+        if (b) b[field] += v;
       };
       for (const r of (pagasPer.data ?? []) as any[]) bump(r.associados?.filial_id, "receitas", Number(r.valor));
       for (const r of (entradasPer.data ?? []) as any[]) if (inRange(r)) bump(r.filial_id, "receitas", Number(r.valor));
       for (const r of (saidasPer.data ?? []) as any[]) if (inRange(r)) bump(r.filial_id, "despesas", Number(r.valor));
-      const porFilial = Array.from(bucket.values()).filter((b) => b.receitas > 0 || b.despesas > 0 || b.nome === "Matriz");
+      const porFilial = Array.from(bucket.values()).filter((b) => b.receitas > 0 || b.despesas > 0);
 
       return {
         ativos: assocAtivos.count ?? 0,
@@ -196,7 +195,7 @@ function Dashboard() {
           <h2 className="mb-3 font-serif text-lg text-foreground">Receitas e despesas por filial</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {data!.porFilial.map((f) => (
-              <Card key={f.nome} className="border-border/60 shadow-soft">
+              <Card key={f.id} className="border-border/60 shadow-soft">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">{f.nome}</CardTitle>
                 </CardHeader>
