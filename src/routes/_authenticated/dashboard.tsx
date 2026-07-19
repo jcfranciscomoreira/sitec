@@ -348,7 +348,7 @@ function FilialDetalhesDialog({
 }
 
 function TabelaSimples({ cols, rows }: { cols: string[]; rows: (string | number)[][] }) {
-  if (rows.length === 0) return <p className="text-sm text-muted-foreground p-4">Sem lançamentos no período.</p>;
+  if (rows.length === 0) return <EmptyState title="Sem lançamentos" message="Nenhum lançamento no período selecionado." />;
   return (
     <div className="overflow-x-auto mt-2">
       <table className="w-full text-sm">
