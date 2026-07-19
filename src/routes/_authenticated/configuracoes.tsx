@@ -26,12 +26,20 @@ function ConfiguracoesPage() {
   return (
     <AppShell title="Configurações" subtitle="Personalização e integrações do sistema">
       <Tabs defaultValue="identidade" className="w-full">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="identidade">Identidade visual</TabsTrigger>
+          <TabsTrigger value="carteirinha">Carteirinha</TabsTrigger>
+          <TabsTrigger value="contrato">Contrato padrão</TabsTrigger>
           <TabsTrigger value="integracao">Integração bancária</TabsTrigger>
         </TabsList>
         <TabsContent value="identidade" className="mt-4">
           <IdentidadeVisual />
+        </TabsContent>
+        <TabsContent value="carteirinha" className="mt-4">
+          <CarteirinhaConfigTab />
+        </TabsContent>
+        <TabsContent value="contrato" className="mt-4">
+          <ContratoConfigTab />
         </TabsContent>
         <TabsContent value="integracao" className="mt-4">
           <IntegracaoBancariaConfig />
