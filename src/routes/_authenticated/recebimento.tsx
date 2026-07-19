@@ -984,7 +984,7 @@ function MobileRecebimentoSection() {
         imprimirComprovante({ id: ins.id, ...comprovante });
         toast.success("Recebimento registrado", { description: "Baixa pendente de conciliação." });
       }
-      setCodigo(""); setValor(""); setObs(""); setPreview(null); setPreviewErr("");
+      setValor(""); setObs(""); setPreview(null);
       qc.invalidateQueries({ queryKey: ["receb-pendentes-meus"] });
       qc.invalidateQueries({ queryKey: ["receb-pendentes-conciliar"] });
     } catch (e: any) {
