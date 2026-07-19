@@ -774,11 +774,9 @@ function MobileRecebimentoSection() {
   const [cobradorId, setCobradorId] = useState<string>("");
   const [cobradorNome, setCobradorNome] = useState<string>("");
   const [cobradorLocked, setCobradorLocked] = useState<boolean>(false);
-  const [codigo, setCodigo] = useState("");
   const [valor, setValor] = useState("");
   const [obs, setObs] = useState("");
   const [preview, setPreview] = useState<any | null>(null);
-  const [previewErr, setPreviewErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [filtroModo, setFiltroModo] = useState<"hoje" | "dia" | "periodo" | "cidade">("hoje");
   const [filtroDia, setFiltroDia] = useState<string>(new Date().toISOString().slice(0, 10));
@@ -952,24 +950,6 @@ function MobileRecebimentoSection() {
     qc.invalidateQueries({ queryKey: ["receb-mobile-areceber"] });
   }
 
-  useEffect(() => {
-    const cod = Number(codigo.trim());
-    if (!cod || !Number.isFinite(cod)) { setPreview(null); setPreviewErr(""); return; }
-    let cancel = false;
-    const t = setTimeout(async () => {
-      const { data, error } = await supabase
-        .from("mensalidades")
-        .select("id, codigo, competencia, vencimento, valor, status, associado_id, associados!inner(nome, codigo)")
-        .eq("codigo", cod)
-        .maybeSingle();
-      if (cancel) return;
-      if (error || !data) { setPreview(null); setPreviewErr("Parcela não encontrada"); return; }
-      setPreview(data);
-      setPreviewErr("");
-      setValor((cur) => cur || String(Number((data as any).valor)));
-    }, 250);
-    return () => { cancel = true; clearTimeout(t); };
-  }, [codigo]);
 
   async function registrar() {
     if (!cobradorId || !cobradorNome) { toast.error("Selecione o cobrador."); return; }
@@ -1004,7 +984,7 @@ function MobileRecebimentoSection() {
         imprimirComprovante({ id: ins.id, ...comprovante });
         toast.success("Recebimento registrado", { description: "Baixa pendente de conciliação." });
       }
-      setCodigo(""); setValor(""); setObs(""); setPreview(null); setPreviewErr("");
+      setValor(""); setObs(""); setPreview(null);
       qc.invalidateQueries({ queryKey: ["receb-pendentes-meus"] });
       qc.invalidateQueries({ queryKey: ["receb-pendentes-conciliar"] });
     } catch (e: any) {
@@ -1154,7 +1134,7 @@ function MobileRecebimentoSection() {
                               <MapPin className="h-4 w-4 text-primary" />
                             </Button>
                           )}
-                          <Button size="sm" variant="ghost" onClick={() => { setCodigo(String(m.codigo)); setValor(String(Number(m.valor))); }}>Receber</Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setPreview(m); setValor(String(Number(m.valor))); }}>Receber</Button>
                           <Button size="sm" variant="ghost" onClick={() => { setReagendar(m); setReagData(""); }}>Reagendar</Button>
                         </TableCell>
                       </TableRow>
@@ -1173,24 +1153,20 @@ function MobileRecebimentoSection() {
           )}
         </div>
 
-
-
-        <div className="grid gap-3 md:grid-cols-[1fr_180px]">
-          <div className="space-y-2"><Label>Código da parcela</Label><Input value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Ex: 1024" inputMode="numeric" /></div>
-          <div className="space-y-2"><Label>Valor recebido (R$)</Label><Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" min="0" /></div>
-        </div>
-
         {preview && (
-          <div className={`rounded border px-3 py-2 text-sm flex flex-wrap gap-x-6 gap-y-1 ${(preview as any).status === "pago" ? "border-destructive/40 bg-destructive/5" : "border-primary/40 bg-primary/5"}`}>
-            <span><span className="text-muted-foreground">Código:</span> <b>#{(preview as any).codigo}</b></span>
-            <span><span className="text-muted-foreground">Associado:</span> <b>{(preview as any).associados?.nome}</b></span>
-            <span><span className="text-muted-foreground">Vencimento:</span> <b>{fmtDate((preview as any).vencimento)}</b></span>
-            <span><span className="text-muted-foreground">Valor:</span> <b>{brl(Number((preview as any).valor))}</b></span>
-            <span className="capitalize"><span className="text-muted-foreground">Status:</span> <b>{(preview as any).status}</b></span>
-          </div>
-        )}
-        {!preview && previewErr && codigo && (
-          <div className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">{previewErr}</div>
+          <>
+            <div className="space-y-2 md:w-[180px]">
+              <Label>Valor recebido (R$)</Label>
+              <Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" min="0" />
+            </div>
+            <div className={`rounded border px-3 py-2 text-sm flex flex-wrap gap-x-6 gap-y-1 ${(preview as any).status === "pago" ? "border-destructive/40 bg-destructive/5" : "border-primary/40 bg-primary/5"}`}>
+              <span><span className="text-muted-foreground">Código:</span> <b>#{(preview as any).codigo}</b></span>
+              <span><span className="text-muted-foreground">Associado:</span> <b>{(preview as any).associados?.nome}</b></span>
+              <span><span className="text-muted-foreground">Vencimento:</span> <b>{fmtDate((preview as any).vencimento)}</b></span>
+              <span><span className="text-muted-foreground">Valor:</span> <b>{brl(Number((preview as any).valor))}</b></span>
+              <span className="capitalize"><span className="text-muted-foreground">Status:</span> <b>{(preview as any).status}</b></span>
+            </div>
+          </>
         )}
 
         <div className="space-y-2"><Label>Observações (opcional)</Label><Textarea rows={2} value={obs} onChange={(e) => setObs(e.target.value)} /></div>
