@@ -214,6 +214,9 @@ function Dashboard() {
                       {brl(f.receitas - f.despesas)}
                     </span>
                   </div>
+                  <Button size="sm" variant="outline" className="w-full mt-2" onClick={() => setDetalheFilial({ id: f.id, nome: f.nome })}>
+                    <Eye className="mr-2 h-4 w-4" />Ver detalhes
+                  </Button>
                 </CardContent>
               </Card>
             ))}
