@@ -28,6 +28,7 @@ type Associado = {
   id: string; codigo: number; nome: string; cpf: string | null; telefone: string | null;
   cidade: string | null; estado: string | null; status: string; plano_id: string | null;
   data_adesao: string; data_nascimento: string | null; forma_pagamento: string | null;
+  filial_id: string | null;
 };
 type Plano = { id: string; nome: string; valor_mensal: number | null };
 type Mensalidade = {
@@ -43,6 +44,7 @@ type Conta = {
 };
 type Centro = { id: string; nome: string };
 type Cobrador = { id: string; nome: string };
+type Filial = { id: string; nome: string };
 
 function RelatoriosPage() {
   const { canTab, isAdmin } = usePermissions();
@@ -53,6 +55,7 @@ function RelatoriosPage() {
   const [contas, setContas] = useState<Conta[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
   const [cobradores, setCobradores] = useState<Cobrador[]>([]);
+  const [filiais, setFiliais] = useState<Filial[]>([]);
   const [loading, setLoading] = useState(true);
 
   const today = new Date();
@@ -63,13 +66,14 @@ function RelatoriosPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [a, p, m, c, cc, cb] = await Promise.all([
-        supabase.from("associados").select("id, codigo, nome, cpf, telefone, cidade, estado, status, plano_id, data_adesao, data_nascimento, forma_pagamento").order("nome"),
+      const [a, p, m, c, cc, cb, fi] = await Promise.all([
+        supabase.from("associados").select("id, codigo, nome, cpf, telefone, cidade, estado, status, plano_id, data_adesao, data_nascimento, forma_pagamento, filial_id").order("nome"),
         supabase.from("planos").select("id, nome, valor_mensal").order("nome"),
         supabase.from("mensalidades").select("id, codigo, associado_id, competencia, vencimento, valor, status, data_pagamento, forma_pagamento, agente_recebimento"),
         supabase.from("contas_financeiras").select("id, tipo, descricao, valor, vencimento, data_pagamento, status, centro_custo_id"),
         supabase.from("centros_custo").select("id, nome"),
         supabase.from("cobradores").select("id, nome").eq("ativo", true).order("nome"),
+        supabase.from("filiais").select("id, nome").eq("ativo", true).order("nome"),
       ]);
       setAssociados((a.data ?? []) as Associado[]);
       setPlanos((p.data ?? []) as Plano[]);
@@ -77,6 +81,7 @@ function RelatoriosPage() {
       setContas((c.data ?? []) as Conta[]);
       setCentros((cc.data ?? []) as Centro[]);
       setCobradores((cb.data ?? []) as Cobrador[]);
+      setFiliais((fi.data ?? []) as Filial[]);
       setLoading(false);
     })();
   }, []);
@@ -107,7 +112,7 @@ function RelatoriosPage() {
           </TabsList>
 
           <TabsContent value="associados" className="mt-4">
-            <AssociadosReport associados={associados} planos={planos} planoNome={planoNome} loading={loading} />
+            <AssociadosReport associados={associados} planos={planos} filiais={filiais} planoNome={planoNome} loading={loading} />
           </TabsContent>
           <TabsContent value="mensalidades" className="mt-4">
             <MensalidadesReport
@@ -208,32 +213,39 @@ function DateRange(props: {
 
 /* ---------- Relatórios individuais ---------- */
 
-function AssociadosReport({ associados, planos, planoNome, loading }: {
-  associados: Associado[]; planos: Plano[]; planoNome: (id: string | null) => string; loading: boolean;
+function AssociadosReport({ associados, planos, filiais, planoNome, loading }: {
+  associados: Associado[]; planos: Plano[]; filiais: Filial[]; planoNome: (id: string | null) => string; loading: boolean;
 }) {
   const [status, setStatus] = useState("__all__");
   const [planoId, setPlanoId] = useState("__all__");
   const [cidade, setCidade] = useState("");
+  const [filialId, setFilialId] = useState("__all__");
 
   const cidades = useMemo(() => Array.from(new Set(associados.map((a) => a.cidade).filter(Boolean) as string[])).sort(), [associados]);
+  const filialNome = (id: string | null) => id ? (filiais.find((f) => f.id === id)?.nome ?? "—") : "Matriz";
 
   const filtered = useMemo(() => associados.filter((a) => {
     if (status !== "__all__" && a.status !== status) return false;
     if (planoId !== "__all__" && a.plano_id !== planoId) return false;
     if (cidade && !(a.cidade ?? "").toLowerCase().includes(cidade.toLowerCase())) return false;
+    if (filialId !== "__all__") {
+      if (filialId === "matriz" && a.filial_id) return false;
+      if (filialId !== "matriz" && a.filial_id !== filialId) return false;
+    }
     return true;
-  }), [associados, status, planoId, cidade]);
+  }), [associados, status, planoId, cidade, filialId]);
 
-  const headers = ["Código", "Nome", "CPF", "Telefone", "Cidade/UF", "Plano", "Status", "Adesão"];
+  const headers = ["Código", "Nome", "CPF", "Telefone", "Cidade/UF", "Filial", "Plano", "Status", "Adesão"];
   const rows = filtered.map((a) => [
     a.codigo, a.nome, a.cpf ?? "", a.telefone ?? "",
     `${a.cidade ?? ""}${a.estado ? "/" + a.estado : ""}`,
+    filialNome(a.filial_id),
     planoNome(a.plano_id), a.status, fmtDate(a.data_adesao),
   ]);
 
   return (
     <div className="space-y-3">
-      <Card><CardContent className="grid gap-3 p-4 md:grid-cols-4">
+      <Card><CardContent className="grid gap-3 p-4 md:grid-cols-5">
         <div>
           <Label className="text-xs">Status</Label>
           <Select value={status} onValueChange={setStatus}>
@@ -253,6 +265,17 @@ function AssociadosReport({ associados, planos, planoNome, loading }: {
             <SelectContent>
               <SelectItem value="__all__">Todos</SelectItem>
               {planos.map((p) => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs">Filial</Label>
+          <Select value={filialId} onValueChange={setFilialId}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all__">Todas</SelectItem>
+              <SelectItem value="matriz">Matriz</SelectItem>
+              {filiais.map((f) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -292,6 +315,7 @@ function AssociadosReport({ associados, planos, planoNome, loading }: {
                 <TableCell>{a.cpf ?? "—"}</TableCell>
                 <TableCell>{a.telefone ?? "—"}</TableCell>
                 <TableCell>{a.cidade ?? "—"}{a.estado ? `/${a.estado}` : ""}</TableCell>
+                <TableCell>{filialNome(a.filial_id)}</TableCell>
                 <TableCell>{planoNome(a.plano_id)}</TableCell>
                 <TableCell><Badge variant="secondary">{a.status}</Badge></TableCell>
                 <TableCell>{fmtDate(a.data_adesao)}</TableCell>

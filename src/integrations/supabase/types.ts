@@ -29,6 +29,7 @@ export type Database = {
           email: string | null
           endereco: string | null
           estado: string | null
+          filial_id: string | null
           forma_pagamento: string | null
           id: string
           nome: string
@@ -53,6 +54,7 @@ export type Database = {
           email?: string | null
           endereco?: string | null
           estado?: string | null
+          filial_id?: string | null
           forma_pagamento?: string | null
           id?: string
           nome: string
@@ -77,6 +79,7 @@ export type Database = {
           email?: string | null
           endereco?: string | null
           estado?: string | null
+          filial_id?: string | null
           forma_pagamento?: string | null
           id?: string
           nome?: string
@@ -93,6 +96,13 @@ export type Database = {
             columns: ["cobrador_id"]
             isOneToOne: false
             referencedRelation: "cobradores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "associados_filial_id_fkey"
+            columns: ["filial_id"]
+            isOneToOne: false
+            referencedRelation: "filiais"
             referencedColumns: ["id"]
           },
           {
@@ -245,6 +255,7 @@ export type Database = {
           data_emissao: string
           data_pagamento: string | null
           descricao: string
+          filial_id: string | null
           forma_pagamento: string | null
           fornecedor_cliente: string | null
           id: string
@@ -263,6 +274,7 @@ export type Database = {
           data_emissao?: string
           data_pagamento?: string | null
           descricao: string
+          filial_id?: string | null
           forma_pagamento?: string | null
           fornecedor_cliente?: string | null
           id?: string
@@ -281,6 +293,7 @@ export type Database = {
           data_emissao?: string
           data_pagamento?: string | null
           descricao?: string
+          filial_id?: string | null
           forma_pagamento?: string | null
           fornecedor_cliente?: string | null
           id?: string
@@ -297,6 +310,13 @@ export type Database = {
             columns: ["centro_custo_id"]
             isOneToOne: false
             referencedRelation: "centros_custo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_financeiras_filial_id_fkey"
+            columns: ["filial_id"]
+            isOneToOne: false
+            referencedRelation: "filiais"
             referencedColumns: ["id"]
           },
         ]
@@ -449,6 +469,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      filiais: {
+        Row: {
+          ativo: boolean
+          cidade: string | null
+          codigo: string | null
+          created_at: string
+          endereco: string | null
+          estado: string | null
+          id: string
+          nome: string
+          responsavel: string | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cidade?: string | null
+          codigo?: string | null
+          created_at?: string
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome: string
+          responsavel?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cidade?: string | null
+          codigo?: string | null
+          created_at?: string
+          endereco?: string | null
+          estado?: string | null
+          id?: string
+          nome?: string
+          responsavel?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       integracao_bancaria: {
         Row: {

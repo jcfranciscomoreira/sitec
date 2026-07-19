@@ -63,6 +63,7 @@ type Associado = {
   plano_id: string | null; data_adesao: string; dia_vencimento: number;
   status: "ativo" | "inativo" | "suspenso"; observacoes: string | null;
   forma_pagamento: FormaPag | null; cobrador_id: string | null;
+  filial_id: string | null;
   planos?: { nome: string; valor_mensal: number } | null;
 };
 
@@ -87,6 +88,7 @@ function AssociadosPage() {
   const [pendingDeps, setPendingDeps] = useState<PendingDep[]>([]);
   const [formaPag, setFormaPag] = useState<string>("");
   const [cobradorId, setCobradorId] = useState<string>("");
+  const [filialId, setFilialId] = useState<string>("matriz");
 
   const { data: cobradores = [] } = useQuery({
     queryKey: ["cobradores-ativos"],
@@ -97,9 +99,19 @@ function AssociadosPage() {
     },
   });
 
+  const { data: filiais = [] } = useQuery({
+    queryKey: ["filiais-ativas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("filiais").select("id, nome").eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data as { id: string; nome: string }[];
+    },
+  });
+
   useEffect(() => {
     setFormaPag(editing?.forma_pagamento ?? "");
     setCobradorId(editing?.cobrador_id ?? "");
+    setFilialId(editing?.filial_id ?? "matriz");
   }, [editing]);
 
   const { data: associados = [], isLoading } = useQuery({
@@ -285,6 +297,7 @@ function AssociadosPage() {
       status: (fd.get("status") as any) || "ativo",
       forma_pagamento: (formaPag || null) as any,
       cobrador_id: formaPag === "cobrador" ? (cobradorId || null) : null,
+      filial_id: filialId === "matriz" ? null : (filialId || null),
       observacoes: get("observacoes"),
       _pendingDeps: editing?.id ? undefined : pendingDeps,
     });
@@ -370,6 +383,18 @@ function AssociadosPage() {
                     </Select>
                   </div>
                 )}
+                <div className="space-y-2 col-span-2">
+                  <Label>Unidade</Label>
+                  <Select value={filialId} onValueChange={setFilialId}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="matriz">Matriz</SelectItem>
+                      {filiais.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>Filial — {f.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2 col-span-2"><Label>Observações</Label><Textarea name="observacoes" rows={2} defaultValue={editing?.observacoes ?? ""} /></div>
               </div>
               <DialogFooter>

@@ -28,6 +28,7 @@ type Conta = {
   descricao: string;
   categoria: string | null;
   centro_custo_id: string | null;
+  filial_id: string | null;
   valor: number;
   data_emissao: string;
   vencimento: string;
@@ -51,6 +52,15 @@ function ContasPage() {
     queryKey: ["centros_custo", "ativos"],
     queryFn: async () => {
       const { data, error } = await supabase.from("centros_custo").select("id, nome").eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data as { id: string; nome: string }[];
+    },
+  });
+
+  const { data: filiais = [] } = useQuery({
+    queryKey: ["filiais-ativas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("filiais").select("id, nome").eq("ativo", true).order("nome");
       if (error) throw error;
       return data as { id: string; nome: string }[];
     },
@@ -179,11 +189,13 @@ function ContasPage() {
                   e.preventDefault();
                   const fd = new FormData(e.currentTarget);
                   const cc = String(fd.get("centro_custo_id") || "");
+                  const fil = String(fd.get("filial_id") || "");
                   save.mutate({
                     tipo: fd.get("tipo") as "entrada" | "saida",
                     descricao: String(fd.get("descricao")),
                     categoria: String(fd.get("categoria") || "") || null,
                     centro_custo_id: cc || null,
+                    filial_id: fil && fil !== "matriz" ? fil : null,
                     valor: Number(fd.get("valor")),
                     data_emissao: String(fd.get("data_emissao")),
                     vencimento: String(fd.get("vencimento")),
@@ -224,6 +236,16 @@ function ContasPage() {
                     <SelectContent>
                       <SelectItem value="none">— Nenhum —</SelectItem>
                       {centros.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Filial</Label>
+                  <Select name="filial_id" defaultValue={editing?.filial_id ?? "matriz"}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="matriz">Matriz</SelectItem>
+                      {filiais.map((f) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
