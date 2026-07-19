@@ -13,6 +13,7 @@ import { reloadConfiguracoes } from "@/hooks/use-configuracoes";
 import { IntegracaoBancariaConfig } from "@/components/IntegracaoBancariaConfig";
 import { CarteirinhaConfigTab } from "@/components/CarteirinhaConfig";
 import { ContratoConfigTab } from "@/components/ContratoConfig";
+import { FiliaisConfig } from "@/components/FiliaisConfig";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
