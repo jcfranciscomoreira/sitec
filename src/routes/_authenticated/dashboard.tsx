@@ -112,7 +112,7 @@ function Dashboard() {
     { label: "Novos planos no mês", value: data?.novosMes ?? 0, sub: "Associados cadastrados no mês", icon: TrendingUp, tone: "text-success" },
     { label: "Novos planos hoje", value: data?.novosHoje ?? 0, sub: "Cadastrados hoje", icon: TrendingUp, tone: "text-success" },
     { label: "Receita de planos", value: brl(data?.receitaPlanos ?? 0), sub: "Mensalidades quitadas no período", icon: TrendingUp, tone: "text-success" },
-    { label: "Outras receitas", value: brl(data?.outrasReceitas ?? 0), sub: "Entradas financeiras", icon: Wallet, tone: "text-gold" },
+    { label: "Outras entradas", value: brl(data?.outrasReceitas ?? 0), sub: "Entradas financeiras no período", icon: Wallet, tone: "text-gold" },
     { label: "Total recebido", value: brl(data?.totalRecebido ?? 0), sub: "Planos + outras entradas", icon: CircleDollarSign, tone: "text-primary" },
     { label: "Pendentes", value: data?.pendentes ?? 0, sub: "Aguardando pagamento", icon: CircleDollarSign, tone: "text-gold" },
     { label: "Em atraso", value: data?.atrasadas ?? 0, sub: "Inadimplência ativa", icon: AlertTriangle, tone: "text-destructive" },
