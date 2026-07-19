@@ -22,14 +22,23 @@ export function ContratoConfigTab() {
   const [preview, setPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState("");
 
+  const [initialHtml, setInitialHtml] = useState<string>("");
+
   useEffect(() => {
     (async () => {
       const { data } = await supabase.from("configuracoes").select("contrato_template").eq("id", 1).maybeSingle();
       const stored = (data as any)?.contrato_template as string | null;
-      if (editorRef.current) editorRef.current.innerHTML = stored && stored.trim() ? stored : DEFAULT_CONTRATO_HTML;
+      setInitialHtml(stored && stored.trim() ? stored : DEFAULT_CONTRATO_HTML);
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    if (!loading && !preview && editorRef.current && initialHtml && !editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = initialHtml;
+    }
+  }, [loading, preview, initialHtml]);
+
 
   function insertPlaceholder(key: string) {
     editorRef.current?.focus();
@@ -63,13 +72,19 @@ export function ContratoConfigTab() {
 
   function reset() {
     if (editorRef.current) editorRef.current.innerHTML = DEFAULT_CONTRATO_HTML;
+    setInitialHtml(DEFAULT_CONTRATO_HTML);
     toast.info("Modelo restaurado (não salvo)");
   }
 
   function togglePreview() {
-    if (!preview && editorRef.current) setPreviewHtml(editorRef.current.innerHTML);
+    if (!preview && editorRef.current) {
+      const html = editorRef.current.innerHTML;
+      setPreviewHtml(html);
+      setInitialHtml(html);
+    }
     setPreview((p) => !p);
   }
+
 
   return (
     <Card>
