@@ -175,27 +175,33 @@ function Dashboard() {
 
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-        {cards.map((c) => (
-          <Card key={c.label} className="border-border/60 shadow-soft">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{c.label}</CardTitle>
-              <c.icon className={`h-5 w-5 ${c.tone}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="font-serif text-2xl font-semibold text-foreground sm:text-3xl">
-                {isLoading ? "—" : c.value}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
-              {c.linkStatus && (
-                <Button asChild size="sm" variant="outline" className="mt-3">
-                  <Link to="/associados-lista" search={{ status: c.linkStatus }}>Ver lista</Link>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {isError ? (
+        <ErrorState message="Verifique sua conexão e tente novamente." onRetry={() => refetch()} />
+      ) : isLoading ? (
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+          {cards.map((c) => (
+            <Card key={c.label} className="border-border/60 shadow-soft">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{c.label}</CardTitle>
+                <c.icon className={`h-5 w-5 ${c.tone}`} />
+              </CardHeader>
+              <CardContent>
+                <div className="font-serif text-2xl font-semibold text-foreground sm:text-3xl">{c.value}</div>
+                <p className="mt-1 text-xs text-muted-foreground">{c.sub}</p>
+                {c.linkStatus && (
+                  <Button asChild size="sm" variant="outline" className="mt-3 w-full sm:w-auto">
+                    <Link to="/associados-lista" search={{ status: c.linkStatus }}>Ver lista</Link>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
 
       {(data?.porFilial?.length ?? 0) > 0 && (
         <div className="mt-8">
