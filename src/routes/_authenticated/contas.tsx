@@ -66,7 +66,7 @@ function ContasPage() {
     },
   });
 
-  const { data: lista = [], isLoading } = useQuery({
+  const { data: lista = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["contas", tipo, status],
     queryFn: async () => {
       let q = supabase.from("contas_financeiras").select("*, centros_custo(nome)").order("vencimento", { ascending: false });
