@@ -29,12 +29,16 @@ function ConfiguracoesPage() {
       <Tabs defaultValue="identidade" className="w-full">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="identidade">Identidade visual</TabsTrigger>
+          <TabsTrigger value="filiais">Filiais</TabsTrigger>
           <TabsTrigger value="carteirinha">Carteirinha</TabsTrigger>
           <TabsTrigger value="contrato">Contrato padrão</TabsTrigger>
           <TabsTrigger value="integracao">Integração bancária</TabsTrigger>
         </TabsList>
         <TabsContent value="identidade" className="mt-4">
           <IdentidadeVisual />
+        </TabsContent>
+        <TabsContent value="filiais" className="mt-4">
+          <FiliaisConfig />
         </TabsContent>
         <TabsContent value="carteirinha" className="mt-4">
           <CarteirinhaConfigTab />
