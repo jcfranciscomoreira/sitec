@@ -75,25 +75,42 @@ function Dashboard() {
         return d.toISOString().slice(0, 10);
       })();
 
-      const [assocAtivos, assocInativos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer, novosMes, novosHoje] = await Promise.all([
+      const [assocAtivos, assocInativos, assocTotal, pagasPer, pendentes, atrasadas, entradasPer, saidasPer, novosMes, novosHoje, filiaisList] = await Promise.all([
         supabase.from("associados").select("*", { count: "exact", head: true }).eq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }).neq("status", "ativo"),
         supabase.from("associados").select("*", { count: "exact", head: true }),
-        supabase.from("mensalidades").select("valor").eq("status", "pago").gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo),
+        supabase.from("mensalidades").select("valor, associados(filial_id)").eq("status", "pago").gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).eq("status", "pendente"),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).in("status", ["pendente", "atrasado"]).lt("vencimento", hojeIso),
-        supabase.from("contas_financeiras").select("valor,data_pagamento,vencimento").eq("tipo", "entrada").eq("status", "pago"),
+        supabase.from("contas_financeiras").select("valor,data_pagamento,vencimento,filial_id").eq("tipo", "entrada").eq("status", "pago"),
+        supabase.from("contas_financeiras").select("valor,data_pagamento,vencimento,filial_id").eq("tipo", "saida").eq("status", "pago"),
         supabase.from("associados").select("*", { count: "exact", head: true }).gte("created_at", inicioMesIso).lt("created_at", proxMes),
         supabase.from("associados").select("*", { count: "exact", head: true }).gte("created_at", hojeIso).lt("created_at", amanhaIso),
+        supabase.from("filiais").select("id, nome").order("nome"),
       ]);
 
-      const receitaPlanos = (pagasPer.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
-      const outrasReceitas = (entradasPer.data ?? [])
-        .filter((r: any) => {
-          const d = r.data_pagamento ?? r.vencimento;
-          return d && d >= inicio && d < fimExclusivo;
-        })
-        .reduce((s, r: any) => s + Number(r.valor), 0);
+      const receitaPlanos = (pagasPer.data ?? []).reduce((s: number, r: any) => s + Number(r.valor), 0);
+      const inRange = (r: any) => {
+        const d = r.data_pagamento ?? r.vencimento;
+        return d && d >= inicio && d < fimExclusivo;
+      };
+      const outrasReceitas = (entradasPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
+      const totalDespesas = (saidasPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
+
+      // Por filial
+      const filiais = (filiaisList.data as { id: string; nome: string }[]) ?? [];
+      const bucket = new Map<string, { nome: string; receitas: number; despesas: number }>();
+      bucket.set("matriz", { nome: "Matriz", receitas: 0, despesas: 0 });
+      for (const f of filiais) bucket.set(f.id, { nome: f.nome, receitas: 0, despesas: 0 });
+      const bump = (key: string | null | undefined, field: "receitas" | "despesas", v: number) => {
+        const k = key ?? "matriz";
+        const b = bucket.get(k) ?? bucket.get("matriz")!;
+        b[field] += v;
+      };
+      for (const r of (pagasPer.data ?? []) as any[]) bump(r.associados?.filial_id, "receitas", Number(r.valor));
+      for (const r of (entradasPer.data ?? []) as any[]) if (inRange(r)) bump(r.filial_id, "receitas", Number(r.valor));
+      for (const r of (saidasPer.data ?? []) as any[]) if (inRange(r)) bump(r.filial_id, "despesas", Number(r.valor));
+      const porFilial = Array.from(bucket.values()).filter((b) => b.receitas > 0 || b.despesas > 0 || b.nome === "Matriz");
 
       return {
         ativos: assocAtivos.count ?? 0,
@@ -101,11 +118,13 @@ function Dashboard() {
         total: assocTotal.count ?? 0,
         receitaPlanos,
         outrasReceitas,
+        totalDespesas,
         totalRecebido: receitaPlanos + outrasReceitas,
         pendentes: pendentes.count ?? 0,
         atrasadas: atrasadas.count ?? 0,
         novosMes: novosMes.count ?? 0,
         novosHoje: novosHoje.count ?? 0,
+        porFilial,
       };
     },
   });
