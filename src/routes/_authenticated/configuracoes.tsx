@@ -11,6 +11,8 @@ import { Loader2, Upload, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { reloadConfiguracoes } from "@/hooks/use-configuracoes";
 import { IntegracaoBancariaConfig } from "@/components/IntegracaoBancariaConfig";
+import { CarteirinhaConfigTab } from "@/components/CarteirinhaConfig";
+import { ContratoConfigTab } from "@/components/ContratoConfig";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
