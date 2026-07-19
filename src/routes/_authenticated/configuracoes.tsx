@@ -129,7 +129,6 @@ function IdentidadeVisual() {
               <div><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(00) 0000-0000" /></div>
             </div>
             <div><Label>Endereço</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Rua, número, bairro, cidade - UF" /></div>
-            <div><Label>Subtítulo</Label><Input value={subtitulo} onChange={(e) => setSubtitulo(e.target.value)} /></div>
             <div className="space-y-2">
               <Label>Logo</Label>
               <div className="flex items-center gap-4">
