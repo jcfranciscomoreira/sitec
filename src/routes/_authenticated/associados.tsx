@@ -27,15 +27,16 @@ export const Route = createFileRoute("/_authenticated/associados")({
   component: AssociadosPage,
 });
 
-function renderCarteirinhaCard(c: { codigo: string; nome: string; plano: string; tipo: string }) {
-  return `<div class="card">
-    <div class="brand">Memorial</div>
-    <div class="title">${c.tipo}</div>
-    <div class="label">Nome</div>
-    <div class="value">${c.nome}</div>
-    <div class="plano">${c.plano}</div>
-    <div class="codigo">${c.codigo}</div>
-  </div>`;
+async function loadCarteirinhaConfig(): Promise<CarteirinhaConfig> {
+  const { data } = await supabase.from("configuracoes").select("carteirinha_config").eq("id", 1).maybeSingle();
+  const stored = (data as any)?.carteirinha_config as CarteirinhaConfig | null;
+  return stored?.elements?.length ? stored : DEFAULT_CARTEIRINHA;
+}
+
+async function loadContratoTemplate(): Promise<string> {
+  const { data } = await supabase.from("configuracoes").select("contrato_template").eq("id", 1).maybeSingle();
+  const stored = (data as any)?.contrato_template as string | null;
+  return stored && stored.trim() ? stored : DEFAULT_CONTRATO_HTML;
 }
 
 function abrirJanelaCarteirinha(title: string, cardsHtml: string) {
@@ -45,14 +46,7 @@ function abrirJanelaCarteirinha(title: string, cardsHtml: string) {
     <style>
       body{font-family:Georgia,serif;margin:0;padding:24px;background:#eee}
       .wrap{display:flex;flex-wrap:wrap;gap:18px;justify-content:center}
-      .card{width:340px;height:210px;background:linear-gradient(135deg,#1e3a5f 0%,#2c5282 100%);color:#fff;border-radius:14px;padding:18px 22px;box-shadow:0 8px 24px rgba(0,0,0,.2);position:relative;font-family:Georgia,serif;box-sizing:border-box}
-      .brand{font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85}
-      .title{font-size:14px;margin-top:2px;color:#d4af37;letter-spacing:1px}
-      .label{font-size:9px;text-transform:uppercase;letter-spacing:2px;opacity:.7;margin-top:18px}
-      .value{font-size:18px;font-weight:bold;margin-top:2px}
-      .codigo{position:absolute;bottom:18px;right:22px;font-family:monospace;font-size:14px;background:#d4af37;color:#1e3a5f;padding:4px 10px;border-radius:6px;font-weight:bold}
-      .plano{position:absolute;bottom:18px;left:22px;font-size:11px;opacity:.85}
-      @media print{body{background:#fff;padding:0}.wrap{display:block}.card{box-shadow:none;page-break-inside:avoid;page-break-after:always;margin:0 auto}.card:last-child{page-break-after:auto}}
+      @media print{body{background:#fff;padding:0}.wrap{display:block}.card{box-shadow:none !important;page-break-inside:avoid;page-break-after:always;margin:0 auto}.card:last-child{page-break-after:auto}}
     </style></head><body>
     <div class="wrap">${cardsHtml}</div>
     <script>window.onload=()=>{window.print();}</script>
