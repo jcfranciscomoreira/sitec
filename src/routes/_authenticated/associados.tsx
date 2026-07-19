@@ -225,8 +225,9 @@ function AssociadosPage() {
         .meta{font-size:12px;color:#666;margin-bottom:16px}
         .totais{margin-top:12px;font-size:13px}
       </style></head><body>
+      ${header}
       <h1>Relatório do Associado</h1>
-      <div class="meta">Gerado em ${new Date().toLocaleString("pt-BR")} · Memorial</div>
+      <div class="meta">Gerado em ${new Date().toLocaleString("pt-BR")}</div>
       <h2>Dados cadastrais</h2>
       <table>
         ${linha("Código", `#${String(a.codigo).padStart(4, "0")}`)}
