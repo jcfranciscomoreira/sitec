@@ -118,7 +118,7 @@ function RelatoriosPage() {
           </TabsContent>
           <TabsContent value="recebimentos" className="mt-4">
             <RecebimentosReport
-              mensalidades={mensalidades} assocNome={assocNome}
+              mensalidades={mensalidades} assocNome={assocNome} cobradores={cobradores}
               dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo}
               loading={loading}
             />
