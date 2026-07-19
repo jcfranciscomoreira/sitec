@@ -166,16 +166,17 @@ function AssociadosPage() {
   });
 
   async function imprimirCarteirinha(a: Associado) {
-    const { data: deps } = await supabase
-      .from("dependentes").select("*")
-      .eq("associado_id", a.id).eq("status", "ativo").order("nome");
+    const [{ data: deps }, cfg] = await Promise.all([
+      supabase.from("dependentes").select("*").eq("associado_id", a.id).eq("status", "ativo").order("nome"),
+      loadCarteirinhaConfig(),
+    ]);
     const cards = [
-      renderCarteirinhaCard({ codigo: `#${String(a.codigo).padStart(4, "0")}`, nome: a.nome, plano: a.planos?.nome ?? "Plano não vinculado", tipo: "Titular" }),
-      ...(deps ?? []).map((d: any) => renderCarteirinhaCard({
+      renderCarteirinhaHTML({ codigo: `#${String(a.codigo).padStart(4, "0")}`, nome: a.nome, plano: a.planos?.nome ?? "Plano não vinculado", tipo: "Titular" }, cfg),
+      ...(deps ?? []).map((d: any) => renderCarteirinhaHTML({
         codigo: `#${String(a.codigo).padStart(4, "0")}`,
         nome: d.nome, plano: a.planos?.nome ?? "Plano não vinculado",
         tipo: `Dependente · ${d.parentesco}`,
-      })),
+      }, cfg)),
     ].join("");
     abrirJanelaCarteirinha(`Carteirinhas — ${a.nome}`, cards);
   }
