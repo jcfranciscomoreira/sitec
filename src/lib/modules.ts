@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, Users, FileText, Wallet, HandCoins,
-  Building2, Receipt, Layers, MapPin, BarChart3, Shield, FileBarChart,
+  Receipt, Layers, MapPin, BarChart3, Shield, FileBarChart,
 } from "lucide-react";
 
 export type AppModuleTab = { key: string; label: string };
