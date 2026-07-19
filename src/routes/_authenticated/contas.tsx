@@ -57,6 +57,15 @@ function ContasPage() {
     },
   });
 
+  const { data: filiais = [] } = useQuery({
+    queryKey: ["filiais-ativas"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("filiais").select("id, nome").eq("ativo", true).order("nome");
+      if (error) throw error;
+      return data as { id: string; nome: string }[];
+    },
+  });
+
   const { data: lista = [], isLoading } = useQuery({
     queryKey: ["contas", tipo, status],
     queryFn: async () => {
