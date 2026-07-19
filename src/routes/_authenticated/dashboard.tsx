@@ -195,7 +195,7 @@ function Dashboard() {
           <h2 className="mb-3 font-serif text-lg text-foreground">Receitas e despesas por filial</h2>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {data!.porFilial.map((f) => (
-              <Card key={f.nome} className="border-border/60 shadow-soft">
+              <Card key={f.id} className="border-border/60 shadow-soft">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">{f.nome}</CardTitle>
                 </CardHeader>
