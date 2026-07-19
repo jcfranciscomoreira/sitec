@@ -63,6 +63,7 @@ type Associado = {
   plano_id: string | null; data_adesao: string; dia_vencimento: number;
   status: "ativo" | "inativo" | "suspenso"; observacoes: string | null;
   forma_pagamento: FormaPag | null; cobrador_id: string | null;
+  filial_id: string | null;
   planos?: { nome: string; valor_mensal: number } | null;
 };
 
