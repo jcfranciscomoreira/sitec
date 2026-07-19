@@ -294,7 +294,7 @@ function ContasPage() {
             </Select>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
