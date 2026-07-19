@@ -216,32 +216,41 @@ export type Database = {
       configuracoes: {
         Row: {
           carteirinha_config: Json | null
+          cnpj: string | null
           contrato_template: string | null
           created_at: string
+          endereco: string | null
           id: number
           logo_url: string | null
           nome_sistema: string
           subtitulo: string | null
+          telefone: string | null
           updated_at: string
         }
         Insert: {
           carteirinha_config?: Json | null
+          cnpj?: string | null
           contrato_template?: string | null
           created_at?: string
+          endereco?: string | null
           id?: number
           logo_url?: string | null
           nome_sistema?: string
           subtitulo?: string | null
+          telefone?: string | null
           updated_at?: string
         }
         Update: {
           carteirinha_config?: Json | null
+          cnpj?: string | null
           contrato_template?: string | null
           created_at?: string
+          endereco?: string | null
           id?: number
           logo_url?: string | null
           nome_sistema?: string
           subtitulo?: string | null
+          telefone?: string | null
           updated_at?: string
         }
         Relationships: []
