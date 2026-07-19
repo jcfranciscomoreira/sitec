@@ -55,6 +55,7 @@ function RelatoriosPage() {
   const [contas, setContas] = useState<Conta[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
   const [cobradores, setCobradores] = useState<Cobrador[]>([]);
+  const [filiais, setFiliais] = useState<Filial[]>([]);
   const [loading, setLoading] = useState(true);
 
   const today = new Date();
