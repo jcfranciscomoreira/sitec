@@ -28,6 +28,7 @@ type Associado = {
   id: string; codigo: number; nome: string; cpf: string | null; telefone: string | null;
   cidade: string | null; estado: string | null; status: string; plano_id: string | null;
   data_adesao: string; data_nascimento: string | null; forma_pagamento: string | null;
+  filial_id: string | null;
 };
 type Plano = { id: string; nome: string; valor_mensal: number | null };
 type Mensalidade = {
