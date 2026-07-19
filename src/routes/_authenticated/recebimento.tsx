@@ -166,7 +166,7 @@ function CobradoresSection() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {isLoading && <TableRow><TableCell colSpan={5} className="p-3"><SkeletonTable rows={4} cols={5} /></TableCell></TableRow>}
             {!isLoading && lista.length === 0 && <TableRow><TableCell colSpan={5} className="py-10 text-center text-muted-foreground">Nenhum cobrador cadastrado.</TableCell></TableRow>}
             {lista.map((c) => (
               <TableRow key={c.id}>
@@ -683,7 +683,7 @@ function HistoricoSection() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+            {isLoading && <TableRow><TableCell colSpan={6} className="p-3"><SkeletonTable rows={4} cols={6} /></TableCell></TableRow>}
             {!isLoading && sessoes.length === 0 && <TableRow><TableCell colSpan={6} className="py-6 text-center text-muted-foreground">Nenhuma baixa registrada.</TableCell></TableRow>}
             {sessoes.map((s: any) => (
               <TableRow key={s.id}>
@@ -1503,7 +1503,7 @@ function ConciliacaoSection() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading && <TableRow><TableCell colSpan={9} className="py-6 text-center text-muted-foreground">Carregando...</TableCell></TableRow>}
+                {isLoading && <TableRow><TableCell colSpan={9} className="p-3"><SkeletonTable rows={4} cols={9} /></TableCell></TableRow>}
                 {!isLoading && (pendentes as any[]).length === 0 && <TableRow><TableCell colSpan={9} className="py-10 text-center text-muted-foreground">Nenhum recebimento pendente de conciliação.</TableCell></TableRow>}
                 {(pendentes as any[]).map((p) => (
                   <TableRow key={p.id}>
