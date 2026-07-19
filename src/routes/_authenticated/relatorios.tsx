@@ -169,18 +169,21 @@ function downloadCSV(filename: string, headers: string[], rows: (string | number
   URL.revokeObjectURL(url);
 }
 
-function printReport(title: string, subtitle: string, headers: string[], rows: (string | number)[][], footer?: string) {
+async function printReport(title: string, subtitle: string, headers: string[], rows: (string | number)[][], footer?: string) {
   const w = window.open("", "_blank"); if (!w) return;
+  const { getEmpresaHeaderHTML } = await import("@/lib/print-header");
+  const header = await getEmpresaHeaderHTML();
   const html = `<!doctype html><html><head><title>${title}</title>
     <style>body{font-family:Arial,sans-serif;padding:24px;color:#111}
     h1{font-size:18px;margin:0 0 4px} .sub{color:#666;font-size:12px;margin-bottom:12px}
     table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:6px;font-size:12px;text-align:left}
     th{background:#f3f4f6} .foot{margin-top:12px;font-size:12px;color:#333}</style></head><body>
+    ${header}
     <h1>${title}</h1><div class="sub">${subtitle}</div>
     <table><thead><tr>${headers.map((h) => `<th>${h}</th>`).join("")}</tr></thead>
     <tbody>${rows.map((r) => `<tr>${r.map((c) => `<td>${c ?? ""}</td>`).join("")}</tr>`).join("")}</tbody></table>
     ${footer ? `<div class="foot">${footer}</div>` : ""}
-    <script>window.print()</script></body></html>`;
+    <script>window.onload=()=>window.print()</script></body></html>`;
   w.document.write(html); w.document.close();
 }
 
