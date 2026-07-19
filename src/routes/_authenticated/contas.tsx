@@ -239,6 +239,16 @@ function ContasPage() {
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="space-y-2">
+                  <Label>Filial</Label>
+                  <Select name="filial_id" defaultValue={editing?.filial_id ?? "matriz"}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="matriz">Matriz</SelectItem>
+                      {filiais.map((f) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-2"><Label>Cliente / Fornecedor</Label><Input name="fornecedor_cliente" defaultValue={editing?.fornecedor_cliente ?? ""} /></div>
                 <div className="space-y-2"><Label>Valor (R$)</Label><Input name="valor" type="number" step="0.01" min="0" required defaultValue={editing?.valor ?? ""} /></div>
                 <div className="space-y-2"><Label>Emissão</Label><Input name="data_emissao" type="date" required defaultValue={editing?.data_emissao ?? new Date().toISOString().slice(0, 10)} /></div>
