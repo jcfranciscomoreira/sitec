@@ -82,13 +82,18 @@ function Dashboard() {
         supabase.from("mensalidades").select("valor").eq("status", "pago").gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).eq("status", "pendente"),
         supabase.from("mensalidades").select("*", { count: "exact", head: true }).in("status", ["pendente", "atrasado"]).lt("vencimento", hojeIso),
-        supabase.from("contas_financeiras").select("valor").eq("tipo", "entrada").eq("status", "pago").gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo),
+        supabase.from("contas_financeiras").select("valor,data_pagamento,vencimento").eq("tipo", "entrada").eq("status", "pago"),
         supabase.from("associados").select("*", { count: "exact", head: true }).gte("created_at", inicioMesIso).lt("created_at", proxMes),
         supabase.from("associados").select("*", { count: "exact", head: true }).gte("created_at", hojeIso).lt("created_at", amanhaIso),
       ]);
 
       const receitaPlanos = (pagasPer.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
-      const outrasReceitas = (entradasPer.data ?? []).reduce((s, r) => s + Number(r.valor), 0);
+      const outrasReceitas = (entradasPer.data ?? [])
+        .filter((r: any) => {
+          const d = r.data_pagamento ?? r.vencimento;
+          return d && d >= inicio && d < fimExclusivo;
+        })
+        .reduce((s, r: any) => s + Number(r.valor), 0);
 
       return {
         ativos: assocAtivos.count ?? 0,
