@@ -65,7 +65,7 @@ function Dashboard() {
     return d.toISOString().slice(0, 10);
   }, [fim]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["dashboard", inicio, fimExclusivo],
     queryFn: async () => {
       const hojeIso = todayIso();
