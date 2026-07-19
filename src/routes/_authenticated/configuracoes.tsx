@@ -11,6 +11,8 @@ import { Loader2, Upload, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { reloadConfiguracoes } from "@/hooks/use-configuracoes";
 import { IntegracaoBancariaConfig } from "@/components/IntegracaoBancariaConfig";
+import { CarteirinhaConfigTab } from "@/components/CarteirinhaConfig";
+import { ContratoConfigTab } from "@/components/ContratoConfig";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
@@ -24,12 +26,20 @@ function ConfiguracoesPage() {
   return (
     <AppShell title="Configurações" subtitle="Personalização e integrações do sistema">
       <Tabs defaultValue="identidade" className="w-full">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="identidade">Identidade visual</TabsTrigger>
+          <TabsTrigger value="carteirinha">Carteirinha</TabsTrigger>
+          <TabsTrigger value="contrato">Contrato padrão</TabsTrigger>
           <TabsTrigger value="integracao">Integração bancária</TabsTrigger>
         </TabsList>
         <TabsContent value="identidade" className="mt-4">
           <IdentidadeVisual />
+        </TabsContent>
+        <TabsContent value="carteirinha" className="mt-4">
+          <CarteirinhaConfigTab />
+        </TabsContent>
+        <TabsContent value="contrato" className="mt-4">
+          <ContratoConfigTab />
         </TabsContent>
         <TabsContent value="integracao" className="mt-4">
           <IntegracaoBancariaConfig />

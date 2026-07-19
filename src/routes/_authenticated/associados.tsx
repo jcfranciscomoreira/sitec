@@ -19,21 +19,24 @@ import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
 import { criarCobranca } from "@/lib/cobranca.functions";
 import { imprimirCarnesAssociado } from "@/lib/carne-print";
+import { DEFAULT_CARTEIRINHA, renderCarteirinhaHTML, type CarteirinhaConfig } from "@/lib/carteirinha-template";
+import { DEFAULT_CONTRATO_HTML, renderContratoHTML } from "@/lib/contrato-template";
 
 export const Route = createFileRoute("/_authenticated/associados")({
   head: () => ({ meta: [{ title: "Associados — Memorial" }] }),
   component: AssociadosPage,
 });
 
-function renderCarteirinhaCard(c: { codigo: string; nome: string; plano: string; tipo: string }) {
-  return `<div class="card">
-    <div class="brand">Memorial</div>
-    <div class="title">${c.tipo}</div>
-    <div class="label">Nome</div>
-    <div class="value">${c.nome}</div>
-    <div class="plano">${c.plano}</div>
-    <div class="codigo">${c.codigo}</div>
-  </div>`;
+async function loadCarteirinhaConfig(): Promise<CarteirinhaConfig> {
+  const { data } = await supabase.from("configuracoes").select("carteirinha_config").eq("id", 1).maybeSingle();
+  const stored = (data as any)?.carteirinha_config as CarteirinhaConfig | null;
+  return stored?.elements?.length ? stored : DEFAULT_CARTEIRINHA;
+}
+
+async function loadContratoTemplate(): Promise<string> {
+  const { data } = await supabase.from("configuracoes").select("contrato_template").eq("id", 1).maybeSingle();
+  const stored = (data as any)?.contrato_template as string | null;
+  return stored && stored.trim() ? stored : DEFAULT_CONTRATO_HTML;
 }
 
 function abrirJanelaCarteirinha(title: string, cardsHtml: string) {
@@ -43,14 +46,7 @@ function abrirJanelaCarteirinha(title: string, cardsHtml: string) {
     <style>
       body{font-family:Georgia,serif;margin:0;padding:24px;background:#eee}
       .wrap{display:flex;flex-wrap:wrap;gap:18px;justify-content:center}
-      .card{width:340px;height:210px;background:linear-gradient(135deg,#1e3a5f 0%,#2c5282 100%);color:#fff;border-radius:14px;padding:18px 22px;box-shadow:0 8px 24px rgba(0,0,0,.2);position:relative;font-family:Georgia,serif;box-sizing:border-box}
-      .brand{font-size:11px;letter-spacing:3px;text-transform:uppercase;opacity:.85}
-      .title{font-size:14px;margin-top:2px;color:#d4af37;letter-spacing:1px}
-      .label{font-size:9px;text-transform:uppercase;letter-spacing:2px;opacity:.7;margin-top:18px}
-      .value{font-size:18px;font-weight:bold;margin-top:2px}
-      .codigo{position:absolute;bottom:18px;right:22px;font-family:monospace;font-size:14px;background:#d4af37;color:#1e3a5f;padding:4px 10px;border-radius:6px;font-weight:bold}
-      .plano{position:absolute;bottom:18px;left:22px;font-size:11px;opacity:.85}
-      @media print{body{background:#fff;padding:0}.wrap{display:block}.card{box-shadow:none;page-break-inside:avoid;page-break-after:always;margin:0 auto}.card:last-child{page-break-after:auto}}
+      @media print{body{background:#fff;padding:0}.wrap{display:block}.card{box-shadow:none !important;page-break-inside:avoid;page-break-after:always;margin:0 auto}.card:last-child{page-break-after:auto}}
     </style></head><body>
     <div class="wrap">${cardsHtml}</div>
     <script>window.onload=()=>{window.print();}</script>
@@ -170,16 +166,17 @@ function AssociadosPage() {
   });
 
   async function imprimirCarteirinha(a: Associado) {
-    const { data: deps } = await supabase
-      .from("dependentes").select("*")
-      .eq("associado_id", a.id).eq("status", "ativo").order("nome");
+    const [{ data: deps }, cfg] = await Promise.all([
+      supabase.from("dependentes").select("*").eq("associado_id", a.id).eq("status", "ativo").order("nome"),
+      loadCarteirinhaConfig(),
+    ]);
     const cards = [
-      renderCarteirinhaCard({ codigo: `#${String(a.codigo).padStart(4, "0")}`, nome: a.nome, plano: a.planos?.nome ?? "Plano não vinculado", tipo: "Titular" }),
-      ...(deps ?? []).map((d: any) => renderCarteirinhaCard({
+      renderCarteirinhaHTML({ codigo: `#${String(a.codigo).padStart(4, "0")}`, nome: a.nome, plano: a.planos?.nome ?? "Plano não vinculado", tipo: "Titular" }, cfg),
+      ...(deps ?? []).map((d: any) => renderCarteirinhaHTML({
         codigo: `#${String(a.codigo).padStart(4, "0")}`,
         nome: d.nome, plano: a.planos?.nome ?? "Plano não vinculado",
         tipo: `Dependente · ${d.parentesco}`,
-      })),
+      }, cfg)),
     ].join("");
     abrirJanelaCarteirinha(`Carteirinhas — ${a.nome}`, cards);
   }
@@ -243,87 +240,22 @@ function AssociadosPage() {
 
   async function gerarContrato(a: Associado) {
     if (!a.plano_id) { toast.error("Associado sem plano vinculado."); return; }
-    const [{ data: plano }, { data: deps }] = await Promise.all([
+    const [{ data: plano }, { data: deps }, template] = await Promise.all([
       supabase.from("planos").select("*").eq("id", a.plano_id).maybeSingle(),
       supabase.from("dependentes").select("*").eq("associado_id", a.id).order("nome"),
+      loadContratoTemplate(),
     ]);
     if (!plano) { toast.error("Plano não encontrado."); return; }
     const w = window.open("", "_blank", "width=900,height=800");
     if (!w) { toast.error("Permita pop-ups para gerar o contrato."); return; }
-    const hoje = new Date();
-    const depsRows = (deps ?? []).length
-      ? `<table><thead><tr><th>Nome</th><th>Parentesco</th><th>Nascimento</th><th>CPF</th></tr></thead><tbody>${(deps ?? []).map((d: any) => `<tr><td>${d.nome}</td><td>${d.parentesco}</td><td>${d.data_nascimento ? fmtDate(d.data_nascimento) : "—"}</td><td>${d.cpf ?? "—"}</td></tr>`).join("")}</tbody></table>`
-      : `<p class="muted">Nenhum dependente cadastrado.</p>`;
-    const cobertura = (plano.cobertura ?? "").trim()
-      ? `<ul>${(plano.cobertura as string).split(/\r?\n|;|•/).map((s) => s.trim()).filter(Boolean).map((s) => `<li>${s}</li>`).join("")}</ul>`
-      : `<p class="muted">Cobertura conforme descrição do plano.</p>`;
+    const body = renderContratoHTML(a as any, plano as any, (deps ?? []) as any, template);
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Contrato — ${a.nome}</title>
       <style>
-        body{font-family:Georgia,serif;color:#111;padding:40px;max-width:820px;margin:0 auto;line-height:1.55}
-        h1{font-size:20px;text-align:center;margin:0 0 4px;color:#1e3a5f;letter-spacing:1px;text-transform:uppercase}
-        h2{font-size:13px;margin:22px 0 8px;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #1e3a5f;padding-bottom:4px}
-        p{margin:6px 0;text-align:justify;font-size:13px}
-        table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
-        th,td{border:1px solid #ccc;padding:5px 7px;text-align:left}
-        th{background:#f4f4f4}
-        ul{font-size:13px;margin:4px 0 4px 20px}
-        .meta{text-align:center;font-size:11px;color:#666;margin-bottom:18px}
-        .muted{color:#888;font-size:12px;font-style:italic}
-        .grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:13px;margin-top:6px}
-        .grid div b{color:#1e3a5f}
-        .assinaturas{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;gap:60px;font-size:12px;text-align:center}
-        .linha{border-top:1px solid #111;padding-top:4px;margin-top:60px}
-        @media print{body{padding:24px}}
+        body{margin:0;background:#fff}
+        table{border-collapse:collapse}
+        @media print{body{padding:0}}
       </style></head><body>
-      <h1>Contrato de Adesão — Plano Funerário</h1>
-      <div class="meta">Memorial · Emitido em ${hoje.toLocaleDateString("pt-BR")}</div>
-
-      <p>Pelo presente instrumento particular, de um lado a <b>MEMORIAL</b>, doravante denominada <b>CONTRATADA</b>, e de outro lado o(a) associado(a) abaixo qualificado, doravante denominado(a) <b>CONTRATANTE</b>, têm entre si justo e contratado o seguinte:</p>
-
-      <h2>I. Identificação do Contratante</h2>
-      <div class="grid">
-        <div><b>Código:</b> #${String(a.codigo).padStart(4, "0")}</div>
-        <div><b>Nome:</b> ${a.nome}</div>
-        <div><b>CPF:</b> ${a.cpf ?? "—"}</div>
-        <div><b>RG:</b> ${a.rg ?? "—"}</div>
-        <div><b>Nascimento:</b> ${a.data_nascimento ? fmtDate(a.data_nascimento) : "—"}</div>
-        <div><b>Telefone:</b> ${a.telefone ?? "—"}</div>
-        <div style="grid-column:span 2"><b>E-mail:</b> ${a.email ?? "—"}</div>
-        <div style="grid-column:span 2"><b>Endereço:</b> ${a.endereco ?? "—"} — ${a.cidade ?? ""}/${a.estado ?? ""} ${a.cep ?? ""}</div>
-      </div>
-
-      <h2>II. Plano Contratado</h2>
-      <div class="grid">
-        <div><b>Plano:</b> ${plano.nome}</div>
-        <div><b>Mensalidade:</b> ${brl(plano.valor_mensal)}</div>
-        <div><b>Adesão:</b> ${fmtDate(a.data_adesao)}</div>
-        <div><b>Vencimento mensal:</b> dia ${a.dia_vencimento}</div>
-        <div><b>Status:</b> ${a.status}</div>
-      </div>
-      ${plano.descricao ? `<p style="margin-top:8px"><b>Descrição:</b> ${plano.descricao}</p>` : ""}
-
-      <h2>III. Serviços e Coberturas</h2>
-      ${cobertura}
-
-      <h2>IV. Dependentes Inclusos</h2>
-      ${depsRows}
-
-      <h2>V. Condições Gerais</h2>
-      <p><b>1.</b> O CONTRATANTE compromete-se a efetuar o pagamento da mensalidade no valor de <b>${brl(plano.valor_mensal)}</b> até o dia <b>${a.dia_vencimento}</b> de cada mês, sob pena de suspensão dos serviços contratados.</p>
-      <p><b>2.</b> O atraso superior a 60 (sessenta) dias acarretará a suspensão automática da cobertura, sendo necessária a regularização integral dos débitos para reativação.</p>
-      <p><b>3.</b> O presente contrato vigora por prazo indeterminado, podendo ser rescindido por qualquer das partes mediante comunicação prévia por escrito.</p>
-      <p><b>4.</b> A inclusão de novos dependentes está limitada ao número máximo previsto no plano contratado e deverá ser solicitada formalmente à CONTRATADA.</p>
-      <p><b>5.</b> Os serviços abrangidos por este contrato são exclusivamente aqueles descritos na cláusula III, ficando excluídos quaisquer serviços não relacionados.</p>
-      <p><b>6.</b> Fica eleito o foro da comarca do CONTRATANTE para dirimir quaisquer questões oriundas deste contrato.</p>
-
-      <p style="margin-top:24px">E por estarem assim justos e contratados, firmam o presente em duas vias de igual teor.</p>
-      <p style="text-align:right">${a.cidade ? `${a.cidade}${a.estado ? "/" + a.estado : ""}, ` : ""}${hoje.toLocaleDateString("pt-BR")}</p>
-
-      <div class="assinaturas">
-        <div><div class="linha">CONTRATANTE<br/>${a.nome}<br/>CPF: ${a.cpf ?? "—"}</div></div>
-        <div><div class="linha">CONTRATADA<br/>Memorial</div></div>
-      </div>
-
+      ${body}
       <script>window.onload=()=>{window.print();}</script>
       </body></html>`);
     w.document.close();
@@ -596,13 +528,14 @@ function DependentesSection({ associado }: { associado: Associado }) {
     setEditingDep(d); setAdding(false); setFormStatus(d.status ?? "ativo");
   }
 
-  function imprimirDep(d: Dependente) {
-    const card = renderCarteirinhaCard({
+  async function imprimirDep(d: Dependente) {
+    const cfg = await loadCarteirinhaConfig();
+    const card = renderCarteirinhaHTML({
       codigo: `#${String(associado.codigo).padStart(4, "0")}`,
       nome: d.nome,
       plano: associado.planos?.nome ?? "Plano não vinculado",
       tipo: `Dependente · ${d.parentesco}`,
-    });
+    }, cfg);
     abrirJanelaCarteirinha(`Carteirinha — ${d.nome}`, card);
   }
 
