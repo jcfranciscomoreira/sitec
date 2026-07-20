@@ -103,12 +103,12 @@ function Dashboard() {
       const totalDespesas = (saidasPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
       const despesasPendentes = (saidasPendentesPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
 
-      // Por filial (Matriz não é exibida)
+      // Por filial
       const filiais = (filiaisList.data as { id: string; nome: string }[]) ?? [];
       const bucket = new Map<string, { id: string; nome: string; receitas: number; despesas: number }>();
       for (const f of filiais) bucket.set(f.id, { id: f.id, nome: f.nome, receitas: 0, despesas: 0 });
       const bump = (key: string | null | undefined, field: "receitas" | "despesas", v: number) => {
-        if (!key || key === "matriz") return;
+        if (!key) return;
         const b = bucket.get(key);
         if (b) b[field] += v;
       };
