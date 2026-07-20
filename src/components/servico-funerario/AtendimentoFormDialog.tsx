@@ -333,7 +333,7 @@ export function AtendimentoFormDialog() {
                 <Label htmlFor="falecido_nome">Nome Completo</Label>
                 {atendimentoTipo === "Plano" ? (
                   <>
-                    <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                    <Popover open={searchOpen} onOpenChange={setSearchOpen} modal={true}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
