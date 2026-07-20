@@ -437,8 +437,16 @@ export function AtendimentoFormDialog() {
                 <Input name="falecido_rg" defaultValue={selectedAssociado?.rg || ""} />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="tipo_vinculo">Vínculo</Label>
+                <Input 
+                  name="tipo_vinculo" 
+                  disabled 
+                  value={selectedDependente ? `Dependente (${selectedDependente.parentesco || 'N/A'})` : selectedAssociado ? "Titular" : "Particular"} 
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="falecido_sexo">Sexo</Label>
-                <Select name="falecido_sexo">
+                <Select name="falecido_sexo" key={`sexo-${selectedDependente?.id || selectedAssociado?.id || 'none'}`} defaultValue={selectedDependente?.sexo || selectedAssociado?.sexo || ""}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
@@ -451,7 +459,7 @@ export function AtendimentoFormDialog() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_estado_civil">Estado Civil</Label>
-                <Input name="falecido_estado_civil" />
+                <Input name="falecido_estado_civil" key={`civil-${selectedDependente?.id || selectedAssociado?.id || 'none'}`} defaultValue={selectedDependente?.estado_civil || selectedAssociado?.estado_civil || ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_data_nascimento">Data de Nascimento</Label>
