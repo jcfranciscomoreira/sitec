@@ -973,17 +973,17 @@ function PinDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:justify-between">
-          <div>
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+          <div className="w-full sm:w-auto">
             {form.id && (
-              <Button variant="destructive" size="sm" onClick={() => form.id && onDelete(form.id)}>
+              <Button variant="destructive" size="sm" onClick={() => form.id && onDelete(form.id)} className="w-full sm:w-auto">
                 <Trash2 className="mr-2 h-4 w-4" /> Excluir
               </Button>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={() => onSave(form)}>Salvar</Button>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancelar</Button>
+            <Button onClick={() => onSave(form)} className="w-full sm:w-auto">Salvar</Button>
           </div>
         </DialogFooter>
       </DialogContent>
