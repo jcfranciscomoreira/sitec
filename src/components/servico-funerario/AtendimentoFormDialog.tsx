@@ -404,49 +404,57 @@ export function AtendimentoFormDialog() {
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[400px] p-0">
+                      <PopoverContent className="w-[350px] p-0" align="start">
                         <Command>
                           <CommandInput placeholder="Buscar dependente..." />
                           <CommandList>
-                            <CommandEmpty>Nenhum dependente encontrado.</CommandEmpty>
-                            <CommandGroup>
-                              <CommandItem
-                                value="titular"
-                                onSelect={() => {
-                                  setSelectedDependente(null);
-                                  setDepSearchOpen(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    !selectedDependente ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                Titular é o falecido
-                              </CommandItem>
-                              {dependentes.map((dep: any) => (
-                                <CommandItem
-                                  key={dep.id}
-                                  value={dep.nome}
-                                  onSelect={() => {
-                                    setSelectedDependente(dep);
-                                    setDepSearchOpen(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      selectedDependente?.id === dep.id ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  <div className="flex flex-col">
-                                    <span>{dep.nome}</span>
-                                    <span className="text-xs text-muted-foreground">{dep.parentesco}</span>
-                                  </div>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
+                            {isLoadingDependentes ? (
+                              <div className="p-4 text-center text-sm text-muted-foreground">
+                                Carregando dependentes...
+                              </div>
+                            ) : (
+                              <>
+                                <CommandEmpty>Nenhum dependente encontrado.</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    value="titular"
+                                    onSelect={() => {
+                                      setSelectedDependente(null);
+                                      setDepSearchOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        !selectedDependente ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    Titular é o falecido
+                                  </CommandItem>
+                                  {dependentes.map((dep: any) => (
+                                    <CommandItem
+                                      key={dep.id}
+                                      value={dep.nome}
+                                      onSelect={() => {
+                                        setSelectedDependente(dep);
+                                        setDepSearchOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          selectedDependente?.id === dep.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <div className="flex flex-col">
+                                        <span>{dep.nome}</span>
+                                        <span className="text-xs text-muted-foreground">{dep.parentesco}</span>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </>
+                            )}
                           </CommandList>
                         </Command>
                       </PopoverContent>
