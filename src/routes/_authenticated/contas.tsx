@@ -30,7 +30,6 @@ type Conta = {
   tipo: "entrada" | "saida";
   descricao: string;
   categoria: string | null;
-  centro_custo_id: string | null;
   filial_id: string | null;
   valor: number;
   data_emissao: string;
@@ -40,7 +39,6 @@ type Conta = {
   status: "pendente" | "pago" | "atrasado" | "cancelado";
   fornecedor_cliente: string | null;
   observacoes: string | null;
-  centros_custo?: { nome: string } | null;
 };
 
 function ContasPage() {
