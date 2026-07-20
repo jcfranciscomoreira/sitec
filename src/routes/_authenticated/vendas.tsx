@@ -791,11 +791,11 @@ function PinDialog({
 
   return (
     <Dialog open={state.open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-lg max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            {form.id ? "Editar ponto" : "Novo ponto"}
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span className="truncate">{form.id ? "Editar ponto" : "Novo ponto"}</span>
           </DialogTitle>
         </DialogHeader>
 
