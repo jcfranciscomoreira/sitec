@@ -566,7 +566,7 @@ function VendasPage() {
   return (
     <AppShell
       title="Mapa de Vendas"
-      subtitle="Toque no mapa para registrar um ponto"
+      subtitle="Verifique e refine o layout do mapa de vendas no iOS e Android para garantir que botões, ações e conteúdo não sejam cortados em diferentes tamanhos de tela."
       actions={
         <div className="flex flex-wrap items-center gap-2">
           {!online && (
@@ -588,7 +588,7 @@ function VendasPage() {
         </div>
       }
     >
-      <div className="grid gap-3 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_320px] pb-10 sm:pb-0">
         <Card className="overflow-hidden">
           <div className="relative">
             {loading && (
@@ -648,7 +648,7 @@ function VendasPage() {
                 </span>
               ))}
             </div>
-            <div className="max-h-[55vh] space-y-2 overflow-y-auto">
+            <div className="max-h-[40vh] sm:max-h-[55vh] space-y-2 overflow-y-auto pr-1">
               {filteredPins.map((p) => {
                 const st = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
                 const plano = planos.find((pl) => pl.id === p.plano_id);
