@@ -52,7 +52,6 @@ function RelatoriosPage() {
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [mensalidades, setMensalidades] = useState<Mensalidade[]>([]);
   const [contas, setContas] = useState<Conta[]>([]);
-  const [centros, setCentros] = useState<Centro[]>([]);
   const [cobradores, setCobradores] = useState<Cobrador[]>([]);
   const [filiais, setFiliais] = useState<Filial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,12 +64,11 @@ function RelatoriosPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [a, p, m, c, cc, cb, fi] = await Promise.all([
+      const [a, p, m, c, cb, fi] = await Promise.all([
         supabase.from("associados").select("id, codigo, nome, cpf, telefone, cidade, estado, status, plano_id, data_adesao, data_nascimento, forma_pagamento, filial_id").order("nome"),
         supabase.from("planos").select("id, nome, valor_mensal").order("nome"),
         supabase.from("mensalidades").select("id, codigo, associado_id, competencia, vencimento, valor, status, data_pagamento, forma_pagamento, agente_recebimento"),
-        supabase.from("contas_financeiras").select("id, tipo, descricao, valor, vencimento, data_pagamento, status, centro_custo_id"),
-        supabase.from("centros_custo").select("id, nome"),
+        supabase.from("contas_financeiras").select("id, tipo, descricao, valor, vencimento, data_pagamento, status"),
         supabase.from("cobradores").select("id, nome").eq("ativo", true).order("nome"),
         supabase.from("filiais").select("id, nome").eq("ativo", true).order("nome"),
       ]);
@@ -78,7 +76,6 @@ function RelatoriosPage() {
       setPlanos((p.data ?? []) as Plano[]);
       setMensalidades((m.data ?? []) as Mensalidade[]);
       setContas((c.data ?? []) as Conta[]);
-      setCentros((cc.data ?? []) as Centro[]);
       setCobradores((cb.data ?? []) as Cobrador[]);
       setFiliais((fi.data ?? []) as Filial[]);
       setLoading(false);
@@ -87,7 +84,6 @@ function RelatoriosPage() {
 
   const planoNome = (id: string | null) => planos.find((p) => p.id === id)?.nome ?? "—";
   const assocNome = (id: string) => associados.find((a) => a.id === id)?.nome ?? "—";
-  const centroNome = (id: string | null) => centros.find((c) => c.id === id)?.nome ?? "—";
 
   const tabs: { key: string; label: string }[] = [
     { key: "associados", label: "Associados" },
