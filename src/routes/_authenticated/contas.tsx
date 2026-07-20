@@ -159,7 +159,7 @@ function ContasPage() {
         <div><span>A pagar</span><b>${brl(totais.aPagar)}</b></div>
         <div><span>Saldo</span><b>${brl(totais.saldo)}</b></div>
       </div>
-      <table><thead><tr><th>Tipo</th><th>Descrição</th><th>Centro de custo</th><th>Cliente/Fornecedor</th><th>Vencimento</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead>
+      <table><thead><tr><th>Tipo</th><th>Descrição</th><th>Cliente/Fornecedor</th><th>Vencimento</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead>
       <tbody>${rows}</tbody></table>
       <script>window.print()</script></body></html>`);
     w.document.close();
