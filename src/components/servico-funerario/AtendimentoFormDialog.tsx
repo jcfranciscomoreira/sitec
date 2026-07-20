@@ -448,11 +448,20 @@ export function AtendimentoFormDialog() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="falecido_nome">Nome Completo</Label>
-                <Input name="falecido_nome" defaultValue={selectedDependente?.nome || selectedAssociado?.nome || ""} required />
+                <Input 
+                  key={`name-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
+                  name="falecido_nome" 
+                  defaultValue={selectedDependente?.nome || selectedAssociado?.nome || ""} 
+                  required 
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_cpf">CPF</Label>
-                <Input name="falecido_cpf" defaultValue={selectedDependente?.cpf || selectedAssociado?.cpf || ""} />
+                <Input 
+                  key={`cpf-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
+                  name="falecido_cpf" 
+                  defaultValue={selectedDependente?.cpf || selectedAssociado?.cpf || ""} 
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_rg">RG</Label>
@@ -477,7 +486,12 @@ export function AtendimentoFormDialog() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_data_nascimento">Data de Nascimento</Label>
-                <Input type="date" name="falecido_data_nascimento" defaultValue={selectedDependente?.data_nascimento || selectedAssociado?.data_nascimento || ""} />
+                <Input 
+                  key={`birth-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
+                  type="date" 
+                  name="falecido_data_nascimento" 
+                  defaultValue={selectedDependente?.data_nascimento || selectedAssociado?.data_nascimento || ""} 
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="data_obito">Data do Óbito</Label>
