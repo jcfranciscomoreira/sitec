@@ -125,7 +125,7 @@ function RelatoriosPage() {
           </TabsContent>
           <TabsContent value="financeiro" className="mt-4">
             <FinanceiroReport
-              contas={contas} centroNome={centroNome}
+              contas={contas}
               dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo}
               loading={loading}
             />
