@@ -95,7 +95,7 @@ export function AppShell({ title, subtitle, actions, children }: {
             <SidebarTrigger />
             <div className="min-w-0 flex-1">
               <h1 className="truncate font-serif text-base font-semibold leading-tight text-foreground sm:text-xl">{title}</h1>
-              {subtitle && <p className="hidden truncate text-xs text-muted-foreground sm:block">{subtitle}</p>}
+              {subtitle && <p className="line-clamp-1 text-[10px] text-muted-foreground sm:text-xs sm:line-clamp-none">{subtitle}</p>}
             </div>
             <div className="flex shrink-0 items-center gap-2">{actions}</div>
             <UserMenu />
