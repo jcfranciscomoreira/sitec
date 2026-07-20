@@ -347,31 +347,41 @@ export function AtendimentoFormDialog() {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0">
+                    <PopoverContent className="w-[350px] p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Buscar associado por nome ou código..." />
+                        <CommandInput placeholder="Buscar por nome, código ou CPF..." />
                         <CommandList>
-                          <CommandEmpty>Nenhum associado encontrado.</CommandEmpty>
-                          <CommandGroup>
-                            {associados.map((assoc: any) => (
-                              <CommandItem
-                                key={assoc.id}
-                                value={`${assoc.nome} ${assoc.codigo} ${assoc.cpf || ""}`}
-                                onSelect={() => handleSelectAssociado(assoc)}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedAssociado?.id === assoc.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex flex-col">
-                                  <span>{assoc.nome}</span>
-                                  <span className="text-xs text-muted-foreground">Código: {assoc.codigo} | CPF: {assoc.cpf || 'N/A'}</span>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
+                          {isLoadingAssociados ? (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                              Carregando associados...
+                            </div>
+                          ) : (
+                            <>
+                              <CommandEmpty>Nenhum associado encontrado.</CommandEmpty>
+                              <CommandGroup>
+                                {associados.map((assoc: any) => (
+                                  <CommandItem
+                                    key={assoc.id}
+                                    value={`${assoc.nome} ${assoc.codigo} ${assoc.cpf || ""}`}
+                                    onSelect={() => handleSelectAssociado(assoc)}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        selectedAssociado?.id === assoc.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span>{assoc.nome}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        Código: {assoc.codigo} | CPF: {assoc.cpf || 'N/A'}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          )}
                         </CommandList>
                       </Command>
                     </PopoverContent>
