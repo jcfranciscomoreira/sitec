@@ -47,7 +47,7 @@ export function LoadingScreen({ children }: { children: React.ReactNode }) {
             <div className="absolute inset-0 rounded-full border-2 border-gold/20" />
             <div className="absolute inset-0 animate-spin rounded-full border-2 border-transparent border-t-gold" />
             <div className="flex h-12 w-12 items-center justify-center rounded-md bg-gold text-gold-foreground overflow-hidden">
-              {config.logo_url
+              {docReady && config.logo_url
                 ? <img src={config.logo_url} alt="" className="h-full w-full object-contain" />
                 : <Cross className="h-6 w-6" />}
             </div>
