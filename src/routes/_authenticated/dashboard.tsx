@@ -103,14 +103,16 @@ function Dashboard() {
       const totalDespesas = (saidasPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
       const despesasPendentes = (saidasPendentesPer.data ?? []).filter(inRange).reduce((s: number, r: any) => s + Number(r.valor), 0);
 
-      // Por filial
+      // Por filial (inclui Matriz para filial_id nulo)
       const filiais = (filiaisList.data as { id: string; nome: string }[]) ?? [];
+      const MATRIZ_KEY = "__matriz__";
       const bucket = new Map<string, { id: string; nome: string; receitas: number; despesas: number }>();
+      bucket.set(MATRIZ_KEY, { id: MATRIZ_KEY, nome: "Matriz", receitas: 0, despesas: 0 });
       for (const f of filiais) bucket.set(f.id, { id: f.id, nome: f.nome, receitas: 0, despesas: 0 });
       const bump = (key: string | null | undefined, field: "receitas" | "despesas", v: number) => {
-        if (!key) return;
-        const b = bucket.get(key);
-        if (b) b[field] += v;
+        const k = !key || key === "matriz" ? MATRIZ_KEY : key;
+        const b = bucket.get(k) ?? bucket.get(MATRIZ_KEY)!;
+        b[field] += v;
       };
       for (const r of (pagasPer.data ?? []) as any[]) bump(r.associados?.filial_id, "receitas", Number(r.valor));
       for (const r of (entradasPer.data ?? []) as any[]) if (inRange(r)) bump(r.filial_id, "receitas", Number(r.valor));
@@ -261,21 +263,24 @@ function FilialDetalhesDialog({
     queryKey: ["filial-detalhes", filial?.id, inicio, fimExclusivo],
     queryFn: async () => {
       const fid = filial!.id;
+      const isMatriz = fid === "__matriz__";
+      const mensQ = supabase
+        .from("mensalidades")
+        .select("valor, data_pagamento, competencia, associados!inner(nome, filial_id)")
+        .eq("status", "pago")
+        .gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo);
+      const entradasQ = supabase
+        .from("contas_financeiras")
+        .select("descricao, valor, data_pagamento, vencimento")
+        .eq("tipo", "entrada").eq("status", "pago");
+      const saidasQ = supabase
+        .from("contas_financeiras")
+        .select("descricao, valor, data_pagamento, vencimento")
+        .eq("tipo", "saida").eq("status", "pago");
       const [mens, entradas, saidas] = await Promise.all([
-        supabase
-          .from("mensalidades")
-          .select("valor, data_pagamento, competencia, associados!inner(nome, filial_id)")
-          .eq("status", "pago")
-          .gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo)
-          .eq("associados.filial_id", fid),
-        supabase
-          .from("contas_financeiras")
-          .select("descricao, valor, data_pagamento, vencimento")
-          .eq("tipo", "entrada").eq("status", "pago").eq("filial_id", fid),
-        supabase
-          .from("contas_financeiras")
-          .select("descricao, valor, data_pagamento, vencimento")
-          .eq("tipo", "saida").eq("status", "pago").eq("filial_id", fid),
+        isMatriz ? mensQ.is("associados.filial_id", null) : mensQ.eq("associados.filial_id", fid),
+        isMatriz ? entradasQ.is("filial_id", null) : entradasQ.eq("filial_id", fid),
+        isMatriz ? saidasQ.is("filial_id", null) : saidasQ.eq("filial_id", fid),
       ]);
       const inRange = (r: any) => {
         const d = r.data_pagamento ?? r.vencimento;
