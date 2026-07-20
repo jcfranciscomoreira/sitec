@@ -25,6 +25,13 @@ export type AppModule = {
  *   - Nas permissões individuais por usuário
  */
 export const MODULES: AppModule[] = [
+  { group: "Dashboard", key: "dashboard", label: "Painel", url: "/dashboard", icon: LayoutDashboard },
+  { group: "Associados", key: "associados", label: "Associados", url: "/associados", icon: Users },
+  { group: "Associados", key: "planos", label: "Planos", url: "/planos", icon: FileText },
+  { group: "Associados", key: "financeiro", label: "Mensalidades", url: "/financeiro", icon: Wallet, tabs: [
+    { key: "mensalidades", label: "Mensalidades" },
+    { key: "carne", label: "Gerar carnês em massa" },
+  ] },
   { group: "Serviços", key: "servico-funerario", label: "Serviço Funerário", url: "/servico-funerario", icon: Cross, tabs: [
     { key: "dashboard", label: "Dashboard" },
     { key: "atendimentos", label: "Atendimentos" },
@@ -33,14 +40,8 @@ export const MODULES: AppModule[] = [
     { key: "financeiro", label: "Financeiro Particular" },
     { key: "relatorios", label: "Relatórios" },
   ] },
-  { group: "Dashboard", key: "dashboard", label: "Painel", url: "/dashboard", icon: LayoutDashboard },
-  { group: "Associados", key: "associados", label: "Associados", url: "/associados", icon: Users },
-  { group: "Associados", key: "planos", label: "Planos", url: "/planos", icon: FileText },
-  { group: "Associados", key: "financeiro", label: "Mensalidades", url: "/financeiro", icon: Wallet, tabs: [
-    { key: "mensalidades", label: "Mensalidades" },
-    { key: "carne", label: "Gerar carnês em massa" },
-  ] },
   { group: "Associados", key: "recebimento", label: "Recebimento", url: "/recebimento", icon: HandCoins, tabs: [
+
     { key: "mobile", label: "Recebimento mobile" },
     { key: "conciliar", label: "Conciliação (supervisor)" },
     { key: "baixa", label: "Baixa por agente" },
