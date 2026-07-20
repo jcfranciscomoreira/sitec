@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, Users, FileText, Wallet, HandCoins,
   Receipt, Layers, MapPin, BarChart3, Shield, FileBarChart,
+  Cross
 } from "lucide-react";
 
 export type AppModuleTab = { key: string; label: string };
@@ -24,6 +25,14 @@ export type AppModule = {
  *   - Nas permissões individuais por usuário
  */
 export const MODULES: AppModule[] = [
+  { group: "Serviços", key: "servico-funerario", label: "Serviço Funerário", url: "/servico-funerario", icon: Cross, tabs: [
+    { key: "dashboard", label: "Dashboard" },
+    { key: "atendimentos", label: "Atendimentos" },
+    { key: "os", label: "Ordens de Serviço" },
+    { key: "equipe", label: "Equipes e Veículos" },
+    { key: "financeiro", label: "Financeiro Particular" },
+    { key: "relatorios", label: "Relatórios" },
+  ] },
   { group: "Dashboard", key: "dashboard", label: "Painel", url: "/dashboard", icon: LayoutDashboard },
   { group: "Associados", key: "associados", label: "Associados", url: "/associados", icon: Users },
   { group: "Associados", key: "planos", label: "Planos", url: "/planos", icon: FileText },
