@@ -448,12 +448,28 @@ export function AtendimentoFormDialog() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="falecido_nome">Nome Completo</Label>
-                <Input 
-                  key={`name-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
-                  name="falecido_nome" 
-                  defaultValue={selectedDependente?.nome || selectedAssociado?.nome || ""} 
-                  required 
-                />
+                {atendimentoTipo === "Plano" ? (
+                  <>
+                    <Input
+                      value={selectedDependente?.nome || selectedAssociado?.nome || ""}
+                      placeholder="Selecione um associado ou dependente na busca acima"
+                      readOnly
+                      disabled
+                    />
+                    <input
+                      type="hidden"
+                      name="falecido_nome"
+                      value={selectedDependente?.nome || selectedAssociado?.nome || ""}
+                    />
+                  </>
+                ) : (
+                  <Input
+                    key={`name-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
+                    name="falecido_nome"
+                    defaultValue={selectedDependente?.nome || selectedAssociado?.nome || ""}
+                    required
+                  />
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_cpf">CPF</Label>
