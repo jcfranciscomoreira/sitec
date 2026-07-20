@@ -356,7 +356,7 @@ export function AtendimentoFormDialog() {
                             {associados.map((assoc: any) => (
                               <CommandItem
                                 key={assoc.id}
-                                value={assoc.nome}
+                                value={`${assoc.nome} ${assoc.codigo} ${assoc.cpf || ""}`}
                                 onSelect={() => handleSelectAssociado(assoc)}
                               >
                                 <Check
