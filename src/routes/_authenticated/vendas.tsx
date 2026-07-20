@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MapPin, Trash2, Loader2, Crosshair, WifiOff, RefreshCw } from "lucide-react";
 import { reverseGeocode } from "@/lib/geocode.functions";
+import { getCachedConfiguracoes, reloadConfiguracoes } from "@/hooks/use-configuracoes";
 
 const CACHE_KEY = "vendas:cache:v1";
 const QUEUE_KEY = "vendas:queue:v1";
@@ -80,21 +81,27 @@ type Plano = { id: string; nome: string };
 type Associado = { id: string; nome: string; codigo: number };
 
 let mapsLoading: Promise<void> | null = null;
-function loadGoogleMaps(): Promise<void> {
+async function loadGoogleMaps(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject();
   if ((window as any).google?.maps) return Promise.resolve();
   if (mapsLoading) return mapsLoading;
-  mapsLoading = new Promise((resolve, reject) => {
-    const key = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;
-    const ch = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID;
-    if (!key) return reject(new Error("Maps key missing"));
-    (window as any).__initGmaps = () => resolve();
-    const s = document.createElement("script");
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&loading=async&callback=__initGmaps${ch ? `&channel=${ch}` : ""}`;
-    s.async = true;
-    s.onerror = () => reject(new Error("Falha ao carregar Google Maps"));
-    document.head.appendChild(s);
-  });
+  mapsLoading = (async () => {
+    let cfg = getCachedConfiguracoes();
+    if (!cfg?.google_maps_browser_key) {
+      try { cfg = await reloadConfiguracoes(); } catch {}
+    }
+    const key = cfg?.google_maps_browser_key || import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY;
+    const ch = cfg?.google_maps_tracking_id || import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID;
+    if (!key) throw new Error("Maps key missing");
+    return new Promise<void>((resolve, reject) => {
+      (window as any).__initGmaps = () => resolve();
+      const s = document.createElement("script");
+      s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&loading=async&callback=__initGmaps${ch ? `&channel=${ch}` : ""}`;
+      s.async = true;
+      s.onerror = () => reject(new Error("Falha ao carregar Google Maps"));
+      document.head.appendChild(s);
+    });
+  })();
   return mapsLoading;
 }
 
