@@ -888,6 +888,7 @@ export type Database = {
           cremacao: boolean | null
           data_abertura: string | null
           data_obito: string | null
+          dependente_id: string | null
           falecido_cpf: string | null
           falecido_data_nascimento: string | null
           falecido_endereco: string | null
@@ -950,6 +951,7 @@ export type Database = {
           cremacao?: boolean | null
           data_abertura?: string | null
           data_obito?: string | null
+          dependente_id?: string | null
           falecido_cpf?: string | null
           falecido_data_nascimento?: string | null
           falecido_endereco?: string | null
@@ -1012,6 +1014,7 @@ export type Database = {
           cremacao?: boolean | null
           data_abertura?: string | null
           data_obito?: string | null
+          dependente_id?: string | null
           falecido_cpf?: string | null
           falecido_data_nascimento?: string | null
           falecido_endereco?: string | null
@@ -1070,6 +1073,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "servicos_funerarios_dependente_id_fkey"
+            columns: ["dependente_id"]
+            isOneToOne: false
+            referencedRelation: "dependentes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "servicos_funerarios_filial_id_fkey"
             columns: ["filial_id"]
             isOneToOne: false
@@ -1077,6 +1087,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      servicos_produtos: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          preco: number
+          tipo: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          preco?: number
+          tipo: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          preco?: number
+          tipo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       user_permissions: {
         Row: {
