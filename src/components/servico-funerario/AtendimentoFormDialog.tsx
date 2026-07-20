@@ -67,10 +67,18 @@ export function AtendimentoFormDialog() {
           <DialogTitle>Cadastro de Serviço Funerário</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-6 pt-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-8 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="tipo">Tipo de Atendimento</Label>
+              <Label htmlFor="numero_servico">Número do Serviço</Label>
+              <Input name="numero_servico" placeholder="Automático" disabled />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="data_abertura">Data/Hora da abertura</Label>
+              <Input type="datetime-local" name="data_abertura" defaultValue={new Date().toISOString().slice(0, 16)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tipo">Tipo do Atendimento</Label>
               <Select name="tipo" required defaultValue="Particular">
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o tipo" />
@@ -83,20 +91,26 @@ export function AtendimentoFormDialog() {
                 </SelectContent>
               </Select>
             </div>
-            
             <div className="space-y-2">
-              <Label htmlFor="data_obito">Data do Óbito</Label>
-              <Input type="date" name="data_obito" required />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="hora_obito">Hora do Óbito</Label>
-              <Input type="time" name="hora_obito" required />
+              <Label htmlFor="status">Situação</Label>
+              <Select name="status" defaultValue="Em Atendimento">
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a situação" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Em Atendimento">Em Atendimento</SelectItem>
+                  <SelectItem value="Preparação">Preparação</SelectItem>
+                  <SelectItem value="Velório">Velório</SelectItem>
+                  <SelectItem value="Sepultamento">Sepultamento</SelectItem>
+                  <SelectItem value="Finalizado">Finalizado</SelectItem>
+                  <SelectItem value="Cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-semibold border-b pb-2">Dados do Falecido</h3>
+            <h3 className="font-bold text-lg border-b pb-2">Falecido</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="falecido_nome">Nome Completo</Label>
@@ -107,8 +121,8 @@ export function AtendimentoFormDialog() {
                 <Input name="falecido_cpf" />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="falecido_data_nascimento">Data de Nascimento</Label>
-                <Input type="date" name="falecido_data_nascimento" />
+                <Label htmlFor="falecido_rg">RG</Label>
+                <Input name="falecido_rg" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_sexo">Sexo</Label>
@@ -127,12 +141,48 @@ export function AtendimentoFormDialog() {
                 <Label htmlFor="falecido_estado_civil">Estado Civil</Label>
                 <Input name="falecido_estado_civil" />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="falecido_data_nascimento">Data de Nascimento</Label>
+                <Input type="date" name="falecido_data_nascimento" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="data_obito">Data do Óbito</Label>
+                <Input type="date" name="data_obito" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="hora_obito">Hora do Óbito</Label>
+                <Input type="time" name="hora_obito" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="falecido_naturalidade">Naturalidade</Label>
+                <Input name="falecido_naturalidade" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="falecido_nacionalidade">Nacionalidade</Label>
+                <Input name="falecido_nacionalidade" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="falecido_profissao">Profissão</Label>
+                <Input name="falecido_profissao" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="falecido_pai">Nome do Pai</Label>
+                <Input name="falecido_pai" />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="falecido_mae">Nome da Mãe</Label>
+                <Input name="falecido_mae" />
+              </div>
+              <div className="space-y-2 md:col-span-3">
+                <Label htmlFor="falecido_endereco">Endereço</Label>
+                <Input name="falecido_endereco" />
+              </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-semibold border-b pb-2">Informações do Óbito</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h3 className="font-bold text-lg border-b pb-2">Informações do Óbito</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="local_obito">Local do Óbito</Label>
                 <Input name="local_obito" placeholder="Hospital, Residência, etc." />
@@ -141,6 +191,112 @@ export function AtendimentoFormDialog() {
                 <Label htmlFor="cidade_obito">Cidade</Label>
                 <Input name="cidade_obito" />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="hospital_nome">Hospital</Label>
+                <Input name="hospital_nome" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="medico_responsavel">Médico responsável</Label>
+                <Input name="medico_responsavel" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="causa_morte">Causa da morte</Label>
+                <Input name="causa_morte" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="numero_do">Número da DO</Label>
+                <Input name="numero_do" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cartorio_nome">Cartório</Label>
+                <Input name="cartorio_nome" />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="font-bold text-lg border-b pb-2">Responsável</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="responsavel_nome">Nome Completo</Label>
+                <Input name="responsavel_nome" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="responsavel_cpf">CPF</Label>
+                <Input name="responsavel_cpf" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="responsavel_rg">RG</Label>
+                <Input name="responsavel_rg" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="responsavel_telefone">Telefone</Label>
+                <Input name="responsavel_telefone" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="responsavel_whatsapp">WhatsApp</Label>
+                <Input name="responsavel_whatsapp" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="responsavel_parentesco">Grau de parentesco</Label>
+                <Input name="responsavel_parentesco" />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="responsavel_endereco">Endereço</Label>
+                <Input name="responsavel_endereco" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="responsavel_email">Email</Label>
+                <Input type="email" name="responsavel_email" />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="border rounded-md p-4 bg-muted/50">
+              <h3 className="font-bold text-lg border-b pb-2 mb-4">Plano Vinculado</h3>
+              <p className="text-sm text-muted-foreground mb-4">Caso possua plano.</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="plano_numero_contrato">Número do contrato</Label>
+                  <Input name="plano_numero_contrato" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="plano_titular">Titular</Label>
+                  <Input name="plano_titular" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="plano_status">Status do plano</Label>
+                  <Input name="plano_status" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="plano_carencia">Carência</Label>
+                  <Input name="plano_carencia" />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="plano_cobertura">Cobertura</Label>
+                  <Input name="plano_cobertura" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="font-bold text-lg border-b pb-2">Serviços Contratados</h3>
+            <p className="text-sm text-muted-foreground">Selecionados em checklist.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {[
+                "Remoção", "Higienização", "Tanatopraxia", "Ornamentação", 
+                "Urna", "Véu", "Flores", "Coroa", 
+                "Transporte", "Sala de velório", "Cerimonial", "Cremação", 
+                "Sepultamento", "Documentação", "Publicação de Nota de Falecimento", 
+                "Livro de Presença", "Café", "Água", "Tenda", "Iluminação"
+              ].map((servico) => (
+                <div key={servico} className="flex items-center space-x-2">
+                  <input type="checkbox" id={servico} className="h-4 w-4 rounded border-gray-300" />
+                  <Label htmlFor={servico} className="text-sm font-normal cursor-pointer">{servico}</Label>
+                </div>
+              ))}
             </div>
           </div>
 
