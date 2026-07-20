@@ -220,16 +220,6 @@ function ContasPage() {
                 <div className="space-y-2 md:col-span-2"><Label>Descrição</Label><Input name="descricao" required defaultValue={editing?.descricao ?? ""} /></div>
                 <div className="space-y-2"><Label>Categoria</Label><Input name="categoria" placeholder="Ex: Energia, Salários" defaultValue={editing?.categoria ?? ""} /></div>
                 <div className="space-y-2">
-                  <Label>Centro de custo</Label>
-                  <Select name="centro_custo_id" defaultValue={editing?.centro_custo_id ?? "none"}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">— Nenhum —</SelectItem>
-                      {centros.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
                   <Label>Filial</Label>
                   <Select name="filial_id" defaultValue={editing?.filial_id ?? "matriz"}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
