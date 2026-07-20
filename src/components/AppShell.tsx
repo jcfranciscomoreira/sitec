@@ -90,7 +90,7 @@ export function AppShell({ title, subtitle, actions, children }: {
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
-        <div className="flex flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-2 border-b border-border bg-card/80 px-3 backdrop-blur sm:gap-3 sm:px-4 lg:px-8">
             <SidebarTrigger />
             <div className="min-w-0 flex-1">
