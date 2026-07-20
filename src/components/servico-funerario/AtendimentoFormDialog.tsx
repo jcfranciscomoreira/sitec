@@ -70,18 +70,16 @@ export function AtendimentoFormDialog() {
   });
 
   const { data: dependentes = [], isLoading: isLoadingDependentes } = useQuery({
-    queryKey: ['dependentes-search', selectedAssociado?.id],
+    queryKey: ['dependentes-search-all'],
     queryFn: async () => {
-      if (!selectedAssociado?.id) return [];
       const { data, error } = await supabase
         .from('dependentes')
-        .select('*')
-        .eq('associado_id', selectedAssociado.id)
+        .select('*, associados(id, nome, codigo, cpf, endereco, telefone, filial_id, planos(nome, valor_mensal))')
         .order('nome');
       if (error) throw error;
       return data;
     },
-    enabled: !!selectedAssociado?.id
+    enabled: open && atendimentoTipo === "Plano"
   });
 
   const { data: catalogo = [] } = useQuery({
