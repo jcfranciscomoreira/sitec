@@ -57,14 +57,6 @@ function PainelFinanceiroPage() {
     const aPagar = saidas.filter((r) => r.status !== "pago" && r.status !== "cancelado").reduce((s, r) => s + Number(r.valor), 0);
     const atrasadas = rows.filter((r) => r.status !== "pago" && r.status !== "cancelado" && r.vencimento < hoje);
 
-    // por centro de custo (saídas)
-    const porCentro = new Map<string, number>();
-    for (const r of saidas) {
-      const k = r.centros_custo?.nome ?? "Sem centro";
-      porCentro.set(k, (porCentro.get(k) ?? 0) + Number(r.valor));
-    }
-    const centros = Array.from(porCentro.entries()).map(([nome, total]) => ({ nome, total })).sort((a, b) => b.total - a.total);
-    const maxCentro = Math.max(1, ...centros.map((c) => c.total));
 
     // série últimos 6 meses
     const serie: { mes: string; entradas: number; saidas: number }[] = [];
