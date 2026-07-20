@@ -1,0 +1,2 @@
+DROP POLICY IF EXISTS "Allow authenticated to select dependentes" ON public.dependentes;
+CREATE POLICY "Allow authenticated to select dependentes" ON public.dependentes FOR SELECT TO authenticated USING (true);
