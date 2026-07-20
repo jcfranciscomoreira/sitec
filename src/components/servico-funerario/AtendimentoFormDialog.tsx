@@ -335,130 +335,115 @@ export function AtendimentoFormDialog() {
                 <Label htmlFor="falecido_nome">Nome Completo</Label>
                 {atendimentoTipo === "Plano" ? (
                   <>
-                    <Popover open={searchOpen} onOpenChange={setSearchOpen} modal={true}>
-                      <PopoverTrigger asChild>
+                    {(selectedDependente || selectedAssociado) && (
+                      <div className="flex items-center justify-between rounded-md border bg-muted/50 px-3 py-2 text-sm">
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {selectedDependente?.nome || selectedAssociado?.nome}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {selectedDependente ? `Dependente de ${selectedAssociado?.nome || ""}` : "Titular"} · Plano: {selectedAssociado?.planos?.nome || "N/A"}
+                          </span>
+                        </div>
                         <Button
-                          variant="outline"
-                          role="combobox"
                           type="button"
-                          aria-expanded={searchOpen}
-                          className="w-full justify-between font-normal"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedAssociado(null);
+                            setSelectedDependente(null);
+                            setSearchTerm("");
+                          }}
                         >
-                          {selectedDependente?.nome || selectedAssociado?.nome || "Pesquisar associado ou dependente..."}
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          Trocar
                         </Button>
-                      </PopoverTrigger>
-                      <PopoverContent 
-                        className="w-[--radix-popover-trigger-width] min-w-[350px] p-0" 
-                        align="start"
-                        side="bottom"
-                        onOpenAutoFocus={(e) => e.preventDefault()}
-                      >
-                        <Command 
-                          className="pointer-events-auto"
-                          shouldFilter={true}
-                        >
-                          <CommandInput 
-                            placeholder="Buscar por nome, código ou CPF..." 
-                            className="pointer-events-auto"
-                            onKeyDown={(e) => e.stopPropagation()}
-                            value={searchTerm}
-                            onValueChange={setSearchTerm}
-                          />
-                          <CommandList className="pointer-events-auto">
-                            <CommandEmpty>
-                              {isLoadingAssociados || isLoadingDependentes ? (
-                                <div className="p-4 text-center text-sm text-muted-foreground animate-pulse">
-                                  Buscando registros...
+                      </div>
+                    )}
+                    {!(selectedDependente || selectedAssociado) && (
+                      <div className="relative">
+                        <Input
+                          type="text"
+                          placeholder="Digite nome, código ou CPF para buscar..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          autoComplete="off"
+                        />
+                        {searchTerm.length >= 2 && (
+                          <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-md border bg-popover shadow-md">
+                            {(isLoadingAssociados || isLoadingDependentes) ? (
+                              <div className="p-4 text-center text-sm text-muted-foreground">Carregando...</div>
+                            ) : (() => {
+                              const term = searchTerm.toLowerCase();
+                              const filteredA = associados.filter((a: any) =>
+                                a.nome?.toLowerCase().includes(term) ||
+                                a.codigo?.toLowerCase().includes(term) ||
+                                a.cpf?.includes(searchTerm)
+                              );
+                              const filteredD = dependentes.filter((d: any) =>
+                                d.nome?.toLowerCase().includes(term) ||
+                                d.cpf?.includes(searchTerm) ||
+                                d.associados?.nome?.toLowerCase().includes(term)
+                              );
+                              if (filteredA.length === 0 && filteredD.length === 0) {
+                                return <div className="p-4 text-center text-sm text-muted-foreground">Nenhum registro encontrado.</div>;
+                              }
+                              return (
+                                <div className="py-1">
+                                  {filteredA.length > 0 && (
+                                    <>
+                                      <div className="px-3 py-1 text-xs font-semibold text-muted-foreground">Titulares</div>
+                                      {filteredA.map((assoc: any) => (
+                                        <button
+                                          key={`a-${assoc.id}`}
+                                          type="button"
+                                          className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                                          onClick={() => {
+                                            setSelectedAssociado(assoc);
+                                            setSelectedDependente(null);
+                                            setSearchTerm("");
+                                          }}
+                                        >
+                                          <div className="flex flex-col">
+                                            <span>{assoc.nome} <span className="text-xs text-muted-foreground">(Titular)</span></span>
+                                            <span className="text-xs text-muted-foreground">
+                                              Código: {assoc.codigo} | CPF: {assoc.cpf || 'N/A'} | Plano: {assoc.planos?.nome || 'N/A'}
+                                            </span>
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </>
+                                  )}
+                                  {filteredD.length > 0 && (
+                                    <>
+                                      <div className="px-3 py-1 text-xs font-semibold text-muted-foreground">Dependentes</div>
+                                      {filteredD.map((dep: any) => (
+                                        <button
+                                          key={`d-${dep.id}`}
+                                          type="button"
+                                          className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                                          onClick={() => {
+                                            setSelectedAssociado(dep.associados || null);
+                                            setSelectedDependente(dep);
+                                            setSearchTerm("");
+                                          }}
+                                        >
+                                          <div className="flex flex-col">
+                                            <span>{dep.nome} <span className="text-xs text-muted-foreground">({dep.parentesco || 'Dependente'})</span></span>
+                                            <span className="text-xs text-muted-foreground">
+                                              Titular: {dep.associados?.nome || 'N/A'} | Plano: {dep.associados?.planos?.nome || 'N/A'}
+                                            </span>
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </>
+                                  )}
                                 </div>
-                              ) : (
-                                "Nenhum registro encontrado."
-                              )}
-                            </CommandEmpty>
-                            
-                            {(isLoadingAssociados || isLoadingDependentes) && (
-                              <div className="p-4 text-center text-sm text-muted-foreground">
-                                <span className="inline-block animate-spin mr-2">⏳</span>
-                                Carregando...
-                              </div>
-                            )}
-
-                            {!isLoadingAssociados && !isLoadingDependentes && searchTerm.length >= 2 && (
-                              <>
-                                {associados.filter((a: any) => 
-                                  a.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                  a.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                  a.cpf?.includes(searchTerm)
-                                ).length > 0 && (
-                                  <CommandGroup heading="Titulares">
-                                    {associados
-                                      .filter((a: any) => 
-                                        a.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                        a.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                        a.cpf?.includes(searchTerm)
-                                      )
-                                      .map((assoc: any) => (
-                                      <CommandItem
-                                        key={`a-${assoc.id}`}
-                                        value={`titular ${assoc.nome} ${assoc.codigo} ${assoc.cpf || ""}`}
-                                        onSelect={() => {
-                                          setSelectedAssociado(assoc);
-                                          setSelectedDependente(null);
-                                          setSearchOpen(false);
-                                        }}
-                                        className="cursor-pointer"
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", selectedAssociado?.id === assoc.id && !selectedDependente ? "opacity-100" : "opacity-0")} />
-                                        <div className="flex flex-col">
-                                          <span>{assoc.nome} <span className="text-xs text-muted-foreground">(Titular)</span></span>
-                                          <span className="text-xs text-muted-foreground">
-                                            Código: {assoc.codigo} | CPF: {assoc.cpf || 'N/A'} | Plano: {assoc.planos?.nome || 'N/A'}
-                                          </span>
-                                        </div>
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                )}
-                                {dependentes.filter((d: any) => 
-                                  d.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                  d.cpf?.includes(searchTerm) ||
-                                  d.associados?.nome.toLowerCase().includes(searchTerm.toLowerCase())
-                                ).length > 0 && (
-                                  <CommandGroup heading="Dependentes">
-                                    {dependentes
-                                      .filter((d: any) => 
-                                        d.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                        d.cpf?.includes(searchTerm) ||
-                                        d.associados?.nome.toLowerCase().includes(searchTerm.toLowerCase())
-                                      )
-                                      .map((dep: any) => (
-                                      <CommandItem
-                                        key={`d-${dep.id}`}
-                                        value={`dependente ${dep.nome} ${dep.cpf || ""} ${dep.associados?.nome || ""} ${dep.associados?.codigo || ""}`}
-                                        onSelect={() => {
-                                          setSelectedAssociado(dep.associados || null);
-                                          setSelectedDependente(dep);
-                                          setSearchOpen(false);
-                                        }}
-                                        className="cursor-pointer"
-                                      >
-                                        <Check className={cn("mr-2 h-4 w-4", selectedDependente?.id === dep.id ? "opacity-100" : "opacity-0")} />
-                                        <div className="flex flex-col">
-                                          <span>{dep.nome} <span className="text-xs text-muted-foreground">({dep.parentesco || 'Dependente'})</span></span>
-                                          <span className="text-xs text-muted-foreground">
-                                            Titular: {dep.associados?.nome || 'N/A'} | Plano: {dep.associados?.planos?.nome || 'N/A'}
-                                          </span>
-                                        </div>
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                )}
-                              </>
-                            )}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <input
                       type="hidden"
                       name="falecido_nome"
