@@ -56,7 +56,7 @@ export function AtendimentoFormDialog() {
     getEmpresaHeaderHTML().then(setHeaderHTML);
   }, []);
 
-  const { data: associados = [] } = useQuery({
+  const { data: associados = [], isLoading: isLoadingAssociados } = useQuery({
     queryKey: ['associados-search'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -66,10 +66,10 @@ export function AtendimentoFormDialog() {
       if (error) throw error;
       return data;
     },
-    enabled: atendimentoTipo === "Plano"
+    enabled: open && atendimentoTipo === "Plano"
   });
 
-  const { data: dependentes = [] } = useQuery({
+  const { data: dependentes = [], isLoading: isLoadingDependentes } = useQuery({
     queryKey: ['dependentes-search', selectedAssociado?.id],
     queryFn: async () => {
       if (!selectedAssociado?.id) return [];
@@ -347,31 +347,41 @@ export function AtendimentoFormDialog() {
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[400px] p-0">
+                    <PopoverContent className="w-[350px] p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Buscar associado por nome ou código..." />
+                        <CommandInput placeholder="Buscar por nome, código ou CPF..." />
                         <CommandList>
-                          <CommandEmpty>Nenhum associado encontrado.</CommandEmpty>
-                          <CommandGroup>
-                            {associados.map((assoc: any) => (
-                              <CommandItem
-                                key={assoc.id}
-                                value={assoc.nome}
-                                onSelect={() => handleSelectAssociado(assoc)}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    selectedAssociado?.id === assoc.id ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                <div className="flex flex-col">
-                                  <span>{assoc.nome}</span>
-                                  <span className="text-xs text-muted-foreground">Código: {assoc.codigo} | CPF: {assoc.cpf || 'N/A'}</span>
-                                </div>
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
+                          {isLoadingAssociados ? (
+                            <div className="p-4 text-center text-sm text-muted-foreground">
+                              Carregando associados...
+                            </div>
+                          ) : (
+                            <>
+                              <CommandEmpty>Nenhum associado encontrado.</CommandEmpty>
+                              <CommandGroup>
+                                {associados.map((assoc: any) => (
+                                  <CommandItem
+                                    key={assoc.id}
+                                    value={`${assoc.nome} ${assoc.codigo} ${assoc.cpf || ""}`}
+                                    onSelect={() => handleSelectAssociado(assoc)}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        selectedAssociado?.id === assoc.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span>{assoc.nome}</span>
+                                      <span className="text-xs text-muted-foreground">
+                                        Código: {assoc.codigo} | CPF: {assoc.cpf || 'N/A'}
+                                      </span>
+                                    </div>
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </>
+                          )}
                         </CommandList>
                       </Command>
                     </PopoverContent>
@@ -394,49 +404,57 @@ export function AtendimentoFormDialog() {
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[400px] p-0">
+                      <PopoverContent className="w-[350px] p-0" align="start">
                         <Command>
                           <CommandInput placeholder="Buscar dependente..." />
                           <CommandList>
-                            <CommandEmpty>Nenhum dependente encontrado.</CommandEmpty>
-                            <CommandGroup>
-                              <CommandItem
-                                value="titular"
-                                onSelect={() => {
-                                  setSelectedDependente(null);
-                                  setDepSearchOpen(false);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    !selectedDependente ? "opacity-100" : "opacity-0"
-                                  )}
-                                />
-                                Titular é o falecido
-                              </CommandItem>
-                              {dependentes.map((dep: any) => (
-                                <CommandItem
-                                  key={dep.id}
-                                  value={dep.nome}
-                                  onSelect={() => {
-                                    setSelectedDependente(dep);
-                                    setDepSearchOpen(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={cn(
-                                      "mr-2 h-4 w-4",
-                                      selectedDependente?.id === dep.id ? "opacity-100" : "opacity-0"
-                                    )}
-                                  />
-                                  <div className="flex flex-col">
-                                    <span>{dep.nome}</span>
-                                    <span className="text-xs text-muted-foreground">{dep.parentesco}</span>
-                                  </div>
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
+                            {isLoadingDependentes ? (
+                              <div className="p-4 text-center text-sm text-muted-foreground">
+                                Carregando dependentes...
+                              </div>
+                            ) : (
+                              <>
+                                <CommandEmpty>Nenhum dependente encontrado.</CommandEmpty>
+                                <CommandGroup>
+                                  <CommandItem
+                                    value="titular"
+                                    onSelect={() => {
+                                      setSelectedDependente(null);
+                                      setDepSearchOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        !selectedDependente ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    Titular é o falecido
+                                  </CommandItem>
+                                  {dependentes.map((dep: any) => (
+                                    <CommandItem
+                                      key={dep.id}
+                                      value={dep.nome}
+                                      onSelect={() => {
+                                        setSelectedDependente(dep);
+                                        setDepSearchOpen(false);
+                                      }}
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          selectedDependente?.id === dep.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <div className="flex flex-col">
+                                        <span>{dep.nome}</span>
+                                        <span className="text-xs text-muted-foreground">{dep.parentesco}</span>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              </>
+                            )}
                           </CommandList>
                         </Command>
                       </PopoverContent>
