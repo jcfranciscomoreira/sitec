@@ -735,11 +735,11 @@ function PinViewDialog({
 
   return (
     <Dialog open={!!pin} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-lg max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            {pin.nome}
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span className="truncate">{pin.nome}</span>
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-2">
@@ -758,9 +758,9 @@ function PinViewDialog({
           <Row label="Observações" value={pin.observacoes ? <pre className="whitespace-pre-wrap font-sans text-sm">{pin.observacoes}</pre> : null} />
           <Row label="Coordenadas" value={`${pin.latitude.toFixed(6)}, ${pin.longitude.toFixed(6)}`} />
         </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>Fechar</Button>
-          <Button onClick={() => onEdit(pin)}>Editar</Button>
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Fechar</Button>
+          <Button onClick={() => onEdit(pin)} className="w-full sm:w-auto">Editar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
