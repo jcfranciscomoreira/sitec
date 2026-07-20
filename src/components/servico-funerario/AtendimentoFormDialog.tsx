@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Search, Check, ChevronsUpDown } from "lucide-react";
+import { Plus, Check, ChevronsUpDown, Printer } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { brl } from "@/lib/format";
+import { getEmpresaHeaderHTML } from "@/lib/print-header";
 
 export function AtendimentoFormDialog() {
   const [open, setOpen] = useState(false);
@@ -44,8 +46,15 @@ export function AtendimentoFormDialog() {
   const [selectedDependente, setSelectedDependente] = useState<any>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [depSearchOpen, setDepSearchOpen] = useState(false);
+  const [selectedItens, setSelectedItens] = useState<string[]>([]);
+  const [desconto, setDesconto] = useState(0);
   
   const queryClient = useQueryClient();
+  const [headerHTML, setHeaderHTML] = useState("");
+
+  useEffect(() => {
+    getEmpresaHeaderHTML().then(setHeaderHTML);
+  }, []);
 
   const { data: associados = [] } = useQuery({
     queryKey: ['associados-search'],
@@ -75,19 +84,80 @@ export function AtendimentoFormDialog() {
     enabled: !!selectedAssociado?.id
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (formData: any) => {
-      const { data, error } = await supabase
-        .from('servicos_funerarios')
-        .insert([formData])
-        .select();
+  const { data: catalogo = [] } = useQuery({
+    queryKey: ['servicos-produtos-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('servicos_produtos').select('*').order('nome');
       if (error) throw error;
       return data;
+    }
+  });
+
+  const totals = useMemo(() => {
+    const totalItens = selectedItens.reduce((acc, id) => {
+      const item = catalogo.find(i => i.id === id);
+      return acc + (item?.preco || 0);
+    }, 0);
+    return {
+      bruto: totalItens,
+      final: Math.max(0, totalItens - desconto)
+    };
+  }, [selectedItens, catalogo, desconto]);
+
+  const createMutation = useMutation({
+    mutationFn: async (formData: any) => {
+      // 1. Create service
+      const { data: servico, error: sError } = await supabase
+        .from('servicos_funerarios')
+        .insert([{
+          ...formData,
+          valor_total: totals.bruto,
+          desconto: desconto,
+          valor_final: totals.final
+        } as any])
+        .select()
+        .single();
+      
+      if (sError) throw sError;
+
+      // 2. Insert items
+      if (selectedItens.length > 0) {
+        const itensToInsert = selectedItens.map(id => {
+          const item = catalogo.find(i => i.id === id);
+          if (!item) return null;
+          return {
+            servico_id: servico.id,
+            item_id: id,
+            nome: item.nome,
+            quantidade: 1,
+            preco_unitario: item.preco,
+            subtotal: item.preco
+          };
+        }).filter(Boolean);
+        
+        const { error: iError } = await supabase.from('servico_itens' as any).insert(itensToInsert as any);
+        if (iError) throw iError;
+      }
+
+      // 3. Register in financial if Particular
+      if (formData.tipo === 'Particular' && totals.final > 0) {
+        const { error: fError } = await supabase.from('contas_financeiras').insert([{
+          descricao: `Serviço Funerário #${servico.numero_servico} - ${formData.falecido_nome}`,
+          valor: totals.final,
+          tipo: 'entrada',
+          status: 'pendente',
+          vencimento: new Date().toISOString().split('T')[0],
+          filial_id: selectedAssociado?.filial_id || null
+        } as any]);
+        if (fError) throw fError;
+      }
+
+      return servico;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['servico-funerario-stats'] });
       queryClient.invalidateQueries({ queryKey: ['servicos-funerarios-list'] });
-      toast.success("Atendimento iniciado com sucesso!");
+      toast.success("Atendimento e lançamentos realizados com sucesso!");
       setOpen(false);
       resetForm();
     },
@@ -100,18 +170,14 @@ export function AtendimentoFormDialog() {
     setIsAssociado(false);
     setSelectedAssociado(null);
     setSelectedDependente(null);
+    setSelectedItens([]);
+    setDesconto(0);
   };
 
   const handleSelectAssociado = (assoc: any) => {
     setSelectedAssociado(assoc);
     setSelectedDependente(null);
     setSearchOpen(false);
-    
-    // Auto-fill common fields
-    const form = document.querySelector('form') as HTMLFormElement;
-    if (form) {
-       // if we are selecting the associate as the deceased, we'll wait for the user to pick dependente or keep associate
-    }
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -119,7 +185,6 @@ export function AtendimentoFormDialog() {
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
     
-    // Add IDs if selected
     if (isAssociado && selectedAssociado) {
       (data as any).associado_id = selectedAssociado.id;
       if (selectedDependente) {
@@ -128,6 +193,73 @@ export function AtendimentoFormDialog() {
     }
     
     createMutation.mutate(data);
+  };
+
+  const toggleItem = (id: string) => {
+    setSelectedItens(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <html>
+        <head>
+          <title>Atendimento Funerário</title>
+          <style>
+            body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .section { margin-bottom: 20px; }
+            .section-title { font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
+            .grid { display: grid; grid-template-cols: 1fr 1fr; gap: 10px; }
+            .item-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 5px 0; }
+            .footer { margin-top: 50px; text-align: center; font-size: 0.8em; }
+            .total { font-weight: bold; font-size: 1.2em; text-align: right; margin-top: 20px; }
+            @media print { .no-print { display: none; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            ${headerHTML}
+            <h2 style="margin-top: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;">ORDEM DE ATENDIMENTO FUNERÁRIO</h2>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Dados do Falecido</div>
+            <div class="grid">
+              <div><strong>Nome:</strong> ${selectedDependente?.nome || selectedAssociado?.nome || 'N/A'}</div>
+              <div><strong>CPF:</strong> ${selectedDependente?.cpf || selectedAssociado?.cpf || 'N/A'}</div>
+              <div><strong>Plano:</strong> ${selectedAssociado?.planos?.nome || 'NÃO ASSOCIADO'}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Serviços e Produtos</div>
+            ${selectedItens.map(id => {
+              const item = catalogo.find(i => i.id === id);
+              return `<div class="item-row"><span>${item?.nome}</span><span>${brl(item?.preco || 0)}</span></div>`;
+            }).join('')}
+            <div class="total">
+              <div>Bruto: ${brl(totals.bruto)}</div>
+              <div>Desconto: ${brl(desconto)}</div>
+              <div style="font-size: 1.4em; color: #d32f2f;">Total Final: ${brl(totals.final)}</div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>Assinatura do Responsável: __________________________________________</p>
+            <p>Data: ${new Date().toLocaleDateString()}</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.print();
   };
 
   return (
@@ -140,7 +272,12 @@ export function AtendimentoFormDialog() {
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Cadastro de Serviço Funerário</DialogTitle>
+          <div className="flex justify-between items-center pr-8">
+            <DialogTitle>Cadastro de Serviço Funerário</DialogTitle>
+            <Button variant="outline" type="button" size="sm" onClick={handlePrint} className="gap-2">
+              <Printer size={16} /> Imprimir
+            </Button>
+          </div>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-8 pt-4">
@@ -164,6 +301,7 @@ export function AtendimentoFormDialog() {
                     <Button
                       variant="outline"
                       role="combobox"
+                      type="button"
                       aria-expanded={searchOpen}
                       className="w-full justify-between"
                     >
@@ -210,6 +348,7 @@ export function AtendimentoFormDialog() {
                       <Button
                         variant="outline"
                         role="combobox"
+                        type="button"
                         aria-expanded={depSearchOpen}
                         className="w-full justify-between"
                       >
@@ -354,26 +493,6 @@ export function AtendimentoFormDialog() {
                 <Label htmlFor="hora_obito">Hora do Óbito</Label>
                 <Input type="time" name="hora_obito" required />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="falecido_naturalidade">Naturalidade</Label>
-                <Input name="falecido_naturalidade" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="falecido_nacionalidade">Nacionalidade</Label>
-                <Input name="falecido_nacionalidade" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="falecido_profissao">Profissão</Label>
-                <Input name="falecido_profissao" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="falecido_pai">Nome do Pai</Label>
-                <Input name="falecido_pai" />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="falecido_mae">Nome da Mãe</Label>
-                <Input name="falecido_mae" />
-              </div>
               <div className="space-y-2 md:col-span-3">
                 <Label htmlFor="falecido_endereco">Endereço</Label>
                 <Input name="falecido_endereco" defaultValue={selectedAssociado?.endereco || ""} />
@@ -382,122 +501,40 @@ export function AtendimentoFormDialog() {
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-bold text-lg border-b pb-2">Informações do Óbito</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="local_obito">Local do Óbito</Label>
-                <Input name="local_obito" placeholder="Hospital, Residência, etc." />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cidade_obito">Cidade</Label>
-                <Input name="cidade_obito" defaultValue={selectedAssociado?.cidade || ""} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="hospital_nome">Hospital</Label>
-                <Input name="hospital_nome" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="medico_responsavel">Médico responsável</Label>
-                <Input name="medico_responsavel" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="causa_morte">Causa da morte</Label>
-                <Input name="causa_morte" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="numero_do">Número da DO</Label>
-                <Input name="numero_do" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cartorio_nome">Cartório</Label>
-                <Input name="cartorio_nome" />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="font-bold text-lg border-b pb-2">Responsável</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="responsavel_nome">Nome Completo</Label>
-                <Input name="responsavel_nome" defaultValue={!selectedDependente ? "" : selectedAssociado?.nome || ""} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="responsavel_cpf">CPF</Label>
-                <Input name="responsavel_cpf" defaultValue={!selectedDependente ? "" : selectedAssociado?.cpf || ""} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="responsavel_rg">RG</Label>
-                <Input name="responsavel_rg" defaultValue={!selectedDependente ? "" : selectedAssociado?.rg || ""} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="responsavel_telefone">Telefone</Label>
-                <Input name="responsavel_telefone" defaultValue={!selectedDependente ? "" : selectedAssociado?.telefone || ""} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="responsavel_whatsapp">WhatsApp</Label>
-                <Input name="responsavel_whatsapp" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="responsavel_parentesco">Grau de parentesco</Label>
-                <Input name="responsavel_parentesco" defaultValue={selectedDependente ? selectedDependente.parentesco : ""} />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="responsavel_endereco">Endereço</Label>
-                <Input name="responsavel_endereco" defaultValue={selectedAssociado?.endereco || ""} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="responsavel_email">Email</Label>
-                <Input type="email" name="responsavel_email" defaultValue={selectedAssociado?.email || ""} />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="border rounded-md p-4 bg-muted/50">
-              <h3 className="font-bold text-lg border-b pb-2 mb-4">Plano Vinculado</h3>
-              <p className="text-sm text-muted-foreground mb-4">Caso possua plano.</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="plano_numero_contrato">Número do contrato</Label>
-                  <Input name="plano_numero_contrato" defaultValue={selectedAssociado?.codigo ? `#${selectedAssociado.codigo}` : ""} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="plano_titular">Titular</Label>
-                  <Input name="plano_titular" defaultValue={selectedAssociado?.nome || ""} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="plano_status">Status do plano</Label>
-                  <Input name="plano_status" defaultValue={selectedAssociado?.status || ""} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="plano_carencia">Carência</Label>
-                  <Input name="plano_carencia" />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="plano_cobertura">Cobertura</Label>
-                  <Input name="plano_cobertura" defaultValue={selectedAssociado?.planos?.nome || ""} />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="font-bold text-lg border-b pb-2">Serviços Contratados</h3>
-            <p className="text-sm text-muted-foreground">Selecionados em checklist.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {[
-                "Remoção", "Higienização", "Tanatopraxia", "Ornamentação", 
-                "Urna", "Véu", "Flores", "Coroa", 
-                "Transporte", "Sala de velório", "Cerimonial", "Cremação", 
-                "Sepultamento", "Documentação", "Publicação de Nota de Falecimento", 
-                "Livro de Presença", "Café", "Água", "Tenda", "Iluminação"
-              ].map((servico) => (
-                <div key={servico} className="flex items-center space-x-2">
-                  <Checkbox id={servico} />
-                  <Label htmlFor={servico} className="text-sm font-normal cursor-pointer">{servico}</Label>
+            <h3 className="font-bold text-lg border-b pb-2">Itens do Catálogo (Serviços e Produtos)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {catalogo.map((item: any) => (
+                <div key={item.id} className="flex items-center justify-between p-2 border rounded-md hover:bg-accent cursor-pointer" onClick={() => toggleItem(item.id)}>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id={item.id} checked={selectedItens.includes(item.id)} />
+                    <div>
+                      <Label className="text-sm font-medium leading-none">{item.nome}</Label>
+                      <p className="text-xs text-muted-foreground">{item.tipo}</p>
+                    </div>
+                  </div>
+                  <span className="text-sm font-bold">{brl(item.preco)}</span>
                 </div>
               ))}
+            </div>
+            
+            <div className="bg-muted p-4 rounded-lg space-y-2">
+              <div className="flex justify-between items-center">
+                <Label>Desconto (R$)</Label>
+                <Input 
+                  type="number" 
+                  className="w-32" 
+                  value={desconto} 
+                  onChange={(e) => setDesconto(Number(e.target.value))} 
+                />
+              </div>
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total Bruto:</span>
+                <span>{brl(totals.bruto)}</span>
+              </div>
+              <div className="flex justify-between text-2xl font-black text-primary border-t pt-2">
+                <span>Total Final:</span>
+                <span>{brl(totals.final)}</span>
+              </div>
             </div>
           </div>
 
