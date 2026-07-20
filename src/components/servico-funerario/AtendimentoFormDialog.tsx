@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -50,6 +50,11 @@ export function AtendimentoFormDialog() {
   const [desconto, setDesconto] = useState(0);
   
   const queryClient = useQueryClient();
+  const [headerHTML, setHeaderHTML] = useState("");
+
+  useEffect(() => {
+    getEmpresaHeaderHTML().then(setHeaderHTML);
+  }, []);
 
   const { data: associados = [] } = useQuery({
     queryKey: ['associados-search'],
@@ -196,8 +201,7 @@ export function AtendimentoFormDialog() {
     );
   };
 
-  const handlePrint = async () => {
-    const headerHTML = await getEmpresaHeaderHTML();
+  const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
