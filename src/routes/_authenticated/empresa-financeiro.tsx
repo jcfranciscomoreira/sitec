@@ -172,23 +172,8 @@ function PainelFinanceiroPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <Card className="border-border/60 shadow-soft">
-          <CardHeader><CardTitle className="font-serif">Despesas por centro de custo</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {stats.centros.length === 0 && <p className="text-sm text-muted-foreground">Sem dados.</p>}
-            {stats.centros.map((c) => (
-              <div key={c.nome}>
-                <div className="mb-1 flex items-center justify-between text-sm">
-                  <span>{c.nome}</span><span className="font-medium">{brl(c.total)}</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded bg-muted">
-                  <div className="h-full bg-gold" style={{ width: `${(c.total / stats.maxCentro) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      <div className="mt-6 grid gap-4">
+
 
         <Card className="border-border/60 shadow-soft">
           <CardHeader><CardTitle className="font-serif">Vencidas em aberto</CardTitle></CardHeader>
