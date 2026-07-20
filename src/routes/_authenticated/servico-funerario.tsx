@@ -30,22 +30,21 @@ function ServicoFunerarioPage() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['servico-funerario-stats'],
     queryFn: async () => {
-      // Use "any" to bypass temporary type sync lag if needed, but let's try to query specifically
       const { data: servicos } = await supabase
-        .from('servicos_funerarios' as any)
+        .from('servicos_funerarios')
         .select('status, tipo, data_abertura');
       
       const counts = {
-        andamento: servicos?.filter((s: any) => s.status !== 'Finalizado' && s.status !== 'Cancelado').length || 0,
-        concluidos: servicos?.filter((s: any) => s.status === 'Finalizado').length || 0,
-        obitosHoje: servicos?.filter((s: any) => {
+        andamento: servicos?.filter((s) => s.status !== 'Finalizado' && s.status !== 'Cancelado').length || 0,
+        concluidos: servicos?.filter((s) => s.status === 'Finalizado').length || 0,
+        obitosHoje: servicos?.filter((s) => {
           const d = s.data_abertura ? new Date(s.data_abertura) : null;
           return d && d.toDateString() === new Date().toDateString();
         }).length || 0,
         equipes: 0, 
         veiculos: 0, 
         pendencias: 0, 
-        osAbertas: servicos?.filter((s: any) => s.status === 'Em Atendimento').length || 0,
+        osAbertas: servicos?.filter((s) => s.status === 'Em Atendimento').length || 0,
         receitaParticular: 0,
       };
       
