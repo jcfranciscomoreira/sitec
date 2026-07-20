@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AtendimentoFormDialog } from '@/components/servico-funerario/AtendimentoFormDialog';
 import { format } from 'date-fns';
+import { AppShell } from '@/components/AppShell';
 
 export const Route = createFileRoute('/_authenticated/servico-funerario')({
   component: ServicoFunerarioPage,
@@ -54,13 +55,13 @@ function ServicoFunerarioPage() {
     }
   });
 
-  if (isLoading) return <div className="p-8"><SkeletonCard /></div>;
-
   return (
-    <div className="container mx-auto p-4 space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <h1 className="text-2xl font-bold">Serviço Funerário</h1>
-      </div>
+    <AppShell title="Serviço Funerário" subtitle="Gestão de atendimentos, O.S. e equipes">
+      {isLoading ? (
+        <div className="p-8"><SkeletonCard /></div>
+      ) : (
+        <div className="space-y-6">
+
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid grid-cols-2 md:grid-cols-6 h-auto gap-1">
@@ -106,9 +107,12 @@ function ServicoFunerarioPage() {
         <TabsContent value="financeiro"><div className="p-8 text-center border rounded-lg bg-muted/20">Controle Financeiro de Serviços Particulares em desenvolvimento</div></TabsContent>
         <TabsContent value="relatorios"><div className="p-8 text-center border rounded-lg bg-muted/20">Relatórios de Atendimento em desenvolvimento</div></TabsContent>
       </Tabs>
-    </div>
+        </div>
+      )}
+    </AppShell>
   );
 }
+
 
 function StatCard({ title, value, icon: Icon, color }: any) {
   return (
