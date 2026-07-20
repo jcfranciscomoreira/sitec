@@ -376,35 +376,37 @@ export function AtendimentoFormDialog() {
                       </div>
                     )}
                     {!(selectedDependente || selectedAssociado) && (
-                      <div className="relative">
-                        <Input
-                          type="text"
-                          placeholder="Digite nome, código ou CPF para buscar..."
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          autoComplete="off"
-                        />
-                        {searchTerm.length >= 2 && (
-                          <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-md border bg-popover shadow-md">
-                            {(isLoadingAssociados || isLoadingDependentes) ? (
-                              <div className="p-4 text-center text-sm text-muted-foreground">Carregando...</div>
-                            ) : (() => {
-                              const term = searchTerm.toLowerCase();
-                              const filteredA = associados.filter((a: any) =>
-                                a.nome?.toLowerCase().includes(term) ||
-                                a.codigo?.toLowerCase().includes(term) ||
-                                a.cpf?.includes(searchTerm)
-                              );
-                              const filteredD = dependentes.filter((d: any) =>
-                                d.nome?.toLowerCase().includes(term) ||
-                                d.cpf?.includes(searchTerm) ||
-                                d.associados?.nome?.toLowerCase().includes(term)
-                              );
-                              if (filteredA.length === 0 && filteredD.length === 0) {
-                                return <div className="p-4 text-center text-sm text-muted-foreground">Nenhum registro encontrado.</div>;
-                              }
-                              return (
-                                <div className="py-1">
+                        <div className="relative">
+                          <div className="relative">
+                            <Input
+                              type="text"
+                              placeholder="Digite nome, código ou CPF para buscar..."
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              autoComplete="off"
+                              className={cn(isLoadingAssociados || isLoadingDependentes ? "pr-10" : "")}
+                            />
+                            {(isLoadingAssociados || isLoadingDependentes) && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          {debouncedSearch.length >= 2 && (
+                            <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-md border bg-popover shadow-md">
+                              {(isLoadingAssociados || isLoadingDependentes) ? (
+                                <div className="p-4 flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                                  <Loader2 className="h-5 w-5 animate-spin" />
+                                  <span>Buscando registros...</span>
+                                </div>
+                              ) : (() => {
+                                const filteredA = associados;
+                                const filteredD = dependentes;
+                                if (filteredA.length === 0 && filteredD.length === 0) {
+                                  return <div className="p-4 text-center text-sm text-muted-foreground">Nenhum registro encontrado.</div>;
+                                }
+                                return (
+                                  <div className="py-1">
                                   {filteredA.length > 0 && (
                                     <>
                                       <div className="px-3 py-1 text-xs font-semibold text-muted-foreground">Titulares</div>
