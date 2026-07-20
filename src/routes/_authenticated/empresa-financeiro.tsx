@@ -17,7 +17,6 @@ export const Route = createFileRoute("/_authenticated/empresa-financeiro")({
 type Row = {
   id: string; tipo: "entrada" | "saida"; descricao: string; valor: number;
   vencimento: string; data_pagamento: string | null; status: string;
-  centro_custo_id: string | null; centros_custo?: { nome: string } | null;
 };
 
 function PainelFinanceiroPage() {
@@ -26,7 +25,7 @@ function PainelFinanceiroPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("contas_financeiras")
-        .select("id, tipo, descricao, valor, vencimento, data_pagamento, status, centro_custo_id, centros_custo(nome)")
+        .select("id, tipo, descricao, valor, vencimento, data_pagamento, status")
         .order("vencimento", { ascending: false })
         .limit(1000);
       if (error) throw error;
