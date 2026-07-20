@@ -588,7 +588,7 @@ function VendasPage() {
         </div>
       }
     >
-      <div className="grid gap-3 lg:grid-cols-[1fr_320px] pb-10 sm:pb-0">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[minmax(0,1fr)_320px] pb-10 sm:pb-0">
         <Card className="overflow-hidden">
           <div className="relative">
             {loading && (
