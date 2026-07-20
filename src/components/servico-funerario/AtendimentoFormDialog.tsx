@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Check, ChevronsUpDown, Printer } from "lucide-react";
+import { Plus, Check, ChevronsUpDown, Printer, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,19 +22,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { brl } from "@/lib/format";
 import { getEmpresaHeaderHTML } from "@/lib/print-header";
@@ -44,11 +31,10 @@ export function AtendimentoFormDialog() {
   const [atendimentoTipo, setAtendimentoTipo] = useState<string>("Particular");
   const [selectedAssociado, setSelectedAssociado] = useState<any>(null);
   const [selectedDependente, setSelectedDependente] = useState<any>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [depSearchOpen, setDepSearchOpen] = useState(false);
   const [selectedItens, setSelectedItens] = useState<string[]>([]);
   const [desconto, setDesconto] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   
   const queryClient = useQueryClient();
   const [headerHTML, setHeaderHTML] = useState("");
@@ -57,30 +43,61 @@ export function AtendimentoFormDialog() {
     getEmpresaHeaderHTML().then(setHeaderHTML);
   }, []);
 
+  // Debounce logic
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const { data: associados = [], isLoading: isLoadingAssociados } = useQuery({
-    queryKey: ['associados-search'],
-    queryFn: async () => {
+    queryKey: ['associados-search', debouncedSearch],
+    queryFn: async ({ signal }) => {
+      if (debouncedSearch.length < 2) return [];
+
+      const term = `%${debouncedSearch}%`;
       const { data, error } = await supabase
         .from('associados')
         .select('*, planos(nome, valor_mensal)')
-        .order('nome');
-      if (error) throw error;
+        .or(`nome.ilike.${term},codigo.ilike.${term},cpf.ilike.${term}`)
+        .order('nome')
+        .limit(10)
+        .abortSignal(signal);
+
+      if (error) {
+        if (error.code === 'ABORT') return [];
+        throw error;
+      }
       return data;
     },
-    enabled: open && atendimentoTipo === "Plano"
+    enabled: open && atendimentoTipo === "Plano" && debouncedSearch.length >= 2,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const { data: dependentes = [], isLoading: isLoadingDependentes } = useQuery({
-    queryKey: ['dependentes-search-all'],
-    queryFn: async () => {
+    queryKey: ['dependentes-search-all', debouncedSearch],
+    queryFn: async ({ signal }) => {
+      if (debouncedSearch.length < 2) return [];
+
+      const term = `%${debouncedSearch}%`;
       const { data, error } = await supabase
         .from('dependentes')
         .select('*, associados(id, nome, codigo, cpf, endereco, telefone, filial_id, planos(nome, valor_mensal))')
-        .order('nome');
-      if (error) throw error;
+        .or(`nome.ilike.${term},cpf.ilike.${term}`)
+        .order('nome')
+        .limit(10)
+        .abortSignal(signal);
+
+      if (error) {
+        if (error.code === 'ABORT') return [];
+        throw error;
+      }
       return data;
     },
-    enabled: open && atendimentoTipo === "Plano"
+    enabled: open && atendimentoTipo === "Plano" && debouncedSearch.length >= 2,
+    staleTime: 1000 * 60 * 5,
   });
 
   const { data: catalogo = [] } = useQuery({
