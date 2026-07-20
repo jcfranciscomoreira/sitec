@@ -604,7 +604,6 @@ function FinanceiroReport({ contas, dateFrom, dateTo, setDateFrom, setDateTo, lo
               <TableRow key={c.id}>
                 <TableCell className="capitalize">{c.tipo}</TableCell>
                 <TableCell className="font-medium">{c.descricao}</TableCell>
-                <TableCell>{centroNome(c.centro_custo_id)}</TableCell>
                 <TableCell>{fmtDate(c.vencimento)}</TableCell>
                 <TableCell>{c.data_pagamento ? fmtDate(c.data_pagamento) : "—"}</TableCell>
                 <TableCell>{brl(c.valor)}</TableCell>
