@@ -566,7 +566,7 @@ function VendasPage() {
   return (
     <AppShell
       title="Mapa de Vendas"
-      subtitle="Verifique e refine o layout do mapa de vendas no iOS e Android para garantir que botões, ações e conteúdo não sejam cortados em diferentes tamanhos de tela."
+      subtitle="Mapeie prospects, associados e concorrência no território."
       actions={
         <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
           {!online && (
@@ -735,11 +735,11 @@ function PinViewDialog({
 
   return (
     <Dialog open={!!pin} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-lg max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            {pin.nome}
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span className="truncate">{pin.nome}</span>
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-2">
@@ -758,9 +758,9 @@ function PinViewDialog({
           <Row label="Observações" value={pin.observacoes ? <pre className="whitespace-pre-wrap font-sans text-sm">{pin.observacoes}</pre> : null} />
           <Row label="Coordenadas" value={`${pin.latitude.toFixed(6)}, ${pin.longitude.toFixed(6)}`} />
         </div>
-        <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={onClose}>Fechar</Button>
-          <Button onClick={() => onEdit(pin)}>Editar</Button>
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+          <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Fechar</Button>
+          <Button onClick={() => onEdit(pin)} className="w-full sm:w-auto">Editar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -791,11 +791,11 @@ function PinDialog({
 
   return (
     <Dialog open={state.open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-lg max-h-[90dvh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            {form.id ? "Editar ponto" : "Novo ponto"}
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <MapPin className="h-4 w-4 shrink-0" />
+            <span className="truncate">{form.id ? "Editar ponto" : "Novo ponto"}</span>
           </DialogTitle>
         </DialogHeader>
 
@@ -973,17 +973,17 @@ function PinDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2 sm:justify-between">
-          <div>
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+          <div className="w-full sm:w-auto">
             {form.id && (
-              <Button variant="destructive" size="sm" onClick={() => form.id && onDelete(form.id)}>
+              <Button variant="destructive" size="sm" onClick={() => form.id && onDelete(form.id)} className="w-full sm:w-auto">
                 <Trash2 className="mr-2 h-4 w-4" /> Excluir
               </Button>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={() => onSave(form)}>Salvar</Button>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
+            <Button variant="outline" onClick={onClose} className="w-full sm:w-auto">Cancelar</Button>
+            <Button onClick={() => onSave(form)} className="w-full sm:w-auto">Salvar</Button>
           </div>
         </DialogFooter>
       </DialogContent>
