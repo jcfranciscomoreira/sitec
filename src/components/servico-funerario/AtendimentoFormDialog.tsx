@@ -347,13 +347,20 @@ export function AtendimentoFormDialog() {
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent 
-                        className="w-[--radix-popover-trigger-width] min-w-[350px] p-0 pointer-events-auto" 
+                        className="w-[--radix-popover-trigger-width] min-w-[350px] p-0" 
                         align="start"
                         side="bottom"
                         onOpenAutoFocus={(e) => e.preventDefault()}
                       >
-                        <Command className="pointer-events-auto">
-                          <CommandInput placeholder="Buscar por nome, código ou CPF..." />
+                        <Command 
+                          className="pointer-events-auto"
+                          shouldFilter={true}
+                        >
+                          <CommandInput 
+                            placeholder="Buscar por nome, código ou CPF..." 
+                            className="pointer-events-auto"
+                            onKeyDown={(e) => e.stopPropagation()}
+                          />
                           <CommandList className="pointer-events-auto">
                             <CommandEmpty>
                               {isLoadingAssociados || isLoadingDependentes ? (
