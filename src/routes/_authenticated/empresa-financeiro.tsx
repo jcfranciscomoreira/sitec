@@ -71,7 +71,7 @@ function PainelFinanceiroPage() {
     }
     const maxSerie = Math.max(1, ...serie.flatMap((s) => [s.entradas, s.saidas]));
 
-    return { recebidoMes, pagoMes, aReceber, aPagar, atrasadas, centros, maxCentro, serie, maxSerie, saldoMes: recebidoMes - pagoMes };
+    return { recebidoMes, pagoMes, aReceber, aPagar, atrasadas, serie, maxSerie, saldoMes: recebidoMes - pagoMes };
   }, [rows]);
 
   const planoStats = useMemo(() => {
