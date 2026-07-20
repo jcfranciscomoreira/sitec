@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AtendimentoFormDialog } from '@/components/servico-funerario/AtendimentoFormDialog';
+import { ServicosProdutosManager } from '@/components/servico-funerario/ServicosProdutosManager';
 import { format } from 'date-fns';
 import { AppShell } from '@/components/AppShell';
 
@@ -69,6 +70,7 @@ function ServicoFunerarioPage() {
           <TabsTrigger value="atendimentos">Atendimentos</TabsTrigger>
           <TabsTrigger value="os">O.S.</TabsTrigger>
           <TabsTrigger value="equipe">Equipes</TabsTrigger>
+          <TabsTrigger value="catalogo">Serviços/Produtos</TabsTrigger>
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
         </TabsList>
@@ -104,6 +106,13 @@ function ServicoFunerarioPage() {
         {/* Placeholder for other tabs */}
         <TabsContent value="os"><div className="p-8 text-center border rounded-lg bg-muted/20">Módulo de Ordens de Serviço em desenvolvimento</div></TabsContent>
         <TabsContent value="equipe"><div className="p-8 text-center border rounded-lg bg-muted/20">Gestão de Equipes e Veículos em desenvolvimento</div></TabsContent>
+        <TabsContent value="catalogo">
+          <Card>
+            <CardContent className="pt-6">
+              <ServicosProdutosManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="financeiro"><div className="p-8 text-center border rounded-lg bg-muted/20">Controle Financeiro de Serviços Particulares em desenvolvimento</div></TabsContent>
         <TabsContent value="relatorios"><div className="p-8 text-center border rounded-lg bg-muted/20">Relatórios de Atendimento em desenvolvimento</div></TabsContent>
       </Tabs>
