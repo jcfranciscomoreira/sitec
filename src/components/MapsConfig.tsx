@@ -139,20 +139,38 @@ export function MapsConfig() {
             )}
           </div>
 
-          <div className="rounded-md border p-4 space-y-2">
-            <div className="font-medium">Como alterar a conexão</div>
+          <div className="rounded-md border p-4 space-y-3">
+            <div className="font-medium">Integrar minha conta do Google Maps</div>
             <p className="text-xs text-muted-foreground">
-              A chave do Google Maps é gerenciada pela integração de conectores. Para trocar de chave,
-              alterar restrições ou usar uma conta própria do Google Cloud, acesse a área de conectores.
+              Use sua própria chave do Google Cloud (recomendado para domínio próprio, faturamento e limites dedicados).
+              Peça no chat da Lovable: <em>"conectar Google Maps com minha conta"</em> — o assistente abrirá o fluxo seguro
+              de conexão e vinculará sua chave ao projeto sem expô-la no código.
             </p>
-            <a
-              href="https://cloud.google.com/apis/credentials"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-primary underline"
-            >
-              Google Cloud Credentials <ExternalLink className="h-3 w-3" />
-            </a>
+            <ol className="list-decimal pl-5 text-xs text-muted-foreground space-y-1">
+              <li>Crie/selecione um projeto no Google Cloud e ative <strong>billing</strong>.</li>
+              <li>Ative as APIs: Maps JavaScript, Places (New), Geocoding e as demais que usar.</li>
+              <li>Gere uma chave em <em>APIs & Services → Credentials</em>.</li>
+              <li>Restrinja por <strong>HTTP referrers</strong> incluindo <code>https://seudominio.com/*</code> e <code>https://*.seudominio.com/*</code>.</li>
+              <li>Volte aqui e peça no chat para conectar — cole a chave no formulário seguro.</li>
+            </ol>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <a
+                href="https://console.cloud.google.com/google/maps-apis/credentials"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-primary underline"
+              >
+                Google Cloud Credentials <ExternalLink className="h-3 w-3" />
+              </a>
+              <a
+                href="https://console.cloud.google.com/google/maps-apis/api-list"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-sm text-primary underline"
+              >
+                Ativar APIs do Maps <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
           </div>
         </CardContent>
       </Card>
