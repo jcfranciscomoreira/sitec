@@ -327,151 +327,88 @@ export function AtendimentoFormDialog() {
 
           <div className="space-y-4">
             <h3 className="font-bold text-lg border-b pb-2">Falecido</h3>
-            
-            {atendimentoTipo === "Plano" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-primary/5 p-4 rounded-lg border border-primary/10">
-                <div className="space-y-2">
-                  <Label>Pesquisar Associado (Titular)</Label>
-                  <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        type="button"
-                        aria-expanded={searchOpen}
-                        className="w-full justify-between"
-                      >
-                        {selectedAssociado ? selectedAssociado.nome : "Selecionar associado..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[350px] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Buscar por nome, código ou CPF..." />
-                        <CommandList>
-                          {isLoadingAssociados ? (
-                            <div className="p-4 text-center text-sm text-muted-foreground">
-                              Carregando associados...
-                            </div>
-                          ) : (
-                            <>
-                              <CommandEmpty>Nenhum associado encontrado.</CommandEmpty>
-                              <CommandGroup>
-                                {associados.map((assoc: any) => (
-                                  <CommandItem
-                                    key={assoc.id}
-                                    value={`${assoc.nome} ${assoc.codigo} ${assoc.cpf || ""}`}
-                                    onSelect={() => handleSelectAssociado(assoc)}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        selectedAssociado?.id === assoc.id ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    <div className="flex flex-col">
-                                      <span>{assoc.nome}</span>
-                                      <span className="text-xs text-muted-foreground">
-                                        Código: {assoc.codigo} | CPF: {assoc.cpf || 'N/A'}
-                                      </span>
-                                    </div>
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            </>
-                          )}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
 
-                {selectedAssociado && (
-                  <div className="space-y-2">
-                    <Label>O falecido é um Dependente? (Opcional)</Label>
-                    <Popover open={depSearchOpen} onOpenChange={setDepSearchOpen}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="falecido_nome">Nome Completo</Label>
+                {atendimentoTipo === "Plano" ? (
+                  <>
+                    <Popover open={searchOpen} onOpenChange={setSearchOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           role="combobox"
                           type="button"
-                          aria-expanded={depSearchOpen}
-                          className="w-full justify-between"
+                          aria-expanded={searchOpen}
+                          className="w-full justify-between font-normal"
                         >
-                          {selectedDependente ? selectedDependente.nome : "Titular é o falecido"}
+                          {selectedDependente?.nome || selectedAssociado?.nome || "Pesquisar associado ou dependente..."}
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[350px] p-0" align="start">
+                      <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[350px] p-0" align="start">
                         <Command>
-                          <CommandInput placeholder="Buscar dependente..." />
+                          <CommandInput placeholder="Buscar por nome, código ou CPF..." />
                           <CommandList>
-                            {isLoadingDependentes ? (
+                            {(isLoadingAssociados || isLoadingDependentes) ? (
                               <div className="p-4 text-center text-sm text-muted-foreground">
-                                Carregando dependentes...
+                                Carregando...
                               </div>
                             ) : (
                               <>
-                                <CommandEmpty>Nenhum dependente encontrado.</CommandEmpty>
-                                <CommandGroup>
-                                  <CommandItem
-                                    value="titular"
-                                    onSelect={() => {
-                                      setSelectedDependente(null);
-                                      setDepSearchOpen(false);
-                                    }}
-                                  >
-                                    <Check
-                                      className={cn(
-                                        "mr-2 h-4 w-4",
-                                        !selectedDependente ? "opacity-100" : "opacity-0"
-                                      )}
-                                    />
-                                    Titular é o falecido
-                                  </CommandItem>
-                                  {dependentes.map((dep: any) => (
-                                    <CommandItem
-                                      key={dep.id}
-                                      value={dep.nome}
-                                      onSelect={() => {
-                                        setSelectedDependente(dep);
-                                        setDepSearchOpen(false);
-                                      }}
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          selectedDependente?.id === dep.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                      />
-                                      <div className="flex flex-col">
-                                        <span>{dep.nome}</span>
-                                        <span className="text-xs text-muted-foreground">{dep.parentesco}</span>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
+                                <CommandEmpty>Nenhum registro encontrado.</CommandEmpty>
+                                {associados.length > 0 && (
+                                  <CommandGroup heading="Titulares">
+                                    {associados.map((assoc: any) => (
+                                      <CommandItem
+                                        key={`a-${assoc.id}`}
+                                        value={`titular ${assoc.nome} ${assoc.codigo} ${assoc.cpf || ""}`}
+                                        onSelect={() => {
+                                          setSelectedAssociado(assoc);
+                                          setSelectedDependente(null);
+                                          setSearchOpen(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", selectedAssociado?.id === assoc.id && !selectedDependente ? "opacity-100" : "opacity-0")} />
+                                        <div className="flex flex-col">
+                                          <span>{assoc.nome} <span className="text-xs text-muted-foreground">(Titular)</span></span>
+                                          <span className="text-xs text-muted-foreground">
+                                            Código: {assoc.codigo} | CPF: {assoc.cpf || 'N/A'} | Plano: {assoc.planos?.nome || 'N/A'}
+                                          </span>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
+                                {dependentes.length > 0 && (
+                                  <CommandGroup heading="Dependentes">
+                                    {dependentes.map((dep: any) => (
+                                      <CommandItem
+                                        key={`d-${dep.id}`}
+                                        value={`dependente ${dep.nome} ${dep.cpf || ""} ${dep.associados?.nome || ""} ${dep.associados?.codigo || ""}`}
+                                        onSelect={() => {
+                                          setSelectedAssociado(dep.associados || null);
+                                          setSelectedDependente(dep);
+                                          setSearchOpen(false);
+                                        }}
+                                      >
+                                        <Check className={cn("mr-2 h-4 w-4", selectedDependente?.id === dep.id ? "opacity-100" : "opacity-0")} />
+                                        <div className="flex flex-col">
+                                          <span>{dep.nome} <span className="text-xs text-muted-foreground">({dep.parentesco || 'Dependente'})</span></span>
+                                          <span className="text-xs text-muted-foreground">
+                                            Titular: {dep.associados?.nome || 'N/A'} | Plano: {dep.associados?.planos?.nome || 'N/A'}
+                                          </span>
+                                        </div>
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                )}
                               </>
                             )}
                           </CommandList>
                         </Command>
                       </PopoverContent>
                     </Popover>
-                  </div>
-                )}
-              </div>
-            )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="falecido_nome">Nome Completo</Label>
-                {atendimentoTipo === "Plano" ? (
-                  <>
-                    <Input
-                      value={selectedDependente?.nome || selectedAssociado?.nome || ""}
-                      placeholder="Selecione um associado ou dependente na busca acima"
-                      readOnly
-                      disabled
-                    />
                     <input
                       type="hidden"
                       name="falecido_nome"
