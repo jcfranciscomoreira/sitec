@@ -523,8 +523,8 @@ function RecebimentosReport({ mensalidades, assocNome, cobradores, dateFrom, dat
   );
 }
 
-function FinanceiroReport({ contas, centroNome, dateFrom, dateTo, setDateFrom, setDateTo, loading }: {
-  contas: Conta[]; centroNome: (id: string | null) => string;
+function FinanceiroReport({ contas, dateFrom, dateTo, setDateFrom, setDateTo, loading }: {
+  contas: Conta[];
   dateFrom: string; dateTo: string; setDateFrom: (s: string) => void; setDateTo: (s: string) => void;
   loading: boolean;
 }) {
@@ -542,9 +542,9 @@ function FinanceiroReport({ contas, centroNome, dateFrom, dateTo, setDateFrom, s
   const receitas = filtered.filter((c) => c.tipo === "receita").reduce((s, c) => s + Number(c.valor), 0);
   const despesas = filtered.filter((c) => c.tipo === "despesa").reduce((s, c) => s + Number(c.valor), 0);
 
-  const headers = ["Tipo", "Descrição", "Centro de Custo", "Vencimento", "Pagamento", "Valor", "Status"];
+  const headers = ["Tipo", "Descrição", "Vencimento", "Pagamento", "Valor", "Status"];
   const rows = filtered.map((c) => [
-    c.tipo, c.descricao, centroNome(c.centro_custo_id),
+    c.tipo, c.descricao,
     fmtDate(c.vencimento), c.data_pagamento ? fmtDate(c.data_pagamento) : "—",
     brl(c.valor), c.status,
   ]);
