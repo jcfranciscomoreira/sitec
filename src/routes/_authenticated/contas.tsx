@@ -138,7 +138,6 @@ function ContasPage() {
       <tr>
         <td>${c.tipo === "entrada" ? "Entrada" : "Saída"}</td>
         <td>${c.descricao}</td>
-        <td>${c.centros_custo?.nome ?? "—"}</td>
         <td>${c.fornecedor_cliente ?? "—"}</td>
         <td>${fmtDate(c.vencimento)}</td>
         <td>${c.data_pagamento ? fmtDate(c.data_pagamento) : "—"}</td>
