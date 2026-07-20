@@ -194,7 +194,6 @@ export function AtendimentoFormDialog() {
   const handleSelectAssociado = (assoc: any) => {
     setSelectedAssociado(assoc);
     setSelectedDependente(null);
-    setSearchOpen(false);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
