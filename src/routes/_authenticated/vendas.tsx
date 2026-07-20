@@ -568,7 +568,7 @@ function VendasPage() {
       title="Mapa de Vendas"
       subtitle="Toque no mapa para registrar um ponto"
       actions={
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {!online && (
             <Badge variant="secondary" className="gap-1">
               <WifiOff className="h-3 w-3" /> Offline
@@ -576,16 +576,19 @@ function VendasPage() {
           )}
           {pendingCount > 0 && (
             <Button size="sm" variant="outline" onClick={flushQueue} disabled={!online}>
-              <RefreshCw className="mr-2 h-4 w-4" /> Sincronizar ({pendingCount})
+              <RefreshCw className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Sincronizar </span>
+              ({pendingCount})
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={centerOnMe}>
-            <Crosshair className="mr-2 h-4 w-4" /> Minha localização
+            <Crosshair className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Minha localização</span>
           </Button>
         </div>
       }
     >
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_320px]">
         <Card className="overflow-hidden">
           <div className="relative">
             {loading && (
@@ -593,7 +596,7 @@ function VendasPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             )}
-            <div ref={mapDivRef} className="h-[60vh] w-full lg:h-[75vh]" />
+            <div ref={mapDivRef} className="h-[55vh] min-h-[320px] w-full lg:h-[75vh]" />
           </div>
         </Card>
 
