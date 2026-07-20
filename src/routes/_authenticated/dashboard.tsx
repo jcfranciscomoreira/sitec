@@ -263,21 +263,24 @@ function FilialDetalhesDialog({
     queryKey: ["filial-detalhes", filial?.id, inicio, fimExclusivo],
     queryFn: async () => {
       const fid = filial!.id;
+      const isMatriz = fid === "__matriz__";
+      const mensQ = supabase
+        .from("mensalidades")
+        .select("valor, data_pagamento, competencia, associados!inner(nome, filial_id)")
+        .eq("status", "pago")
+        .gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo);
+      const entradasQ = supabase
+        .from("contas_financeiras")
+        .select("descricao, valor, data_pagamento, vencimento")
+        .eq("tipo", "entrada").eq("status", "pago");
+      const saidasQ = supabase
+        .from("contas_financeiras")
+        .select("descricao, valor, data_pagamento, vencimento")
+        .eq("tipo", "saida").eq("status", "pago");
       const [mens, entradas, saidas] = await Promise.all([
-        supabase
-          .from("mensalidades")
-          .select("valor, data_pagamento, competencia, associados!inner(nome, filial_id)")
-          .eq("status", "pago")
-          .gte("data_pagamento", inicio).lt("data_pagamento", fimExclusivo)
-          .eq("associados.filial_id", fid),
-        supabase
-          .from("contas_financeiras")
-          .select("descricao, valor, data_pagamento, vencimento")
-          .eq("tipo", "entrada").eq("status", "pago").eq("filial_id", fid),
-        supabase
-          .from("contas_financeiras")
-          .select("descricao, valor, data_pagamento, vencimento")
-          .eq("tipo", "saida").eq("status", "pago").eq("filial_id", fid),
+        isMatriz ? mensQ.is("associados.filial_id", null) : mensQ.eq("associados.filial_id", fid),
+        isMatriz ? entradasQ.is("filial_id", null) : entradasQ.eq("filial_id", fid),
+        isMatriz ? saidasQ.is("filial_id", null) : saidasQ.eq("filial_id", fid),
       ]);
       const inRange = (r: any) => {
         const d = r.data_pagamento ?? r.vencimento;
