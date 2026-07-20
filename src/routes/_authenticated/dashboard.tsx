@@ -207,7 +207,7 @@ function Dashboard() {
 
       {(data?.porFilial?.length ?? 0) > 0 && (
         <div className="mt-8">
-          <h2 className="mb-3 font-serif text-lg text-foreground">Receitas e despesas por filial</h2>
+          <h2 className="mb-3 font-serif text-lg text-foreground">Receitas e despesas por escritório:</h2>
           <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
             {data!.porFilial.map((f) => (
               <Card key={f.id} className="border-border/60 shadow-soft">
