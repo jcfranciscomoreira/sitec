@@ -55,3 +55,16 @@ export function renderEmpresaHeaderHTML(h: EmpresaHeader): string {
 export async function getEmpresaHeaderHTML(): Promise<string> {
   return renderEmpresaHeaderHTML(await loadEmpresaHeader());
 }
+
+/**
+ * Legacy support for older imports
+ */
+export function printHeader() {
+  return `<div id="company-header-placeholder">Carregando cabeçalho...</div>
+  <script>
+    (async () => {
+      // In a real print scenario, this would be pre-rendered server-side or 
+      // the window would wait for this to load.
+    })();
+  </script>`;
+}
