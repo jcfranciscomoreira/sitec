@@ -56,7 +56,7 @@ export function AtendimentoFormDialog() {
     getEmpresaHeaderHTML().then(setHeaderHTML);
   }, []);
 
-  const { data: associados = [] } = useQuery({
+  const { data: associados = [], isLoading: isLoadingAssociados } = useQuery({
     queryKey: ['associados-search'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -66,10 +66,10 @@ export function AtendimentoFormDialog() {
       if (error) throw error;
       return data;
     },
-    enabled: atendimentoTipo === "Plano"
+    enabled: open && atendimentoTipo === "Plano"
   });
 
-  const { data: dependentes = [] } = useQuery({
+  const { data: dependentes = [], isLoading: isLoadingDependentes } = useQuery({
     queryKey: ['dependentes-search', selectedAssociado?.id],
     queryFn: async () => {
       if (!selectedAssociado?.id) return [];
