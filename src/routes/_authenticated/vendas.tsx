@@ -566,9 +566,9 @@ function VendasPage() {
   return (
     <AppShell
       title="Mapa de Vendas"
-      subtitle="Toque no mapa para registrar um ponto"
+      subtitle="Verifique e refine o layout do mapa de vendas no iOS e Android para garantir que botões, ações e conteúdo não sejam cortados em diferentes tamanhos de tela."
       actions={
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
           {!online && (
             <Badge variant="secondary" className="gap-1">
               <WifiOff className="h-3 w-3" /> Offline
@@ -588,7 +588,7 @@ function VendasPage() {
         </div>
       }
     >
-      <div className="grid gap-3 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-3 lg:grid-cols-[1fr_320px] pb-10 sm:pb-0">
         <Card className="overflow-hidden">
           <div className="relative">
             {loading && (
@@ -596,7 +596,7 @@ function VendasPage() {
                 <Loader2 className="h-6 w-6 animate-spin" />
               </div>
             )}
-            <div ref={mapDivRef} className="h-[55vh] min-h-[320px] w-full lg:h-[75vh]" />
+            <div ref={mapDivRef} className="h-[50dvh] min-h-[300px] w-full lg:h-[75dvh]" />
           </div>
         </Card>
 
@@ -648,7 +648,7 @@ function VendasPage() {
                 </span>
               ))}
             </div>
-            <div className="max-h-[55vh] space-y-2 overflow-y-auto">
+            <div className="max-h-[40vh] sm:max-h-[55vh] space-y-2 overflow-y-auto pr-1">
               {filteredPins.map((p) => {
                 const st = STATUS_OPTIONS.find((s) => s.value === p.status) ?? STATUS_OPTIONS[0];
                 const plano = planos.find((pl) => pl.id === p.plano_id);
@@ -727,7 +727,7 @@ function PinViewDialog({
   const assoc = associados.find((a) => a.id === pin.associado_id);
   const Row = ({ label, value }: { label: string; value: React.ReactNode }) =>
     value ? (
-      <div className="grid grid-cols-[120px_1fr] gap-2 text-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-1 sm:gap-2 text-sm border-b pb-2 sm:border-0 sm:pb-0">
         <span className="text-muted-foreground">{label}</span>
         <span className="break-words">{value}</span>
       </div>
