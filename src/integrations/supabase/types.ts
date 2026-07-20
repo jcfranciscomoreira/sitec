@@ -778,6 +778,306 @@ export type Database = {
         }
         Relationships: []
       }
+      servico_checklist: {
+        Row: {
+          concluido: boolean | null
+          id: string
+          item: string
+          servico_id: string | null
+        }
+        Insert: {
+          concluido?: boolean | null
+          id?: string
+          item: string
+          servico_id?: string | null
+        }
+        Update: {
+          concluido?: boolean | null
+          id?: string
+          item?: string
+          servico_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servico_checklist_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos_funerarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      servico_financeiro: {
+        Row: {
+          acrescimo: number | null
+          desconto: number | null
+          id: string
+          servico_id: string | null
+          status: string | null
+          valor_final: number | null
+          valor_total: number | null
+        }
+        Insert: {
+          acrescimo?: number | null
+          desconto?: number | null
+          id?: string
+          servico_id?: string | null
+          status?: string | null
+          valor_final?: number | null
+          valor_total?: number | null
+        }
+        Update: {
+          acrescimo?: number | null
+          desconto?: number | null
+          id?: string
+          servico_id?: string | null
+          status?: string | null
+          valor_final?: number | null
+          valor_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servico_financeiro_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos_funerarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      servico_timeline: {
+        Row: {
+          created_at: string | null
+          evento: string
+          id: string
+          servico_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          evento: string
+          id?: string
+          servico_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          evento?: string
+          id?: string
+          servico_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servico_timeline_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos_funerarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      servicos_funerarios: {
+        Row: {
+          agente_funerario: string | null
+          associado_id: string | null
+          auxiliar: string | null
+          cartorio: string | null
+          causa_morte: string | null
+          cerimonialista: string | null
+          cidade_obito: string | null
+          combustivel: string | null
+          created_at: string | null
+          cremacao: boolean | null
+          data_abertura: string | null
+          data_obito: string | null
+          falecido_cpf: string | null
+          falecido_data_nascimento: string | null
+          falecido_endereco: string | null
+          falecido_estado_civil: string | null
+          falecido_nacionalidade: string | null
+          falecido_naturalidade: string | null
+          falecido_nome: string
+          falecido_nome_mae: string | null
+          falecido_nome_pai: string | null
+          falecido_profissao: string | null
+          falecido_rg: string | null
+          falecido_sexo: string | null
+          filial_id: string | null
+          hora_obito: string | null
+          hospital_obito: string | null
+          id: string
+          km_retorno: number | null
+          km_saida: number | null
+          local_obito: string | null
+          medico_responsavel: string | null
+          motorista: string | null
+          numero_do: string | null
+          numero_servico: number
+          observacoes: string | null
+          responsavel_cpf: string | null
+          responsavel_email: string | null
+          responsavel_endereco: string | null
+          responsavel_nome: string | null
+          responsavel_parentesco: string | null
+          responsavel_rg: string | null
+          responsavel_telefone: string | null
+          responsavel_whatsapp: string | null
+          sepultamento_cemiterio: string | null
+          sepultamento_cidade: string | null
+          sepultamento_horario: string | null
+          sepultamento_jazigo: string | null
+          sepultamento_lote: string | null
+          sepultamento_quadra: string | null
+          status: Database["public"]["Enums"]["servico_status"] | null
+          tanatopraxista: string | null
+          tipo: Database["public"]["Enums"]["servico_tipo"]
+          veiculo_placa: string | null
+          velorio_capela: string | null
+          velorio_cidade: string | null
+          velorio_endereco: string | null
+          velorio_inicio: string | null
+          velorio_local: string | null
+          velorio_termino: string | null
+        }
+        Insert: {
+          agente_funerario?: string | null
+          associado_id?: string | null
+          auxiliar?: string | null
+          cartorio?: string | null
+          causa_morte?: string | null
+          cerimonialista?: string | null
+          cidade_obito?: string | null
+          combustivel?: string | null
+          created_at?: string | null
+          cremacao?: boolean | null
+          data_abertura?: string | null
+          data_obito?: string | null
+          falecido_cpf?: string | null
+          falecido_data_nascimento?: string | null
+          falecido_endereco?: string | null
+          falecido_estado_civil?: string | null
+          falecido_nacionalidade?: string | null
+          falecido_naturalidade?: string | null
+          falecido_nome: string
+          falecido_nome_mae?: string | null
+          falecido_nome_pai?: string | null
+          falecido_profissao?: string | null
+          falecido_rg?: string | null
+          falecido_sexo?: string | null
+          filial_id?: string | null
+          hora_obito?: string | null
+          hospital_obito?: string | null
+          id?: string
+          km_retorno?: number | null
+          km_saida?: number | null
+          local_obito?: string | null
+          medico_responsavel?: string | null
+          motorista?: string | null
+          numero_do?: string | null
+          numero_servico?: number
+          observacoes?: string | null
+          responsavel_cpf?: string | null
+          responsavel_email?: string | null
+          responsavel_endereco?: string | null
+          responsavel_nome?: string | null
+          responsavel_parentesco?: string | null
+          responsavel_rg?: string | null
+          responsavel_telefone?: string | null
+          responsavel_whatsapp?: string | null
+          sepultamento_cemiterio?: string | null
+          sepultamento_cidade?: string | null
+          sepultamento_horario?: string | null
+          sepultamento_jazigo?: string | null
+          sepultamento_lote?: string | null
+          sepultamento_quadra?: string | null
+          status?: Database["public"]["Enums"]["servico_status"] | null
+          tanatopraxista?: string | null
+          tipo: Database["public"]["Enums"]["servico_tipo"]
+          veiculo_placa?: string | null
+          velorio_capela?: string | null
+          velorio_cidade?: string | null
+          velorio_endereco?: string | null
+          velorio_inicio?: string | null
+          velorio_local?: string | null
+          velorio_termino?: string | null
+        }
+        Update: {
+          agente_funerario?: string | null
+          associado_id?: string | null
+          auxiliar?: string | null
+          cartorio?: string | null
+          causa_morte?: string | null
+          cerimonialista?: string | null
+          cidade_obito?: string | null
+          combustivel?: string | null
+          created_at?: string | null
+          cremacao?: boolean | null
+          data_abertura?: string | null
+          data_obito?: string | null
+          falecido_cpf?: string | null
+          falecido_data_nascimento?: string | null
+          falecido_endereco?: string | null
+          falecido_estado_civil?: string | null
+          falecido_nacionalidade?: string | null
+          falecido_naturalidade?: string | null
+          falecido_nome?: string
+          falecido_nome_mae?: string | null
+          falecido_nome_pai?: string | null
+          falecido_profissao?: string | null
+          falecido_rg?: string | null
+          falecido_sexo?: string | null
+          filial_id?: string | null
+          hora_obito?: string | null
+          hospital_obito?: string | null
+          id?: string
+          km_retorno?: number | null
+          km_saida?: number | null
+          local_obito?: string | null
+          medico_responsavel?: string | null
+          motorista?: string | null
+          numero_do?: string | null
+          numero_servico?: number
+          observacoes?: string | null
+          responsavel_cpf?: string | null
+          responsavel_email?: string | null
+          responsavel_endereco?: string | null
+          responsavel_nome?: string | null
+          responsavel_parentesco?: string | null
+          responsavel_rg?: string | null
+          responsavel_telefone?: string | null
+          responsavel_whatsapp?: string | null
+          sepultamento_cemiterio?: string | null
+          sepultamento_cidade?: string | null
+          sepultamento_horario?: string | null
+          sepultamento_jazigo?: string | null
+          sepultamento_lote?: string | null
+          sepultamento_quadra?: string | null
+          status?: Database["public"]["Enums"]["servico_status"] | null
+          tanatopraxista?: string | null
+          tipo?: Database["public"]["Enums"]["servico_tipo"]
+          veiculo_placa?: string | null
+          velorio_capela?: string | null
+          velorio_cidade?: string | null
+          velorio_endereco?: string | null
+          velorio_inicio?: string | null
+          velorio_local?: string | null
+          velorio_termino?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servicos_funerarios_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "servicos_funerarios_filial_id_fkey"
+            columns: ["filial_id"]
+            isOneToOne: false
+            referencedRelation: "filiais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           allowed: boolean
@@ -943,6 +1243,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "operador" | "vendedor" | "cobrador"
+      servico_status:
+        | "Em Atendimento"
+        | "Preparação"
+        | "Velório"
+        | "Sepultamento"
+        | "Finalizado"
+        | "Cancelado"
+      servico_tipo: "Plano" | "Particular" | "Convênio" | "Prefeitura"
       status_associado: "ativo" | "inativo" | "suspenso"
       status_conta: "pendente" | "pago" | "atrasado" | "cancelado"
       status_mensalidade: "pendente" | "pago" | "atrasado" | "cancelado"
@@ -1075,6 +1383,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "operador", "vendedor", "cobrador"],
+      servico_status: [
+        "Em Atendimento",
+        "Preparação",
+        "Velório",
+        "Sepultamento",
+        "Finalizado",
+        "Cancelado",
+      ],
+      servico_tipo: ["Plano", "Particular", "Convênio", "Prefeitura"],
       status_associado: ["ativo", "inativo", "suspenso"],
       status_conta: ["pendente", "pago", "atrasado", "cancelado"],
       status_mensalidade: ["pendente", "pago", "atrasado", "cancelado"],
