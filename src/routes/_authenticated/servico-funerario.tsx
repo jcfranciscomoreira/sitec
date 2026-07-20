@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { AtendimentoFormDialog } from '@/components/servico-funerario/AtendimentoFormDialog';
+import { ResponsiveTable } from '@/components/ResponsiveTable';
 
 export const Route = createFileRoute('/_authenticated/servico-funerario')({
   component: ServicoFunerarioPage,
@@ -127,15 +129,66 @@ function StatCard({ title, value, icon: Icon, color }: any) {
 }
 
 function AtendimentosTab() {
+  const { data: atendimentos, isLoading } = useQuery({
+    queryKey: ['servicos-funerarios-list'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('servicos_funerarios')
+        .select('*')
+        .order('created_at', { ascending: false });
+      return data || [];
+    }
+  });
+
   return (
     <div className="space-y-4 mt-4">
       <div className="flex justify-between items-center">
-         <h2 className="text-xl font-semibold">Gestão de Atendimentos</h2>
-         {/* Button to open creation dialog would go here */}
+         <h2 className="text-xl font-semibold">Atendimentos Registrados</h2>
+         <AtendimentoFormDialog />
       </div>
-      <div className="p-8 text-center border-2 border-dashed rounded-lg bg-muted/10">
-        <p className="text-muted-foreground">Clique no botão para iniciar um novo atendimento funerário.</p>
-      </div>
+      
+      {isLoading ? (
+        <div className="p-8 text-center italic text-muted-foreground">Carregando atendimentos...</div>
+      ) : atendimentos?.length === 0 ? (
+        <div className="p-8 text-center border-2 border-dashed rounded-lg bg-muted/10">
+          <p className="text-muted-foreground">Nenhum atendimento registrado ainda.</p>
+        </div>
+      ) : (
+        <ResponsiveTable>
+          <thead>
+            <tr>
+              <th>Nº</th>
+              <th>Falecido</th>
+              <th>Data Óbito</th>
+              <th>Tipo</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {atendimentos?.map((item) => (
+              <tr key={item.id}>
+                <td className="font-mono">#{item.numero_servico}</td>
+                <td className="font-medium">{item.falecido_nome}</td>
+                <td>{item.data_obito ? format(new Date(item.data_obito), 'dd/MM/yyyy') : '-'}</td>
+                <td><Badge variant="outline">{item.tipo}</Badge></td>
+                <td>
+                  <Badge className={
+                    item.status === 'Finalizado' ? 'bg-green-100 text-green-800' :
+                    item.status === 'Cancelado' ? 'bg-red-100 text-red-800' :
+                    'bg-blue-100 text-blue-800'
+                  }>
+                    {item.status}
+                  </Badge>
+                </td>
+                <td>
+                  <Button variant="ghost" size="sm">Ver OS</Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </ResponsiveTable>
+      )}
     </div>
   );
 }
