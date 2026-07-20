@@ -14,6 +14,7 @@ import { IntegracaoBancariaConfig } from "@/components/IntegracaoBancariaConfig"
 import { CarteirinhaConfigTab } from "@/components/CarteirinhaConfig";
 import { ContratoConfigTab } from "@/components/ContratoConfig";
 import { FiliaisConfig } from "@/components/FiliaisConfig";
+import { MapsConfig } from "@/components/MapsConfig";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
@@ -33,6 +34,7 @@ function ConfiguracoesPage() {
           <TabsTrigger value="carteirinha">Carteirinha</TabsTrigger>
           <TabsTrigger value="contrato">Contrato padrão</TabsTrigger>
           <TabsTrigger value="integracao">Integração bancária</TabsTrigger>
+          <TabsTrigger value="maps">Google Maps</TabsTrigger>
         </TabsList>
         <TabsContent value="identidade" className="mt-4">
           <IdentidadeVisual />
@@ -48,6 +50,9 @@ function ConfiguracoesPage() {
         </TabsContent>
         <TabsContent value="integracao" className="mt-4">
           <IntegracaoBancariaConfig />
+        </TabsContent>
+        <TabsContent value="maps" className="mt-4">
+          <MapsConfig />
         </TabsContent>
       </Tabs>
     </AppShell>
