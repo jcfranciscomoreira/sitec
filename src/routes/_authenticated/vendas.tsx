@@ -566,7 +566,7 @@ function VendasPage() {
   return (
     <AppShell
       title="Mapa de Vendas"
-      subtitle="Verifique e refine o layout do mapa de vendas no iOS e Android para garantir que botões, ações e conteúdo não sejam cortados em diferentes tamanhos de tela."
+      subtitle="Mapeie prospects, associados e concorrência no território."
       actions={
         <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
           {!online && (
