@@ -107,9 +107,12 @@ function ServicoFunerarioPage() {
         <TabsContent value="financeiro"><div className="p-8 text-center border rounded-lg bg-muted/20">Controle Financeiro de Serviços Particulares em desenvolvimento</div></TabsContent>
         <TabsContent value="relatorios"><div className="p-8 text-center border rounded-lg bg-muted/20">Relatórios de Atendimento em desenvolvimento</div></TabsContent>
       </Tabs>
-    </div>
+        </div>
+      )}
+    </AppShell>
   );
 }
+
 
 function StatCard({ title, value, icon: Icon, color }: any) {
   return (
