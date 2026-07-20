@@ -48,6 +48,7 @@ export function AtendimentoFormDialog() {
   const [depSearchOpen, setDepSearchOpen] = useState(false);
   const [selectedItens, setSelectedItens] = useState<string[]>([]);
   const [desconto, setDesconto] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
   
   const queryClient = useQueryClient();
   const [headerHTML, setHeaderHTML] = useState("");
@@ -170,6 +171,7 @@ export function AtendimentoFormDialog() {
     setSelectedDependente(null);
     setSelectedItens([]);
     setDesconto(0);
+    setSearchTerm("");
   };
 
   const handleSelectAssociado = (assoc: any) => {
@@ -360,6 +362,8 @@ export function AtendimentoFormDialog() {
                             placeholder="Buscar por nome, código ou CPF..." 
                             className="pointer-events-auto"
                             onKeyDown={(e) => e.stopPropagation()}
+                            value={searchTerm}
+                            onValueChange={setSearchTerm}
                           />
                           <CommandList className="pointer-events-auto">
                             <CommandEmpty>
@@ -379,11 +383,21 @@ export function AtendimentoFormDialog() {
                               </div>
                             )}
 
-                            {!isLoadingAssociados && !isLoadingDependentes && (
+                            {!isLoadingAssociados && !isLoadingDependentes && searchTerm.length >= 2 && (
                               <>
-                                {associados.length > 0 && (
+                                {associados.filter((a: any) => 
+                                  a.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                  a.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                  a.cpf?.includes(searchTerm)
+                                ).length > 0 && (
                                   <CommandGroup heading="Titulares">
-                                    {associados.map((assoc: any) => (
+                                    {associados
+                                      .filter((a: any) => 
+                                        a.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                        a.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                        a.cpf?.includes(searchTerm)
+                                      )
+                                      .map((assoc: any) => (
                                       <CommandItem
                                         key={`a-${assoc.id}`}
                                         value={`titular ${assoc.nome} ${assoc.codigo} ${assoc.cpf || ""}`}
@@ -405,9 +419,19 @@ export function AtendimentoFormDialog() {
                                     ))}
                                   </CommandGroup>
                                 )}
-                                {dependentes.length > 0 && (
+                                {dependentes.filter((d: any) => 
+                                  d.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                  d.cpf?.includes(searchTerm) ||
+                                  d.associados?.nome.toLowerCase().includes(searchTerm.toLowerCase())
+                                ).length > 0 && (
                                   <CommandGroup heading="Dependentes">
-                                    {dependentes.map((dep: any) => (
+                                    {dependentes
+                                      .filter((d: any) => 
+                                        d.nome.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                        d.cpf?.includes(searchTerm) ||
+                                        d.associados?.nome.toLowerCase().includes(searchTerm.toLowerCase())
+                                      )
+                                      .map((dep: any) => (
                                       <CommandItem
                                         key={`d-${dep.id}`}
                                         value={`dependente ${dep.nome} ${dep.cpf || ""} ${dep.associados?.nome || ""} ${dep.associados?.codigo || ""}`}
