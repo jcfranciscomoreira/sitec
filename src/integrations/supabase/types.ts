@@ -220,6 +220,8 @@ export type Database = {
           contrato_template: string | null
           created_at: string
           endereco: string | null
+          google_maps_browser_key: string | null
+          google_maps_tracking_id: string | null
           id: number
           logo_url: string | null
           nome_sistema: string
@@ -233,6 +235,8 @@ export type Database = {
           contrato_template?: string | null
           created_at?: string
           endereco?: string | null
+          google_maps_browser_key?: string | null
+          google_maps_tracking_id?: string | null
           id?: number
           logo_url?: string | null
           nome_sistema?: string
@@ -246,6 +250,8 @@ export type Database = {
           contrato_template?: string | null
           created_at?: string
           endereco?: string | null
+          google_maps_browser_key?: string | null
+          google_maps_tracking_id?: string | null
           id?: number
           logo_url?: string | null
           nome_sistema?: string
