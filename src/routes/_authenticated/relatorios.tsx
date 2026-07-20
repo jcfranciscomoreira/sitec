@@ -41,9 +41,7 @@ type Mensalidade = {
 type Conta = {
   id: string; tipo: string; descricao: string; valor: number;
   vencimento: string; data_pagamento: string | null; status: string;
-  centro_custo_id: string | null;
 };
-type Centro = { id: string; nome: string };
 type Cobrador = { id: string; nome: string };
 type Filial = { id: string; nome: string };
 
