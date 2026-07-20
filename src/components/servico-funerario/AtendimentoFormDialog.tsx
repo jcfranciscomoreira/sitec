@@ -346,17 +346,34 @@ export function AtendimentoFormDialog() {
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[350px] p-0" align="start">
-                        <Command>
+                      <PopoverContent 
+                        className="w-[--radix-popover-trigger-width] min-w-[350px] p-0 pointer-events-auto" 
+                        align="start"
+                        side="bottom"
+                        onOpenAutoFocus={(e) => e.preventDefault()}
+                      >
+                        <Command className="pointer-events-auto">
                           <CommandInput placeholder="Buscar por nome, código ou CPF..." />
-                          <CommandList>
-                            {(isLoadingAssociados || isLoadingDependentes) ? (
+                          <CommandList className="pointer-events-auto">
+                            <CommandEmpty>
+                              {isLoadingAssociados || isLoadingDependentes ? (
+                                <div className="p-4 text-center text-sm text-muted-foreground animate-pulse">
+                                  Buscando registros...
+                                </div>
+                              ) : (
+                                "Nenhum registro encontrado."
+                              )}
+                            </CommandEmpty>
+                            
+                            {(isLoadingAssociados || isLoadingDependentes) && (
                               <div className="p-4 text-center text-sm text-muted-foreground">
+                                <span className="inline-block animate-spin mr-2">⏳</span>
                                 Carregando...
                               </div>
-                            ) : (
+                            )}
+
+                            {!isLoadingAssociados && !isLoadingDependentes && (
                               <>
-                                <CommandEmpty>Nenhum registro encontrado.</CommandEmpty>
                                 {associados.length > 0 && (
                                   <CommandGroup heading="Titulares">
                                     {associados.map((assoc: any) => (
@@ -368,6 +385,7 @@ export function AtendimentoFormDialog() {
                                           setSelectedDependente(null);
                                           setSearchOpen(false);
                                         }}
+                                        className="cursor-pointer"
                                       >
                                         <Check className={cn("mr-2 h-4 w-4", selectedAssociado?.id === assoc.id && !selectedDependente ? "opacity-100" : "opacity-0")} />
                                         <div className="flex flex-col">
@@ -391,6 +409,7 @@ export function AtendimentoFormDialog() {
                                           setSelectedDependente(dep);
                                           setSearchOpen(false);
                                         }}
+                                        className="cursor-pointer"
                                       >
                                         <Check className={cn("mr-2 h-4 w-4", selectedDependente?.id === dep.id ? "opacity-100" : "opacity-0")} />
                                         <div className="flex flex-col">
