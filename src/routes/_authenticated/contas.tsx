@@ -30,7 +30,6 @@ type Conta = {
   tipo: "entrada" | "saida";
   descricao: string;
   categoria: string | null;
-  centro_custo_id: string | null;
   filial_id: string | null;
   valor: number;
   data_emissao: string;
@@ -40,7 +39,6 @@ type Conta = {
   status: "pendente" | "pago" | "atrasado" | "cancelado";
   fornecedor_cliente: string | null;
   observacoes: string | null;
-  centros_custo?: { nome: string } | null;
 };
 
 function ContasPage() {
@@ -51,14 +49,6 @@ function ContasPage() {
   const [editing, setEditing] = useState<Conta | null>(null);
   const [payOpen, setPayOpen] = useState<Conta | null>(null);
 
-  const { data: centros = [] } = useQuery({
-    queryKey: ["centros_custo", "ativos"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("centros_custo").select("id, nome").eq("ativo", true).order("nome");
-      if (error) throw error;
-      return data as { id: string; nome: string }[];
-    },
-  });
 
   const { data: filiais = [] } = useQuery({
     queryKey: ["filiais-ativas"],
@@ -72,7 +62,7 @@ function ContasPage() {
   const { data: lista = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["contas", tipo, status],
     queryFn: async () => {
-      let q = supabase.from("contas_financeiras").select("*, centros_custo(nome)").order("vencimento", { ascending: false });
+      let q = supabase.from("contas_financeiras").select("*").order("vencimento", { ascending: false });
       if (tipo !== "todos") q = q.eq("tipo", tipo);
       if (status !== "todos") q = q.eq("status", status as any);
       const { data, error } = await q.limit(500);
@@ -148,7 +138,6 @@ function ContasPage() {
       <tr>
         <td>${c.tipo === "entrada" ? "Entrada" : "Saída"}</td>
         <td>${c.descricao}</td>
-        <td>${c.centros_custo?.nome ?? "—"}</td>
         <td>${c.fornecedor_cliente ?? "—"}</td>
         <td>${fmtDate(c.vencimento)}</td>
         <td>${c.data_pagamento ? fmtDate(c.data_pagamento) : "—"}</td>
@@ -170,7 +159,7 @@ function ContasPage() {
         <div><span>A pagar</span><b>${brl(totais.aPagar)}</b></div>
         <div><span>Saldo</span><b>${brl(totais.saldo)}</b></div>
       </div>
-      <table><thead><tr><th>Tipo</th><th>Descrição</th><th>Centro de custo</th><th>Cliente/Fornecedor</th><th>Vencimento</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead>
+      <table><thead><tr><th>Tipo</th><th>Descrição</th><th>Cliente/Fornecedor</th><th>Vencimento</th><th>Pagamento</th><th>Valor</th><th>Status</th></tr></thead>
       <tbody>${rows}</tbody></table>
       <script>window.print()</script></body></html>`);
     w.document.close();
@@ -191,13 +180,11 @@ function ContasPage() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   const fd = new FormData(e.currentTarget);
-                  const cc = String(fd.get("centro_custo_id") || "");
                   const fil = String(fd.get("filial_id") || "");
                   save.mutate({
                     tipo: fd.get("tipo") as "entrada" | "saida",
                     descricao: String(fd.get("descricao")),
                     categoria: String(fd.get("categoria") || "") || null,
-                    centro_custo_id: cc || null,
                     filial_id: fil && fil !== "matriz" ? fil : null,
                     valor: Number(fd.get("valor")),
                     data_emissao: String(fd.get("data_emissao")),
@@ -232,16 +219,6 @@ function ContasPage() {
                 </div>
                 <div className="space-y-2 md:col-span-2"><Label>Descrição</Label><Input name="descricao" required defaultValue={editing?.descricao ?? ""} /></div>
                 <div className="space-y-2"><Label>Categoria</Label><Input name="categoria" placeholder="Ex: Energia, Salários" defaultValue={editing?.categoria ?? ""} /></div>
-                <div className="space-y-2">
-                  <Label>Centro de custo</Label>
-                  <Select name="centro_custo_id" defaultValue={editing?.centro_custo_id ?? "none"}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">— Nenhum —</SelectItem>
-                      {centros.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div className="space-y-2">
                   <Label>Filial</Label>
                   <Select name="filial_id" defaultValue={editing?.filial_id ?? "matriz"}>
@@ -300,7 +277,7 @@ function ContasPage() {
               <TableRow>
                 <TableHead>Tipo</TableHead>
                 <TableHead>Descrição</TableHead>
-                <TableHead className="hidden sm:table-cell">Centro</TableHead>
+                
                 <TableHead>Vencimento</TableHead>
                 <TableHead>Valor</TableHead>
                 <TableHead>Status</TableHead>
@@ -328,7 +305,7 @@ function ContasPage() {
                     <div className="font-medium">{c.descricao}</div>
                     <div className="text-xs text-muted-foreground">{c.fornecedor_cliente || c.categoria || "—"}</div>
                   </TableCell>
-                  <TableCell className="hidden text-muted-foreground sm:table-cell">{c.centros_custo?.nome ?? "—"}</TableCell>
+                  
                   <TableCell>{fmtDate(c.vencimento)}</TableCell>
                   <TableCell className="font-medium">{brl(c.valor)}</TableCell>
                   <TableCell><StatusBadge status={c.status} /></TableCell>

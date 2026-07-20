@@ -41,9 +41,7 @@ type Mensalidade = {
 type Conta = {
   id: string; tipo: string; descricao: string; valor: number;
   vencimento: string; data_pagamento: string | null; status: string;
-  centro_custo_id: string | null;
 };
-type Centro = { id: string; nome: string };
 type Cobrador = { id: string; nome: string };
 type Filial = { id: string; nome: string };
 
@@ -54,7 +52,6 @@ function RelatoriosPage() {
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [mensalidades, setMensalidades] = useState<Mensalidade[]>([]);
   const [contas, setContas] = useState<Conta[]>([]);
-  const [centros, setCentros] = useState<Centro[]>([]);
   const [cobradores, setCobradores] = useState<Cobrador[]>([]);
   const [filiais, setFiliais] = useState<Filial[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,12 +64,11 @@ function RelatoriosPage() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const [a, p, m, c, cc, cb, fi] = await Promise.all([
+      const [a, p, m, c, cb, fi] = await Promise.all([
         supabase.from("associados").select("id, codigo, nome, cpf, telefone, cidade, estado, status, plano_id, data_adesao, data_nascimento, forma_pagamento, filial_id").order("nome"),
         supabase.from("planos").select("id, nome, valor_mensal").order("nome"),
         supabase.from("mensalidades").select("id, codigo, associado_id, competencia, vencimento, valor, status, data_pagamento, forma_pagamento, agente_recebimento"),
-        supabase.from("contas_financeiras").select("id, tipo, descricao, valor, vencimento, data_pagamento, status, centro_custo_id"),
-        supabase.from("centros_custo").select("id, nome"),
+        supabase.from("contas_financeiras").select("id, tipo, descricao, valor, vencimento, data_pagamento, status"),
         supabase.from("cobradores").select("id, nome").eq("ativo", true).order("nome"),
         supabase.from("filiais").select("id, nome").eq("ativo", true).order("nome"),
       ]);
@@ -80,7 +76,6 @@ function RelatoriosPage() {
       setPlanos((p.data ?? []) as Plano[]);
       setMensalidades((m.data ?? []) as Mensalidade[]);
       setContas((c.data ?? []) as Conta[]);
-      setCentros((cc.data ?? []) as Centro[]);
       setCobradores((cb.data ?? []) as Cobrador[]);
       setFiliais((fi.data ?? []) as Filial[]);
       setLoading(false);
@@ -89,7 +84,6 @@ function RelatoriosPage() {
 
   const planoNome = (id: string | null) => planos.find((p) => p.id === id)?.nome ?? "—";
   const assocNome = (id: string) => associados.find((a) => a.id === id)?.nome ?? "—";
-  const centroNome = (id: string | null) => centros.find((c) => c.id === id)?.nome ?? "—";
 
   const tabs: { key: string; label: string }[] = [
     { key: "associados", label: "Associados" },
@@ -131,7 +125,7 @@ function RelatoriosPage() {
           </TabsContent>
           <TabsContent value="financeiro" className="mt-4">
             <FinanceiroReport
-              contas={contas} centroNome={centroNome}
+              contas={contas}
               dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo}
               loading={loading}
             />
@@ -529,8 +523,8 @@ function RecebimentosReport({ mensalidades, assocNome, cobradores, dateFrom, dat
   );
 }
 
-function FinanceiroReport({ contas, centroNome, dateFrom, dateTo, setDateFrom, setDateTo, loading }: {
-  contas: Conta[]; centroNome: (id: string | null) => string;
+function FinanceiroReport({ contas, dateFrom, dateTo, setDateFrom, setDateTo, loading }: {
+  contas: Conta[];
   dateFrom: string; dateTo: string; setDateFrom: (s: string) => void; setDateTo: (s: string) => void;
   loading: boolean;
 }) {
@@ -548,9 +542,9 @@ function FinanceiroReport({ contas, centroNome, dateFrom, dateTo, setDateFrom, s
   const receitas = filtered.filter((c) => c.tipo === "receita").reduce((s, c) => s + Number(c.valor), 0);
   const despesas = filtered.filter((c) => c.tipo === "despesa").reduce((s, c) => s + Number(c.valor), 0);
 
-  const headers = ["Tipo", "Descrição", "Centro de Custo", "Vencimento", "Pagamento", "Valor", "Status"];
+  const headers = ["Tipo", "Descrição", "Vencimento", "Pagamento", "Valor", "Status"];
   const rows = filtered.map((c) => [
-    c.tipo, c.descricao, centroNome(c.centro_custo_id),
+    c.tipo, c.descricao,
     fmtDate(c.vencimento), c.data_pagamento ? fmtDate(c.data_pagamento) : "—",
     brl(c.valor), c.status,
   ]);
@@ -610,7 +604,6 @@ function FinanceiroReport({ contas, centroNome, dateFrom, dateTo, setDateFrom, s
               <TableRow key={c.id}>
                 <TableCell className="capitalize">{c.tipo}</TableCell>
                 <TableCell className="font-medium">{c.descricao}</TableCell>
-                <TableCell>{centroNome(c.centro_custo_id)}</TableCell>
                 <TableCell>{fmtDate(c.vencimento)}</TableCell>
                 <TableCell>{c.data_pagamento ? fmtDate(c.data_pagamento) : "—"}</TableCell>
                 <TableCell>{brl(c.valor)}</TableCell>

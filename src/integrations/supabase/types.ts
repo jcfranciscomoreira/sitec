@@ -150,33 +150,6 @@ export type Database = {
         }
         Relationships: []
       }
-      centros_custo: {
-        Row: {
-          ativo: boolean
-          created_at: string
-          descricao: string | null
-          id: string
-          nome: string
-          updated_at: string
-        }
-        Insert: {
-          ativo?: boolean
-          created_at?: string
-          descricao?: string | null
-          id?: string
-          nome: string
-          updated_at?: string
-        }
-        Update: {
-          ativo?: boolean
-          created_at?: string
-          descricao?: string | null
-          id?: string
-          nome?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       cobradores: {
         Row: {
           ativo: boolean
@@ -264,7 +237,6 @@ export type Database = {
       contas_financeiras: {
         Row: {
           categoria: string | null
-          centro_custo_id: string | null
           created_at: string
           created_by: string | null
           data_emissao: string
@@ -283,7 +255,6 @@ export type Database = {
         }
         Insert: {
           categoria?: string | null
-          centro_custo_id?: string | null
           created_at?: string
           created_by?: string | null
           data_emissao?: string
@@ -302,7 +273,6 @@ export type Database = {
         }
         Update: {
           categoria?: string | null
-          centro_custo_id?: string | null
           created_at?: string
           created_by?: string | null
           data_emissao?: string
@@ -320,13 +290,6 @@ export type Database = {
           vencimento?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "contas_financeiras_centro_custo_id_fkey"
-            columns: ["centro_custo_id"]
-            isOneToOne: false
-            referencedRelation: "centros_custo"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "contas_financeiras_filial_id_fkey"
             columns: ["filial_id"]

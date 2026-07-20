@@ -17,7 +17,6 @@ export const Route = createFileRoute("/_authenticated/empresa-financeiro")({
 type Row = {
   id: string; tipo: "entrada" | "saida"; descricao: string; valor: number;
   vencimento: string; data_pagamento: string | null; status: string;
-  centro_custo_id: string | null; centros_custo?: { nome: string } | null;
 };
 
 function PainelFinanceiroPage() {
@@ -26,7 +25,7 @@ function PainelFinanceiroPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("contas_financeiras")
-        .select("id, tipo, descricao, valor, vencimento, data_pagamento, status, centro_custo_id, centros_custo(nome)")
+        .select("id, tipo, descricao, valor, vencimento, data_pagamento, status")
         .order("vencimento", { ascending: false })
         .limit(1000);
       if (error) throw error;
@@ -58,14 +57,6 @@ function PainelFinanceiroPage() {
     const aPagar = saidas.filter((r) => r.status !== "pago" && r.status !== "cancelado").reduce((s, r) => s + Number(r.valor), 0);
     const atrasadas = rows.filter((r) => r.status !== "pago" && r.status !== "cancelado" && r.vencimento < hoje);
 
-    // por centro de custo (saídas)
-    const porCentro = new Map<string, number>();
-    for (const r of saidas) {
-      const k = r.centros_custo?.nome ?? "Sem centro";
-      porCentro.set(k, (porCentro.get(k) ?? 0) + Number(r.valor));
-    }
-    const centros = Array.from(porCentro.entries()).map(([nome, total]) => ({ nome, total })).sort((a, b) => b.total - a.total);
-    const maxCentro = Math.max(1, ...centros.map((c) => c.total));
 
     // série últimos 6 meses
     const serie: { mes: string; entradas: number; saidas: number }[] = [];
@@ -80,7 +71,7 @@ function PainelFinanceiroPage() {
     }
     const maxSerie = Math.max(1, ...serie.flatMap((s) => [s.entradas, s.saidas]));
 
-    return { recebidoMes, pagoMes, aReceber, aPagar, atrasadas, centros, maxCentro, serie, maxSerie, saldoMes: recebidoMes - pagoMes };
+    return { recebidoMes, pagoMes, aReceber, aPagar, atrasadas, serie, maxSerie, saldoMes: recebidoMes - pagoMes };
   }, [rows]);
 
   const planoStats = useMemo(() => {
@@ -181,23 +172,8 @@ function PainelFinanceiroPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <Card className="border-border/60 shadow-soft">
-          <CardHeader><CardTitle className="font-serif">Despesas por centro de custo</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
-            {stats.centros.length === 0 && <p className="text-sm text-muted-foreground">Sem dados.</p>}
-            {stats.centros.map((c) => (
-              <div key={c.nome}>
-                <div className="mb-1 flex items-center justify-between text-sm">
-                  <span>{c.nome}</span><span className="font-medium">{brl(c.total)}</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded bg-muted">
-                  <div className="h-full bg-gold" style={{ width: `${(c.total / stats.maxCentro) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      <div className="mt-6 grid gap-4">
+
 
         <Card className="border-border/60 shadow-soft">
           <CardHeader><CardTitle className="font-serif">Vencidas em aberto</CardTitle></CardHeader>
