@@ -62,7 +62,7 @@ function ContasPage() {
   const { data: lista = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["contas", tipo, status],
     queryFn: async () => {
-      let q = supabase.from("contas_financeiras").select("*, centros_custo(nome)").order("vencimento", { ascending: false });
+      let q = supabase.from("contas_financeiras").select("*").order("vencimento", { ascending: false });
       if (tipo !== "todos") q = q.eq("tipo", tipo);
       if (status !== "todos") q = q.eq("status", status as any);
       const { data, error } = await q.limit(500);
