@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Search, Check, ChevronsUpDown, Printer, Receipt } from "lucide-react";
+import { Plus, Check, ChevronsUpDown, Printer } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { brl } from "@/lib/format";
-import { printHeader } from "@/lib/print-header";
+import { getEmpresaHeaderHTML } from "@/lib/print-header";
 
 export function AtendimentoFormDialog() {
   const [open, setOpen] = useState(false);
@@ -109,7 +109,7 @@ export function AtendimentoFormDialog() {
           valor_total: totals.bruto,
           desconto: desconto,
           valor_final: totals.final
-        }])
+        } as any])
         .select()
         .single();
       
@@ -119,6 +119,7 @@ export function AtendimentoFormDialog() {
       if (selectedItens.length > 0) {
         const itensToInsert = selectedItens.map(id => {
           const item = catalogo.find(i => i.id === id);
+          if (!item) return null;
           return {
             servico_id: servico.id,
             item_id: id,
@@ -127,8 +128,9 @@ export function AtendimentoFormDialog() {
             preco_unitario: item.preco,
             subtotal: item.preco
           };
-        });
-        const { error: iError } = await supabase.from('servico_itens').insert(itensToInsert);
+        }).filter(Boolean);
+        
+        const { error: iError } = await supabase.from('servico_itens' as any).insert(itensToInsert as any);
         if (iError) throw iError;
       }
 
@@ -137,11 +139,11 @@ export function AtendimentoFormDialog() {
         const { error: fError } = await supabase.from('contas_financeiras').insert([{
           descricao: `Serviço Funerário #${servico.numero_servico} - ${formData.falecido_nome}`,
           valor: totals.final,
-          tipo: 'receita',
+          tipo: 'entrada',
           status: 'pendente',
-          data_vencimento: new Date().toISOString().split('T')[0],
+          vencimento: new Date().toISOString().split('T')[0],
           filial_id: selectedAssociado?.filial_id || null
-        }]);
+        } as any]);
         if (fError) throw fError;
       }
 
@@ -194,7 +196,8 @@ export function AtendimentoFormDialog() {
     );
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
+    const headerHTML = await getEmpresaHeaderHTML();
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
@@ -204,7 +207,7 @@ export function AtendimentoFormDialog() {
           <title>Atendimento Funerário</title>
           <style>
             body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+            .header { text-align: center; margin-bottom: 30px; }
             .section { margin-bottom: 20px; }
             .section-title { font-weight: bold; text-transform: uppercase; border-bottom: 1px solid #ccc; margin-bottom: 10px; }
             .grid { display: grid; grid-template-cols: 1fr 1fr; gap: 10px; }
@@ -216,8 +219,8 @@ export function AtendimentoFormDialog() {
         </head>
         <body>
           <div class="header">
-            ${printHeader()}
-            <h2>ORDEM DE ATENDIMENTO FUNERÁRIO</h2>
+            ${headerHTML}
+            <h2 style="margin-top: 20px; border-bottom: 2px solid #000; padding-bottom: 10px;">ORDEM DE ATENDIMENTO FUNERÁRIO</h2>
           </div>
 
           <div class="section">
@@ -267,7 +270,7 @@ export function AtendimentoFormDialog() {
         <DialogHeader>
           <div className="flex justify-between items-center pr-8">
             <DialogTitle>Cadastro de Serviço Funerário</DialogTitle>
-            <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
+            <Button variant="outline" type="button" size="sm" onClick={handlePrint} className="gap-2">
               <Printer size={16} /> Imprimir
             </Button>
           </div>
@@ -294,6 +297,7 @@ export function AtendimentoFormDialog() {
                     <Button
                       variant="outline"
                       role="combobox"
+                      type="button"
                       aria-expanded={searchOpen}
                       className="w-full justify-between"
                     >
@@ -340,6 +344,7 @@ export function AtendimentoFormDialog() {
                       <Button
                         variant="outline"
                         role="combobox"
+                        type="button"
                         aria-expanded={depSearchOpen}
                         className="w-full justify-between"
                       >
