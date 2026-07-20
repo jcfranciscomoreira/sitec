@@ -25,3 +25,13 @@ export function SkeletonTable() {
     </div>
   );
 }
+
+export function ResponsiveTable({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="w-full overflow-x-auto rounded-md border">
+      <table className="w-full text-sm">
+        {children}
+      </table>
+    </div>
+  );
+}
