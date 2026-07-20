@@ -49,14 +49,6 @@ function ContasPage() {
   const [editing, setEditing] = useState<Conta | null>(null);
   const [payOpen, setPayOpen] = useState<Conta | null>(null);
 
-  const { data: centros = [] } = useQuery({
-    queryKey: ["centros_custo", "ativos"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("centros_custo").select("id, nome").eq("ativo", true).order("nome");
-      if (error) throw error;
-      return data as { id: string; nome: string }[];
-    },
-  });
 
   const { data: filiais = [] } = useQuery({
     queryKey: ["filiais-ativas"],
