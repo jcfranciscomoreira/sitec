@@ -575,46 +575,6 @@ export function AtendimentoFormDialog() {
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h3 className="font-bold text-lg border-b pb-2">Itens do Catálogo (Serviços e Produtos)</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {catalogo.map((item: any) => (
-                <div key={item.id} className="flex items-center justify-between p-2 border rounded-md hover:bg-accent cursor-pointer" onClick={(e) => {
-                  e.preventDefault();
-                  toggleItem(item.id);
-                }}>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id={item.id} checked={selectedItens.includes(item.id)} />
-                    <div>
-                      <Label className="text-sm font-medium leading-none">{item.nome}</Label>
-                      <p className="text-xs text-muted-foreground">{item.tipo}</p>
-                    </div>
-                  </div>
-                  <span className="text-sm font-bold">{brl(item.preco)}</span>
-                </div>
-              ))}
-            </div>
-            
-            <div className="bg-muted p-4 rounded-lg space-y-2">
-              <div className="flex justify-between items-center">
-                <Label>Desconto (R$)</Label>
-                <Input 
-                  type="number" 
-                  className="w-32" 
-                  value={desconto} 
-                  onChange={(e) => setDesconto(Number(e.target.value))} 
-                />
-              </div>
-              <div className="flex justify-between text-lg font-bold">
-                <span>Total Bruto:</span>
-                <span>{brl(totals.bruto)}</span>
-              </div>
-              <div className="flex justify-between text-2xl font-black text-primary border-t pt-2">
-                <span>Total Final:</span>
-                <span>{brl(totals.final)}</span>
-              </div>
-            </div>
-          </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
