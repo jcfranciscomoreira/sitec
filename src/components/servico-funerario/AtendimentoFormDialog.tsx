@@ -55,67 +55,50 @@ export function AtendimentoFormDialog() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const { data: associados = [], isLoading: isLoadingAssociados, error: assocError } = useQuery({
-    queryKey: ['associados-search', debouncedSearch, page],
+  const { data: searchResults = { associados: [], dependentes: [] }, isLoading, error } = useQuery({
+    queryKey: ['atendimento-unified-search', debouncedSearch, page],
     queryFn: async ({ signal }) => {
-      if (debouncedSearch.length < 2) return [];
+      if (debouncedSearch.length < 2) return { associados: [], dependentes: [] };
 
       const term = `%${debouncedSearch}%`;
       const from = page * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      console.log('Searching associados with term:', debouncedSearch);
-
-      const { data, error } = await supabase
+      // Search associates
+      const { data: assocData, error: assocError } = await supabase
         .from('associados')
         .select('*, planos(nome, valor_mensal)')
-        .or(`nome.ilike."${term}",codigo.ilike."${term}",cpf.ilike."${term}"`)
+        .or(`nome.ilike.${term},codigo.ilike.${term},cpf.ilike.${term}`)
         .order('nome')
         .range(from, to)
         .abortSignal(signal);
 
-      if (error) {
-        console.error('Associados search error:', error);
-        if (error.code === 'ABORT') return [];
-        throw error;
-      }
-      console.log('Associados search result:', data);
-      return data || [];
-    },
-    enabled: open && atendimentoTipo === "Plano" && debouncedSearch.length >= 2,
-    staleTime: 0, // Disable stale time for debugging
-  });
+      if (assocError && assocError.code !== 'ABORT') throw assocError;
 
-  const { data: dependentes = [], isLoading: isLoadingDependentes, error: depError } = useQuery({
-    queryKey: ['dependentes-search-all', debouncedSearch, page],
-    queryFn: async ({ signal }) => {
-      if (debouncedSearch.length < 2) return [];
-
-      const term = `%${debouncedSearch}%`;
-      const from = page * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
-      console.log('Searching dependentes with term:', debouncedSearch);
-
-      const { data, error } = await supabase
+      // Search dependents
+      const { data: depData, error: depError } = await supabase
         .from('dependentes')
         .select('*, associados(id, nome, codigo, cpf, endereco, telefone, filial_id, planos(nome, valor_mensal))')
-        .or(`nome.ilike."${term}",cpf.ilike."${term}"`)
+        .or(`nome.ilike.${term},cpf.ilike.${term}`)
         .order('nome')
         .range(from, to)
         .abortSignal(signal);
 
-      if (error) {
-        console.error('Dependentes search error:', error);
-        if (error.code === 'ABORT') return [];
-        throw error;
-      }
-      console.log('Dependentes search result:', data);
-      return data || [];
+      if (depError && depError.code !== 'ABORT') throw depError;
+
+      return {
+        associados: assocData || [],
+        dependentes: depData || []
+      };
     },
     enabled: open && atendimentoTipo === "Plano" && debouncedSearch.length >= 2,
-    staleTime: 0,
+    staleTime: 1000 * 60,
   });
+
+  const associados = searchResults.associados;
+  const dependentes = searchResults.dependentes;
+  const isLoadingAssociados = isLoading;
+  const isLoadingDependentes = isLoading;
 
   const { data: catalogo = [] } = useQuery({
     queryKey: ['servicos-produtos-list'],
