@@ -148,6 +148,7 @@ function StatCard({ title, value, icon: Icon, color }: any) {
 
 function AtendimentosTab() {
   const [editingAtendimento, setEditingAtendimento] = useState<any>(null);
+  const [osServico, setOsServico] = useState<any>(null);
 
   const queryClient = useQueryClient();
 
