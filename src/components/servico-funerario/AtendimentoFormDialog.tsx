@@ -48,6 +48,38 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
     }
   }, [atendimento]);
 
+  // Prefill selected associado/dependente when editing a "Plano" atendimento
+  useEffect(() => {
+    if (!editMode || atendimentoTipo !== "Plano" || !atendimento) return;
+    let cancelled = false;
+    (async () => {
+      if (atendimento.dependente_id) {
+        const { data: dep } = await supabase
+          .from("dependentes")
+          .select("*, associados(id, nome, codigo, cpf, endereco, telefone, filial_id, planos(nome, valor_mensal))")
+          .eq("id", atendimento.dependente_id)
+          .maybeSingle();
+        if (!cancelled && dep) {
+          setSelectedDependente(dep);
+          if (dep.associados) setSelectedAssociado(dep.associados);
+          return;
+        }
+      }
+      if (atendimento.associado_id) {
+        const { data: assoc } = await supabase
+          .from("associados")
+          .select("*, planos(nome, valor_mensal)")
+          .eq("id", atendimento.associado_id)
+          .maybeSingle();
+        if (!cancelled && assoc) setSelectedAssociado(assoc);
+      } else if (atendimento.falecido_nome && !cancelled) {
+        // Fallback: at least show the stored name so the field isn't empty
+        setSelectedAssociado({ nome: atendimento.falecido_nome, planos: null });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [editMode, atendimento, atendimentoTipo]);
+
   // Debounce logic and reset page on new search
   useEffect(() => {
     const timer = setTimeout(() => {
