@@ -389,7 +389,7 @@ export function AtendimentoFormDialog() {
                           <div className="relative">
                             <Input
                               type="text"
-                              placeholder="Digite nome, código ou CPF para buscar..."
+                              placeholder="No campo de busca, buscar titular e dependentes"
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
                               autoComplete="off"
