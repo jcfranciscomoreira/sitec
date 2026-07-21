@@ -131,12 +131,7 @@ export function AtendimentoFormDialog() {
       // 1. Create service
       const { data: servico, error: sError } = await supabase
         .from('servicos_funerarios')
-        .insert([{
-          ...formData,
-          valor_total: totals.bruto,
-          desconto: desconto,
-          valor_final: totals.final
-        } as any])
+        .insert([formData])
         .select()
         .single();
       
