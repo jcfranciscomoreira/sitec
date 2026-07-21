@@ -231,7 +231,11 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) resetForm(); }}>
+    <Dialog open={open} onOpenChange={(v) => { 
+      setOpen(v); 
+      if (onOpenChange) onOpenChange(v);
+      if(!v) resetForm(); 
+    }}>
       {!editMode && (
         <DialogTrigger asChild>
           <Button className="gap-2">
