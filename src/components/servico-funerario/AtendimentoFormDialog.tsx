@@ -459,7 +459,7 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
                   <Input
                     key={`name-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
                     name="falecido_nome"
-                    defaultValue={selectedDependente?.nome || selectedAssociado?.nome || ""}
+                    defaultValue={selectedDependente?.nome || selectedAssociado?.nome || atendimento?.falecido_nome || ""}
                     required
                   />
                 )}
