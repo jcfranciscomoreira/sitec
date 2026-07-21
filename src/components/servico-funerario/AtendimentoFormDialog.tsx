@@ -31,8 +31,6 @@ export function AtendimentoFormDialog() {
   const [atendimentoTipo, setAtendimentoTipo] = useState<string>("Particular");
   const [selectedAssociado, setSelectedAssociado] = useState<any>(null);
   const [selectedDependente, setSelectedDependente] = useState<any>(null);
-  const [selectedItens, setSelectedItens] = useState<string[]>([]);
-  const [desconto, setDesconto] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
