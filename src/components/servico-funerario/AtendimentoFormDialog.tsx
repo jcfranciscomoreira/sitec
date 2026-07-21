@@ -31,8 +31,6 @@ export function AtendimentoFormDialog() {
   const [atendimentoTipo, setAtendimentoTipo] = useState<string>("Particular");
   const [selectedAssociado, setSelectedAssociado] = useState<any>(null);
   const [selectedDependente, setSelectedDependente] = useState<any>(null);
-  const [selectedItens, setSelectedItens] = useState<string[]>([]);
-  const [desconto, setDesconto] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -115,64 +113,19 @@ export function AtendimentoFormDialog() {
     }
   });
 
-  const totals = useMemo(() => {
-    const totalItens = selectedItens.reduce((acc, id) => {
-      const item = catalogo.find(i => i.id === id);
-      return acc + (item?.preco || 0);
-    }, 0);
-    return {
-      bruto: totalItens,
-      final: Math.max(0, totalItens - desconto)
-    };
-  }, [selectedItens, catalogo, desconto]);
 
   const createMutation = useMutation({
     mutationFn: async (formData: any) => {
       // 1. Create service
       const { data: servico, error: sError } = await supabase
         .from('servicos_funerarios')
-        .insert([{
-          ...formData,
-          valor_total: totals.bruto,
-          desconto: desconto,
-          valor_final: totals.final
-        } as any])
+        .insert([formData])
         .select()
         .single();
       
       if (sError) throw sError;
 
-      // 2. Insert items
-      if (selectedItens.length > 0) {
-        const itensToInsert = selectedItens.map(id => {
-          const item = catalogo.find(i => i.id === id);
-          if (!item) return null;
-          return {
-            servico_id: servico.id,
-            item_id: id,
-            nome: item.nome,
-            quantidade: 1,
-            preco_unitario: item.preco,
-            subtotal: item.preco
-          };
-        }).filter(Boolean);
-        
-        const { error: iError } = await supabase.from('servico_itens' as any).insert(itensToInsert as any);
-        if (iError) throw iError;
-      }
 
-      // 3. Register in financial if Particular
-      if (formData.tipo === 'Particular' && totals.final > 0) {
-        const { error: fError } = await supabase.from('contas_financeiras').insert([{
-          descricao: `Serviço Funerário #${servico.numero_servico} - ${formData.falecido_nome}`,
-          valor: totals.final,
-          tipo: 'entrada',
-          status: 'pendente',
-          vencimento: new Date().toISOString().split('T')[0],
-          filial_id: selectedAssociado?.filial_id || null
-        } as any]);
-        if (fError) throw fError;
-      }
 
       return servico;
     },
@@ -192,8 +145,6 @@ export function AtendimentoFormDialog() {
     setAtendimentoTipo("Particular");
     setSelectedAssociado(null);
     setSelectedDependente(null);
-    setSelectedItens([]);
-    setDesconto(0);
     setSearchTerm("");
   };
 
@@ -217,11 +168,6 @@ export function AtendimentoFormDialog() {
     createMutation.mutate(data);
   };
 
-  const toggleItem = (id: string) => {
-    setSelectedItens(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -258,18 +204,6 @@ export function AtendimentoFormDialog() {
             </div>
           </div>
 
-          <div class="section">
-            <div class="section-title">Serviços e Produtos</div>
-            ${selectedItens.map(id => {
-              const item = catalogo.find(i => i.id === id);
-              return `<div class="item-row"><span>${item?.nome}</span><span>${brl(item?.preco || 0)}</span></div>`;
-            }).join('')}
-            <div class="total">
-              <div>Bruto: ${brl(totals.bruto)}</div>
-              <div>Desconto: ${brl(desconto)}</div>
-              <div style="font-size: 1.4em; color: #d32f2f;">Total Final: ${brl(totals.final)}</div>
-            </div>
-          </div>
 
           <div class="footer">
             <p>Assinatura do Responsável: __________________________________________</p>
@@ -310,13 +244,12 @@ export function AtendimentoFormDialog() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="data_abertura">Data/Hora da abertura</Label>
-              <Input type="datetime-local" name="data_abertura" defaultValue={new Date().toISOString().slice(0, 16)} required />
+              <Input type="datetime-local" name="data_abertura" defaultValue={new Date().toISOString().slice(0, 16)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tipo">Tipo do Atendimento</Label>
               <Select 
                 name="tipo" 
-                required 
                 value={atendimentoTipo}
                 onValueChange={setAtendimentoTipo}
               >
@@ -355,6 +288,7 @@ export function AtendimentoFormDialog() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="falecido_nome">Nome Completo</Label>
+                <Input type="hidden" name="falecido_nome" value={selectedDependente?.nome || selectedAssociado?.nome || ""} />
                 {atendimentoTipo === "Plano" ? (
                   <>
                     {(selectedDependente || selectedAssociado) && (
@@ -385,10 +319,12 @@ export function AtendimentoFormDialog() {
                         <div className="relative">
                           <div className="relative">
                             <Input
+                              name="falecido_nome"
                               type="text"
                               placeholder="No campo de busca, buscar titular e dependentes"
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
+                              required
                               autoComplete="off"
                               className={cn(isLoadingAssociados || isLoadingDependentes ? "pr-10" : "")}
                             />
