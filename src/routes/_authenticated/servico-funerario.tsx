@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AtendimentoFormDialog } from '@/components/servico-funerario/AtendimentoFormDialog';
 import { ServicosProdutosManager } from '@/components/servico-funerario/ServicosProdutosManager';
+import { OSDialog } from '@/components/servico-funerario/OSDialog';
 import { format } from 'date-fns';
 import { AppShell } from '@/components/AppShell';
 
