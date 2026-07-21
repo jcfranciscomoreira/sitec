@@ -168,11 +168,6 @@ export function AtendimentoFormDialog() {
     createMutation.mutate(data);
   };
 
-  const toggleItem = (id: string) => {
-    setSelectedItens(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
