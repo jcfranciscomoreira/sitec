@@ -86,7 +86,7 @@ export function AtendimentoFormDialog() {
     staleTime: 0, // Disable stale time for debugging
   });
 
-  const { data: dependentes = [], isLoading: isLoadingDependentes } = useQuery({
+  const { data: dependentes = [], isLoading: isLoadingDependentes, error: depError } = useQuery({
     queryKey: ['dependentes-search-all', debouncedSearch, page],
     queryFn: async ({ signal }) => {
       if (debouncedSearch.length < 2) return [];
@@ -95,22 +95,26 @@ export function AtendimentoFormDialog() {
       const from = page * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
+      console.log('Searching dependentes with term:', debouncedSearch);
+
       const { data, error } = await supabase
         .from('dependentes')
         .select('*, associados(id, nome, codigo, cpf, endereco, telefone, filial_id, planos(nome, valor_mensal))')
-        .or(`nome.ilike.${term},cpf.ilike.${term}`)
+        .or(`nome.ilike."${term}",cpf.ilike."${term}"`)
         .order('nome')
         .range(from, to)
         .abortSignal(signal);
 
       if (error) {
+        console.error('Dependentes search error:', error);
         if (error.code === 'ABORT') return [];
         throw error;
       }
-      return data;
+      console.log('Dependentes search result:', data);
+      return data || [];
     },
     enabled: open && atendimentoTipo === "Plano" && debouncedSearch.length >= 2,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 0,
   });
 
   const { data: catalogo = [] } = useQuery({
