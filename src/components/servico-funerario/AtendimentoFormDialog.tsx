@@ -280,7 +280,7 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Situação</Label>
-              <Select name="status" defaultValue="Em Atendimento">
+              <Select name="status" defaultValue={atendimento?.status || "Em Atendimento"}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a situação" />
                 </SelectTrigger>
