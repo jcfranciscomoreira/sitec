@@ -232,12 +232,14 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) resetForm(); }}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus size={18} />
-          Novo Atendimento
-        </Button>
-      </DialogTrigger>
+      {!editMode && (
+        <DialogTrigger asChild>
+          <Button className="gap-2">
+            <Plus size={18} />
+            Novo Atendimento
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex justify-between items-center pr-8">
