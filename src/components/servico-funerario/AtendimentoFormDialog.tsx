@@ -115,16 +115,6 @@ export function AtendimentoFormDialog() {
     }
   });
 
-  const totals = useMemo(() => {
-    const totalItens = selectedItens.reduce((acc, id) => {
-      const item = catalogo.find(i => i.id === id);
-      return acc + (item?.preco || 0);
-    }, 0);
-    return {
-      bruto: totalItens,
-      final: Math.max(0, totalItens - desconto)
-    };
-  }, [selectedItens, catalogo, desconto]);
 
   const createMutation = useMutation({
     mutationFn: async (formData: any) => {
