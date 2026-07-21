@@ -55,12 +55,18 @@ export function AtendimentoFormDialog() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const { data: searchResults = { associados: [], dependentes: [] }, isLoading, error } = useQuery({
+  const { data: searchResults = { associados: [], dependentes: [] }, isLoading } = useQuery({
     queryKey: ['atendimento-unified-search', debouncedSearch, page],
     queryFn: async ({ signal }) => {
       if (debouncedSearch.length < 2) return { associados: [], dependentes: [] };
 
-      const term = `%${debouncedSearch}%`;
+      const search = debouncedSearch.trim();
+      const term = `%${search}%`;
+      const numericSearch = search.replace(/\D/g, "");
+      const associadoFilters = [`nome.ilike.${term}`, `cpf.ilike.${term}`];
+      if (numericSearch.length > 0) {
+        associadoFilters.push(`codigo.eq.${Number(numericSearch)}`);
+      }
       const from = page * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
@@ -68,7 +74,7 @@ export function AtendimentoFormDialog() {
       const { data: assocData, error: assocError } = await supabase
         .from('associados')
         .select('*, planos(nome, valor_mensal)')
-        .or(`nome.ilike.${term},codigo.ilike.${term},cpf.ilike.${term}`)
+        .or(associadoFilters.join(','))
         .order('nome')
         .range(from, to)
         .abortSignal(signal);
