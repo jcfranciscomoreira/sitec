@@ -464,12 +464,13 @@ export function AtendimentoFormDialog() {
                                       ))}
                                     </>
                                   )}
-                                    {(filteredA.length === ITEMS_PER_PAGE || filteredD.length === ITEMS_PER_PAGE) && (
+                                    {(filteredA.length === ITEMS_PER_PAGE || filteredD.length === ITEMS_PER_PAGE || page > 0) && (
                                       <div className="flex items-center justify-between border-t p-2">
                                         <Button
                                           type="button"
                                           variant="outline"
-                                          size="xs"
+                                          size="sm"
+                                          className="h-7 px-2 text-xs"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setPage(prev => Math.max(0, prev - 1));
@@ -482,11 +483,13 @@ export function AtendimentoFormDialog() {
                                         <Button
                                           type="button"
                                           variant="outline"
-                                          size="xs"
+                                          size="sm"
+                                          className="h-7 px-2 text-xs"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             setPage(prev => prev + 1);
                                           }}
+                                          disabled={filteredA.length < ITEMS_PER_PAGE && filteredD.length < ITEMS_PER_PAGE}
                                         >
                                           Próxima
                                         </Button>
