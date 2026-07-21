@@ -2,6 +2,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SkeletonCard, ResponsiveTable } from '@/components/Skeletons';
@@ -15,7 +17,9 @@ import {
   FileText, 
   MapPin, 
   DollarSign,
-  Plus
+  Plus,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -142,6 +146,28 @@ function StatCard({ title, value, icon: Icon, color }: any) {
 }
 
 function AtendimentosTab() {
+  const [editingAtendimento, setEditingAtendimento] = useState<any>(null);
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('servicos_funerarios')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['servicos-funerarios-list'] });
+      queryClient.invalidateQueries({ queryKey: ['servico-funerario-stats'] });
+      toast.success("Atendimento excluído com sucesso!");
+    },
+    onError: (error: any) => {
+      toast.error("Erro ao excluir atendimento: " + error.message);
+    }
+  });
+
   const { data: atendimentos, isLoading } = useQuery({
     queryKey: ['servicos-funerarios-list'],
     queryFn: async () => {
@@ -159,6 +185,13 @@ function AtendimentosTab() {
          <h2 className="text-xl font-semibold">Atendimentos Registrados</h2>
          <AtendimentoFormDialog />
       </div>
+
+      {editingAtendimento && (
+        <AtendimentoFormDialog 
+          atendimento={editingAtendimento} 
+          onOpenChange={(open) => !open && setEditingAtendimento(null)} 
+        />
+      )}
       
       {isLoading ? (
         <div className="p-8 text-center italic text-muted-foreground">Carregando atendimentos...</div>
@@ -194,7 +227,21 @@ function AtendimentosTab() {
                     {item.status}
                   </Badge>
                 </td>
-                <td>
+                <td className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setEditingAtendimento(item)}>
+                    <Edit size={16} className="text-blue-600" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {
+                      if (confirm("Tem certeza que deseja excluir este atendimento?")) {
+                        deleteMutation.mutate(item.id);
+                      }
+                    }}
+                  >
+                    <Trash2 size={16} className="text-red-600" />
+                  </Button>
                   <Button variant="ghost" size="sm">Ver OS</Button>
                 </td>
               </tr>

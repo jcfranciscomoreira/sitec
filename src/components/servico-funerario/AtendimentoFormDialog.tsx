@@ -26,9 +26,10 @@ import { cn } from "@/lib/utils";
 import { brl } from "@/lib/format";
 import { getEmpresaHeaderHTML } from "@/lib/print-header";
 
-export function AtendimentoFormDialog() {
+export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimento?: any, onOpenChange?: (open: boolean) => void }) {
   const [open, setOpen] = useState(false);
-  const [atendimentoTipo, setAtendimentoTipo] = useState<string>("Particular");
+  const editMode = !!atendimento;
+  const [atendimentoTipo, setAtendimentoTipo] = useState<string>(atendimento?.tipo || "Particular");
   const [selectedAssociado, setSelectedAssociado] = useState<any>(null);
   const [selectedDependente, setSelectedDependente] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,7 +42,11 @@ export function AtendimentoFormDialog() {
 
   useEffect(() => {
     getEmpresaHeaderHTML().then(setHeaderHTML);
-  }, []);
+    if (atendimento) {
+      setOpen(true);
+      setAtendimentoTipo(atendimento.tipo || "Particular");
+    }
+  }, [atendimento]);
 
   // Debounce logic and reset page on new search
   useEffect(() => {
@@ -114,30 +119,37 @@ export function AtendimentoFormDialog() {
   });
 
 
-  const createMutation = useMutation({
+  const mutation = useMutation({
     mutationFn: async (formData: any) => {
-      // 1. Create service
-      const { data: servico, error: sError } = await supabase
-        .from('servicos_funerarios')
-        .insert([formData])
-        .select()
-        .single();
-      
-      if (sError) throw sError;
-
-
-
-      return servico;
+      if (editMode) {
+        const { data, error } = await supabase
+          .from('servicos_funerarios')
+          .update(formData)
+          .eq('id', atendimento.id)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from('servicos_funerarios')
+          .insert([formData])
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['servico-funerario-stats'] });
       queryClient.invalidateQueries({ queryKey: ['servicos-funerarios-list'] });
-      toast.success("Atendimento e lançamentos realizados com sucesso!");
+      toast.success(editMode ? "Atendimento atualizado com sucesso!" : "Atendimento iniciado com sucesso!");
       setOpen(false);
+      if (onOpenChange) onOpenChange(false);
       resetForm();
     },
     onError: (error: any) => {
-      toast.error("Erro ao iniciar atendimento: " + error.message);
+      toast.error("Erro ao salvar atendimento: " + error.message);
     }
   });
 
@@ -165,7 +177,7 @@ export function AtendimentoFormDialog() {
       }
     }
     
-    createMutation.mutate(data);
+    mutation.mutate(data);
   };
 
 
@@ -219,13 +231,19 @@ export function AtendimentoFormDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if(!v) resetForm(); }}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus size={18} />
-          Novo Atendimento
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={(v) => { 
+      setOpen(v); 
+      if (onOpenChange) onOpenChange(v);
+      if(!v) resetForm(); 
+    }}>
+      {!editMode && (
+        <DialogTrigger asChild>
+          <Button className="gap-2">
+            <Plus size={18} />
+            Novo Atendimento
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex justify-between items-center pr-8">
@@ -244,7 +262,7 @@ export function AtendimentoFormDialog() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="data_abertura">Data/Hora da abertura</Label>
-              <Input type="datetime-local" name="data_abertura" defaultValue={new Date().toISOString().slice(0, 16)} />
+              <Input type="datetime-local" name="data_abertura" defaultValue={atendimento?.data_abertura ? new Date(atendimento.data_abertura).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tipo">Tipo do Atendimento</Label>
@@ -266,7 +284,7 @@ export function AtendimentoFormDialog() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Situação</Label>
-              <Select name="status" defaultValue="Em Atendimento">
+              <Select name="status" defaultValue={atendimento?.status || "Em Atendimento"}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a situação" />
                 </SelectTrigger>
@@ -445,7 +463,7 @@ export function AtendimentoFormDialog() {
                   <Input
                     key={`name-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
                     name="falecido_nome"
-                    defaultValue={selectedDependente?.nome || selectedAssociado?.nome || ""}
+                    defaultValue={selectedDependente?.nome || selectedAssociado?.nome || atendimento?.falecido_nome || ""}
                     required
                   />
                 )}
@@ -455,12 +473,12 @@ export function AtendimentoFormDialog() {
                 <Input 
                   key={`cpf-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
                   name="falecido_cpf" 
-                  defaultValue={selectedDependente?.cpf || selectedAssociado?.cpf || ""} 
+                  defaultValue={selectedDependente?.cpf || selectedAssociado?.cpf || atendimento?.falecido_cpf || ""} 
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_rg">RG</Label>
-                <Input name="falecido_rg" defaultValue={selectedAssociado?.rg || ""} />
+                <Input name="falecido_rg" defaultValue={selectedAssociado?.rg || atendimento?.falecido_rg || ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tipo_vinculo">Vínculo</Label>
@@ -472,7 +490,7 @@ export function AtendimentoFormDialog() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_sexo">Sexo</Label>
-                <Select name="falecido_sexo" key={`sexo-${selectedDependente?.id || selectedAssociado?.id || 'none'}`} defaultValue={selectedDependente?.sexo || selectedAssociado?.sexo || ""}>
+                <Select name="falecido_sexo" key={`sexo-${selectedDependente?.id || selectedAssociado?.id || 'none'}`} defaultValue={selectedDependente?.sexo || selectedAssociado?.sexo || atendimento?.falecido_sexo || ""}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
@@ -485,7 +503,7 @@ export function AtendimentoFormDialog() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_estado_civil">Estado Civil</Label>
-                <Input name="falecido_estado_civil" key={`civil-${selectedDependente?.id || selectedAssociado?.id || 'none'}`} defaultValue={selectedDependente?.estado_civil || selectedAssociado?.estado_civil || ""} />
+                <Input name="falecido_estado_civil" key={`civil-${selectedDependente?.id || selectedAssociado?.id || 'none'}`} defaultValue={selectedDependente?.estado_civil || selectedAssociado?.estado_civil || atendimento?.falecido_estado_civil || ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_data_nascimento">Data de Nascimento</Label>
@@ -493,20 +511,20 @@ export function AtendimentoFormDialog() {
                   key={`birth-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
                   type="date" 
                   name="falecido_data_nascimento" 
-                  defaultValue={selectedDependente?.data_nascimento || selectedAssociado?.data_nascimento || ""} 
+                  defaultValue={selectedDependente?.data_nascimento || selectedAssociado?.data_nascimento || atendimento?.falecido_data_nascimento || ""} 
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="data_obito">Data do Óbito</Label>
-                <Input type="date" name="data_obito" required />
+                <Input type="date" name="data_obito" required defaultValue={atendimento?.data_obito || ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="hora_obito">Hora do Óbito</Label>
-                <Input type="time" name="hora_obito" required />
+                <Input type="time" name="hora_obito" required defaultValue={atendimento?.hora_obito || ""} />
               </div>
               <div className="space-y-2 md:col-span-3">
                 <Label htmlFor="falecido_endereco">Endereço</Label>
-                <Input name="falecido_endereco" defaultValue={selectedAssociado?.endereco || ""} />
+                <Input name="falecido_endereco" defaultValue={selectedAssociado?.endereco || atendimento?.falecido_endereco || ""} />
               </div>
             </div>
           </div>
@@ -514,8 +532,8 @@ export function AtendimentoFormDialog() {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? "Iniciando..." : "Salvar Atendimento"}
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? "Salvando..." : editMode ? "Atualizar Atendimento" : "Salvar Atendimento"}
             </Button>
           </DialogFooter>
         </form>
