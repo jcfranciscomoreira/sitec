@@ -145,8 +145,6 @@ export function AtendimentoFormDialog() {
     setAtendimentoTipo("Particular");
     setSelectedAssociado(null);
     setSelectedDependente(null);
-    setSelectedItens([]);
-    setDesconto(0);
     setSearchTerm("");
   };
 
