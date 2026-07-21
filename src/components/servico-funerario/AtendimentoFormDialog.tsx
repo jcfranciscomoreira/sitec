@@ -319,10 +319,12 @@ export function AtendimentoFormDialog() {
                         <div className="relative">
                           <div className="relative">
                             <Input
+                              name="falecido_nome"
                               type="text"
                               placeholder="No campo de busca, buscar titular e dependentes"
                               value={searchTerm}
                               onChange={(e) => setSearchTerm(e.target.value)}
+                              required
                               autoComplete="off"
                               className={cn(isLoadingAssociados || isLoadingDependentes ? "pr-10" : "")}
                             />
