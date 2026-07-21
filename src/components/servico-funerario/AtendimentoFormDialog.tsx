@@ -250,7 +250,6 @@ export function AtendimentoFormDialog() {
               <Label htmlFor="tipo">Tipo do Atendimento</Label>
               <Select 
                 name="tipo" 
-                required 
                 value={atendimentoTipo}
                 onValueChange={setAtendimentoTipo}
               >
