@@ -253,6 +253,8 @@ function AtendimentosTab() {
           </tbody>
         </ResponsiveTable>
       )}
+
+      <OSDialog servico={osServico} open={!!osServico} onOpenChange={(o) => !o && setOsServico(null)} />
     </div>
   );
 }
