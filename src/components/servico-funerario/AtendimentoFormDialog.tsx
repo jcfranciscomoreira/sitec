@@ -55,16 +55,17 @@ export function AtendimentoFormDialog() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const { data: associados = [], isLoading: isLoadingAssociados } = useQuery({
-    queryKey: ['associados-search', debouncedSearch, page],
+  const { data: searchResults = { associados: [], dependentes: [] }, isLoading, error } = useQuery({
+    queryKey: ['atendimento-unified-search', debouncedSearch, page],
     queryFn: async ({ signal }) => {
-      if (debouncedSearch.length < 2) return [];
+      if (debouncedSearch.length < 2) return { associados: [], dependentes: [] };
 
       const term = `%${debouncedSearch}%`;
       const from = page * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
 
-      const { data, error } = await supabase
+      // Search associates
+      const { data: assocData, error: assocError } = await supabase
         .from('associados')
         .select('*, planos(nome, valor_mensal)')
         .or(`nome.ilike.${term},codigo.ilike.${term},cpf.ilike.${term}`)
@@ -72,26 +73,10 @@ export function AtendimentoFormDialog() {
         .range(from, to)
         .abortSignal(signal);
 
-      if (error) {
-        if (error.code === 'ABORT') return [];
-        throw error;
-      }
-      return data;
-    },
-    enabled: open && atendimentoTipo === "Plano" && debouncedSearch.length >= 2,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+      if (assocError && assocError.code !== 'ABORT') throw assocError;
 
-  const { data: dependentes = [], isLoading: isLoadingDependentes } = useQuery({
-    queryKey: ['dependentes-search-all', debouncedSearch, page],
-    queryFn: async ({ signal }) => {
-      if (debouncedSearch.length < 2) return [];
-
-      const term = `%${debouncedSearch}%`;
-      const from = page * ITEMS_PER_PAGE;
-      const to = from + ITEMS_PER_PAGE - 1;
-
-      const { data, error } = await supabase
+      // Search dependents
+      const { data: depData, error: depError } = await supabase
         .from('dependentes')
         .select('*, associados(id, nome, codigo, cpf, endereco, telefone, filial_id, planos(nome, valor_mensal))')
         .or(`nome.ilike.${term},cpf.ilike.${term}`)
@@ -99,15 +84,21 @@ export function AtendimentoFormDialog() {
         .range(from, to)
         .abortSignal(signal);
 
-      if (error) {
-        if (error.code === 'ABORT') return [];
-        throw error;
-      }
-      return data;
+      if (depError && depError.code !== 'ABORT') throw depError;
+
+      return {
+        associados: assocData || [],
+        dependentes: depData || []
+      };
     },
     enabled: open && atendimentoTipo === "Plano" && debouncedSearch.length >= 2,
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60,
   });
+
+  const associados = searchResults.associados;
+  const dependentes = searchResults.dependentes;
+  const isLoadingAssociados = isLoading;
+  const isLoadingDependentes = isLoading;
 
   const { data: catalogo = [] } = useQuery({
     queryKey: ['servicos-produtos-list'],
