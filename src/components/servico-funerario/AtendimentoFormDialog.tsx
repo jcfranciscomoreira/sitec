@@ -244,7 +244,7 @@ export function AtendimentoFormDialog() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="data_abertura">Data/Hora da abertura</Label>
-              <Input type="datetime-local" name="data_abertura" defaultValue={new Date().toISOString().slice(0, 16)} required />
+              <Input type="datetime-local" name="data_abertura" defaultValue={new Date().toISOString().slice(0, 16)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tipo">Tipo do Atendimento</Label>
