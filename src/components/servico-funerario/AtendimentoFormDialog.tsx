@@ -258,7 +258,7 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
             </div>
             <div className="space-y-2">
               <Label htmlFor="data_abertura">Data/Hora da abertura</Label>
-              <Input type="datetime-local" name="data_abertura" defaultValue={new Date().toISOString().slice(0, 16)} />
+              <Input type="datetime-local" name="data_abertura" defaultValue={atendimento?.data_abertura ? new Date(atendimento.data_abertura).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tipo">Tipo do Atendimento</Label>
