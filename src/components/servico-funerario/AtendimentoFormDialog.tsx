@@ -26,9 +26,10 @@ import { cn } from "@/lib/utils";
 import { brl } from "@/lib/format";
 import { getEmpresaHeaderHTML } from "@/lib/print-header";
 
-export function AtendimentoFormDialog() {
+export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimento?: any, onOpenChange?: (open: boolean) => void }) {
   const [open, setOpen] = useState(false);
-  const [atendimentoTipo, setAtendimentoTipo] = useState<string>("Particular");
+  const editMode = !!atendimento;
+  const [atendimentoTipo, setAtendimentoTipo] = useState<string>(atendimento?.tipo || "Particular");
   const [selectedAssociado, setSelectedAssociado] = useState<any>(null);
   const [selectedDependente, setSelectedDependente] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
