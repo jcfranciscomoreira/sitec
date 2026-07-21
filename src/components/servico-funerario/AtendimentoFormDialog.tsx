@@ -115,30 +115,37 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
   });
 
 
-  const createMutation = useMutation({
+  const mutation = useMutation({
     mutationFn: async (formData: any) => {
-      // 1. Create service
-      const { data: servico, error: sError } = await supabase
-        .from('servicos_funerarios')
-        .insert([formData])
-        .select()
-        .single();
-      
-      if (sError) throw sError;
-
-
-
-      return servico;
+      if (editMode) {
+        const { data, error } = await supabase
+          .from('servicos_funerarios')
+          .update(formData)
+          .eq('id', atendimento.id)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      } else {
+        const { data, error } = await supabase
+          .from('servicos_funerarios')
+          .insert([formData])
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['servico-funerario-stats'] });
       queryClient.invalidateQueries({ queryKey: ['servicos-funerarios-list'] });
-      toast.success("Atendimento e lançamentos realizados com sucesso!");
+      toast.success(editMode ? "Atendimento atualizado com sucesso!" : "Atendimento iniciado com sucesso!");
       setOpen(false);
+      if (onOpenChange) onOpenChange(false);
       resetForm();
     },
     onError: (error: any) => {
-      toast.error("Erro ao iniciar atendimento: " + error.message);
+      toast.error("Erro ao salvar atendimento: " + error.message);
     }
   });
 
