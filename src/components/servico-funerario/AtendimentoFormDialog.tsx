@@ -156,18 +156,6 @@ export function AtendimentoFormDialog() {
         if (iError) throw iError;
       }
 
-      // 3. Register in financial if Particular
-      if (formData.tipo === 'Particular' && totals.final > 0) {
-        const { error: fError } = await supabase.from('contas_financeiras').insert([{
-          descricao: `Serviço Funerário #${servico.numero_servico} - ${formData.falecido_nome}`,
-          valor: totals.final,
-          tipo: 'entrada',
-          status: 'pendente',
-          vencimento: new Date().toISOString().split('T')[0],
-          filial_id: selectedAssociado?.filial_id || null
-        } as any]);
-        if (fError) throw fError;
-      }
 
       return servico;
     },
