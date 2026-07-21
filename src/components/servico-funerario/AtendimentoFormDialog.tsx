@@ -125,24 +125,6 @@ export function AtendimentoFormDialog() {
       
       if (sError) throw sError;
 
-      // 2. Insert items
-      if (selectedItens.length > 0) {
-        const itensToInsert = selectedItens.map(id => {
-          const item = catalogo.find(i => i.id === id);
-          if (!item) return null;
-          return {
-            servico_id: servico.id,
-            item_id: id,
-            nome: item.nome,
-            quantidade: 1,
-            preco_unitario: item.preco,
-            subtotal: item.preco
-          };
-        }).filter(Boolean);
-        
-        const { error: iError } = await supabase.from('servico_itens' as any).insert(itensToInsert as any);
-        if (iError) throw iError;
-      }
 
 
       return servico;
