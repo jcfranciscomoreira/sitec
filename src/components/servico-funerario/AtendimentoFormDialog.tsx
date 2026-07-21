@@ -231,18 +231,6 @@ export function AtendimentoFormDialog() {
             </div>
           </div>
 
-          <div class="section">
-            <div class="section-title">Serviços e Produtos</div>
-            ${selectedItens.map(id => {
-              const item = catalogo.find(i => i.id === id);
-              return `<div class="item-row"><span>${item?.nome}</span><span>${brl(item?.preco || 0)}</span></div>`;
-            }).join('')}
-            <div class="total">
-              <div>Bruto: ${brl(totals.bruto)}</div>
-              <div>Desconto: ${brl(desconto)}</div>
-              <div style="font-size: 1.4em; color: #d32f2f;">Total Final: ${brl(totals.final)}</div>
-            </div>
-          </div>
 
           <div class="footer">
             <p>Assinatura do Responsável: __________________________________________</p>
