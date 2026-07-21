@@ -289,6 +289,7 @@ export function AtendimentoFormDialog() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="falecido_nome">Nome Completo</Label>
+                <Input type="hidden" name="falecido_nome" value={selectedDependente?.nome || selectedAssociado?.nome || ""} />
                 {atendimentoTipo === "Plano" ? (
                   <>
                     {(selectedDependente || selectedAssociado) && (
