@@ -35,6 +35,8 @@ export function AtendimentoFormDialog() {
   const [desconto, setDesconto] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const ITEMS_PER_PAGE = 10;
   
   const queryClient = useQueryClient();
   const [headerHTML, setHeaderHTML] = useState("");
@@ -43,27 +45,31 @@ export function AtendimentoFormDialog() {
     getEmpresaHeaderHTML().then(setHeaderHTML);
   }, []);
 
-  // Debounce logic
+  // Debounce logic and reset page on new search
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchTerm);
+      setPage(0);
     }, 500); // 500ms delay
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
   const { data: associados = [], isLoading: isLoadingAssociados } = useQuery({
-    queryKey: ['associados-search', debouncedSearch],
+    queryKey: ['associados-search', debouncedSearch, page],
     queryFn: async ({ signal }) => {
       if (debouncedSearch.length < 2) return [];
 
       const term = `%${debouncedSearch}%`;
+      const from = page * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
       const { data, error } = await supabase
         .from('associados')
         .select('*, planos(nome, valor_mensal)')
         .or(`nome.ilike.${term},codigo.ilike.${term},cpf.ilike.${term}`)
         .order('nome')
-        .limit(10)
+        .range(from, to)
         .abortSignal(signal);
 
       if (error) {
@@ -77,17 +83,20 @@ export function AtendimentoFormDialog() {
   });
 
   const { data: dependentes = [], isLoading: isLoadingDependentes } = useQuery({
-    queryKey: ['dependentes-search-all', debouncedSearch],
+    queryKey: ['dependentes-search-all', debouncedSearch, page],
     queryFn: async ({ signal }) => {
       if (debouncedSearch.length < 2) return [];
 
       const term = `%${debouncedSearch}%`;
+      const from = page * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
       const { data, error } = await supabase
         .from('dependentes')
         .select('*, associados(id, nome, codigo, cpf, endereco, telefone, filial_id, planos(nome, valor_mensal))')
         .or(`nome.ilike.${term},cpf.ilike.${term}`)
         .order('nome')
-        .limit(10)
+        .range(from, to)
         .abortSignal(signal);
 
       if (error) {
@@ -455,9 +464,40 @@ export function AtendimentoFormDialog() {
                                       ))}
                                     </>
                                   )}
-                                </div>
-                              );
-                            })()}
+                                    {(filteredA.length === ITEMS_PER_PAGE || filteredD.length === ITEMS_PER_PAGE || page > 0) && (
+                                      <div className="flex items-center justify-between border-t p-2">
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-7 px-2 text-xs"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setPage(prev => Math.max(0, prev - 1));
+                                          }}
+                                          disabled={page === 0}
+                                        >
+                                          Anterior
+                                        </Button>
+                                        <span className="text-xs text-muted-foreground">Página {page + 1}</span>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="h-7 px-2 text-xs"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setPage(prev => prev + 1);
+                                          }}
+                                          disabled={filteredA.length < ITEMS_PER_PAGE && filteredD.length < ITEMS_PER_PAGE}
+                                        >
+                                          Próxima
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                           </div>
                         )}
                       </div>
