@@ -469,12 +469,12 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
                 <Input 
                   key={`cpf-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
                   name="falecido_cpf" 
-                  defaultValue={selectedDependente?.cpf || selectedAssociado?.cpf || ""} 
+                  defaultValue={selectedDependente?.cpf || selectedAssociado?.cpf || atendimento?.falecido_cpf || ""} 
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_rg">RG</Label>
-                <Input name="falecido_rg" defaultValue={selectedAssociado?.rg || ""} />
+                <Input name="falecido_rg" defaultValue={selectedAssociado?.rg || atendimento?.falecido_rg || ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="tipo_vinculo">Vínculo</Label>
