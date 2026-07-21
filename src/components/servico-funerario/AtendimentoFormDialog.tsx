@@ -520,7 +520,7 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
               </div>
               <div className="space-y-2 md:col-span-3">
                 <Label htmlFor="falecido_endereco">Endereço</Label>
-                <Input name="falecido_endereco" defaultValue={selectedAssociado?.endereco || ""} />
+                <Input name="falecido_endereco" defaultValue={selectedAssociado?.endereco || atendimento?.falecido_endereco || ""} />
               </div>
             </div>
           </div>
