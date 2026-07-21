@@ -878,6 +878,8 @@ export type Database = {
         Row: {
           agente_funerario: string | null
           associado_id: string | null
+          atendente_nome: string | null
+          autorizacao_responsavel: string | null
           auxiliar: string | null
           cartorio: string | null
           causa_morte: string | null
@@ -913,6 +915,10 @@ export type Database = {
           numero_do: string | null
           numero_servico: number
           observacoes: string | null
+          os_assinada_url: string | null
+          os_data: string | null
+          os_hora: string | null
+          os_materiais: string | null
           responsavel_cpf: string | null
           responsavel_email: string | null
           responsavel_endereco: string | null
@@ -941,6 +947,8 @@ export type Database = {
         Insert: {
           agente_funerario?: string | null
           associado_id?: string | null
+          atendente_nome?: string | null
+          autorizacao_responsavel?: string | null
           auxiliar?: string | null
           cartorio?: string | null
           causa_morte?: string | null
@@ -976,6 +984,10 @@ export type Database = {
           numero_do?: string | null
           numero_servico?: number
           observacoes?: string | null
+          os_assinada_url?: string | null
+          os_data?: string | null
+          os_hora?: string | null
+          os_materiais?: string | null
           responsavel_cpf?: string | null
           responsavel_email?: string | null
           responsavel_endereco?: string | null
@@ -1004,6 +1016,8 @@ export type Database = {
         Update: {
           agente_funerario?: string | null
           associado_id?: string | null
+          atendente_nome?: string | null
+          autorizacao_responsavel?: string | null
           auxiliar?: string | null
           cartorio?: string | null
           causa_morte?: string | null
@@ -1039,6 +1053,10 @@ export type Database = {
           numero_do?: string | null
           numero_servico?: number
           observacoes?: string | null
+          os_assinada_url?: string | null
+          os_data?: string | null
+          os_hora?: string | null
+          os_materiais?: string | null
           responsavel_cpf?: string | null
           responsavel_email?: string | null
           responsavel_endereco?: string | null
@@ -1293,6 +1311,10 @@ export type Database = {
         | "Sepultamento"
         | "Finalizado"
         | "Cancelado"
+        | "Aberta"
+        | "Em Execução"
+        | "Concluída"
+        | "Cancelada"
       servico_tipo: "Plano" | "Particular" | "Convênio" | "Prefeitura"
       status_associado: "ativo" | "inativo" | "suspenso"
       status_conta: "pendente" | "pago" | "atrasado" | "cancelado"
@@ -1433,6 +1455,10 @@ export const Constants = {
         "Sepultamento",
         "Finalizado",
         "Cancelado",
+        "Aberta",
+        "Em Execução",
+        "Concluída",
+        "Cancelada",
       ],
       servico_tipo: ["Plano", "Particular", "Convênio", "Prefeitura"],
       status_associado: ["ativo", "inativo", "suspenso"],

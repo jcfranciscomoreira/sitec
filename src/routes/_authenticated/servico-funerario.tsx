@@ -25,6 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AtendimentoFormDialog } from '@/components/servico-funerario/AtendimentoFormDialog';
 import { ServicosProdutosManager } from '@/components/servico-funerario/ServicosProdutosManager';
+import { OSDialog } from '@/components/servico-funerario/OSDialog';
 import { format } from 'date-fns';
 import { AppShell } from '@/components/AppShell';
 
@@ -147,6 +148,7 @@ function StatCard({ title, value, icon: Icon, color }: any) {
 
 function AtendimentosTab() {
   const [editingAtendimento, setEditingAtendimento] = useState<any>(null);
+  const [osServico, setOsServico] = useState<any>(null);
 
   const queryClient = useQueryClient();
 
@@ -242,13 +244,17 @@ function AtendimentosTab() {
                   >
                     <Trash2 size={16} className="text-red-600" />
                   </Button>
-                  <Button variant="ghost" size="sm">Ver OS</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setOsServico(item)}>
+                    <FileText size={16} className="text-emerald-600 mr-1" />OS
+                  </Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </ResponsiveTable>
       )}
+
+      <OSDialog servico={osServico} open={!!osServico} onOpenChange={(o) => !o && setOsServico(null)} />
     </div>
   );
 }
