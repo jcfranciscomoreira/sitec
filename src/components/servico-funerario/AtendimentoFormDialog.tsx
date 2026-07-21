@@ -512,11 +512,11 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
               </div>
               <div className="space-y-2">
                 <Label htmlFor="data_obito">Data do Óbito</Label>
-                <Input type="date" name="data_obito" required />
+                <Input type="date" name="data_obito" required defaultValue={atendimento?.data_obito || ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="hora_obito">Hora do Óbito</Label>
-                <Input type="time" name="hora_obito" required />
+                <Input type="time" name="hora_obito" required defaultValue={atendimento?.hora_obito || ""} />
               </div>
               <div className="space-y-2 md:col-span-3">
                 <Label htmlFor="falecido_endereco">Endereço</Label>
