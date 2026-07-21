@@ -499,7 +499,7 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_estado_civil">Estado Civil</Label>
-                <Input name="falecido_estado_civil" key={`civil-${selectedDependente?.id || selectedAssociado?.id || 'none'}`} defaultValue={selectedDependente?.estado_civil || selectedAssociado?.estado_civil || ""} />
+                <Input name="falecido_estado_civil" key={`civil-${selectedDependente?.id || selectedAssociado?.id || 'none'}`} defaultValue={selectedDependente?.estado_civil || selectedAssociado?.estado_civil || atendimento?.falecido_estado_civil || ""} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_data_nascimento">Data de Nascimento</Label>
@@ -507,7 +507,7 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
                   key={`birth-${selectedDependente?.id || selectedAssociado?.id || 'none'}`}
                   type="date" 
                   name="falecido_data_nascimento" 
-                  defaultValue={selectedDependente?.data_nascimento || selectedAssociado?.data_nascimento || ""} 
+                  defaultValue={selectedDependente?.data_nascimento || selectedAssociado?.data_nascimento || atendimento?.falecido_data_nascimento || ""} 
                 />
               </div>
               <div className="space-y-2">
