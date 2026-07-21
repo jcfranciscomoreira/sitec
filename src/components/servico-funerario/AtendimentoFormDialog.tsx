@@ -522,8 +522,8 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? "Iniciando..." : "Salvar Atendimento"}
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? "Salvando..." : editMode ? "Atualizar Atendimento" : "Salvar Atendimento"}
             </Button>
           </DialogFooter>
         </form>
