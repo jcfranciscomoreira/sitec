@@ -464,9 +464,37 @@ export function AtendimentoFormDialog() {
                                       ))}
                                     </>
                                   )}
-                                </div>
-                              );
-                            })()}
+                                    {(filteredA.length === ITEMS_PER_PAGE || filteredD.length === ITEMS_PER_PAGE) && (
+                                      <div className="flex items-center justify-between border-t p-2">
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="xs"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setPage(prev => Math.max(0, prev - 1));
+                                          }}
+                                          disabled={page === 0}
+                                        >
+                                          Anterior
+                                        </Button>
+                                        <span className="text-xs text-muted-foreground">Página {page + 1}</span>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="xs"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setPage(prev => prev + 1);
+                                          }}
+                                        >
+                                          Próxima
+                                        </Button>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                           </div>
                         )}
                       </div>
