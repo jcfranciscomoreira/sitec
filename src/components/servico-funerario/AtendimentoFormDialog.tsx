@@ -42,7 +42,11 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
 
   useEffect(() => {
     getEmpresaHeaderHTML().then(setHeaderHTML);
-  }, []);
+    if (atendimento) {
+      setOpen(true);
+      setAtendimentoTipo(atendimento.tipo || "Particular");
+    }
+  }, [atendimento]);
 
   // Debounce logic and reset page on new search
   useEffect(() => {
