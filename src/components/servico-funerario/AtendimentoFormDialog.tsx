@@ -486,7 +486,7 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
               </div>
               <div className="space-y-2">
                 <Label htmlFor="falecido_sexo">Sexo</Label>
-                <Select name="falecido_sexo" key={`sexo-${selectedDependente?.id || selectedAssociado?.id || 'none'}`} defaultValue={selectedDependente?.sexo || selectedAssociado?.sexo || ""}>
+                <Select name="falecido_sexo" key={`sexo-${selectedDependente?.id || selectedAssociado?.id || 'none'}`} defaultValue={selectedDependente?.sexo || selectedAssociado?.sexo || atendimento?.falecido_sexo || ""}>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
