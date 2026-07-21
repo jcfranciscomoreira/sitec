@@ -173,7 +173,7 @@ export function AtendimentoFormDialog({ atendimento, onOpenChange }: { atendimen
       }
     }
     
-    createMutation.mutate(data);
+    mutation.mutate(data);
   };
 
 
