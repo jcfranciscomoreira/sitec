@@ -244,7 +244,9 @@ function AtendimentosTab() {
                   >
                     <Trash2 size={16} className="text-red-600" />
                   </Button>
-                  <Button variant="ghost" size="sm">Ver OS</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setOsServico(item)}>
+                    <FileText size={16} className="text-emerald-600 mr-1" />OS
+                  </Button>
                 </td>
               </tr>
             ))}
