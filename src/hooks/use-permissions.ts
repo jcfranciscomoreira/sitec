@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "operador" | "vendedor" | "cobrador";
+export type AppRole = "admin" | "operador" | "vendedor" | "cobrador" | "agente";
 
 export function usePermissions() {
   const [allowedModules, setAllowedModules] = useState<Set<string> | null>(null);

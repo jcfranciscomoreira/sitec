@@ -52,7 +52,7 @@ const createSchema = z.object({
   email: z.string().email().max(255),
   password: z.string().min(8).max(72),
   nome: z.string().trim().min(1).max(120),
-  role: z.enum(["admin", "operador", "vendedor", "cobrador"]),
+  role: z.enum(["admin", "operador", "vendedor", "cobrador", "agente"]),
 });
 
 export const createUsuario = createServerFn({ method: "POST" })
@@ -103,7 +103,7 @@ export const createUsuario = createServerFn({ method: "POST" })
 
 const updateRoleSchema = z.object({
   userId: z.string().uuid(),
-  role: z.enum(["admin", "operador", "vendedor", "cobrador"]),
+  role: z.enum(["admin", "operador", "vendedor", "cobrador", "agente"]),
 });
 
 export const updateUsuarioRole = createServerFn({ method: "POST" })
