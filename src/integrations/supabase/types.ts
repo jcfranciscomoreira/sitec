@@ -915,6 +915,7 @@ export type Database = {
           numero_do: string | null
           numero_servico: number
           observacoes: string | null
+          os_arquivos: Json
           os_assinada_url: string | null
           os_data: string | null
           os_hora: string | null
@@ -984,6 +985,7 @@ export type Database = {
           numero_do?: string | null
           numero_servico?: number
           observacoes?: string | null
+          os_arquivos?: Json
           os_assinada_url?: string | null
           os_data?: string | null
           os_hora?: string | null
@@ -1053,6 +1055,7 @@ export type Database = {
           numero_do?: string | null
           numero_servico?: number
           observacoes?: string | null
+          os_arquivos?: Json
           os_assinada_url?: string | null
           os_data?: string | null
           os_hora?: string | null
@@ -1303,7 +1306,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "operador" | "vendedor" | "cobrador"
+      app_role: "admin" | "operador" | "vendedor" | "cobrador" | "agente"
       servico_status:
         | "Em Atendimento"
         | "Preparação"
@@ -1447,7 +1450,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "operador", "vendedor", "cobrador"],
+      app_role: ["admin", "operador", "vendedor", "cobrador", "agente"],
       servico_status: [
         "Em Atendimento",
         "Preparação",
