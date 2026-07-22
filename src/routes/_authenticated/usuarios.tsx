@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
   notFoundComponent: () => <div className="p-6">Página não encontrada</div>,
 });
 
-type Role = "admin" | "operador" | "vendedor" | "cobrador";
+type Role = "admin" | "operador" | "vendedor" | "cobrador" | "agente";
 type Usuario = {
   id: string;
   email: string;
@@ -46,6 +46,7 @@ const ROLE_LABEL: Record<Role, string> = {
   operador: "Operador",
   vendedor: "Vendedor",
   cobrador: "Cobrador",
+  agente: "Agente",
 };
 
 const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
@@ -53,9 +54,10 @@ const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
   operador: "secondary",
   vendedor: "outline",
   cobrador: "outline",
+  agente: "outline",
 };
 
-const ALL_ROLES: Role[] = ["admin", "operador", "vendedor", "cobrador"];
+const ALL_ROLES: Role[] = ["admin", "operador", "vendedor", "cobrador", "agente"];
 // Módulos vêm do registro central em src/lib/modules.ts.
 // Adicione novos módulos lá — aparecerão automaticamente nas permissões.
 import { MODULES } from "@/lib/modules";
