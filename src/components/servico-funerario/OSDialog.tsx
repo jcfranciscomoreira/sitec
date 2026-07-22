@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,17 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Printer, Upload, FileText, Loader2 } from "lucide-react";
+import { Printer, Upload, FileText, Loader2, X, Download, Paperclip } from "lucide-react";
 import { getEmpresaHeaderHTML } from "@/lib/print-header";
 import { format } from "date-fns";
 
 const OS_STATUS = ["Aberta", "Em Execução", "Concluída", "Cancelada"] as const;
+
+type Anexo = { path: string; name: string; type?: string; size?: number };
+
+function brl(v: number) {
+  return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
 
 export function OSDialog({
   servico,
@@ -33,14 +39,15 @@ export function OSDialog({
   const [form, setForm] = useState<any>({});
   const [checklist, setChecklist] = useState<{ item: string; concluido: boolean }[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [anexos, setAnexos] = useState<Anexo[]>([]);
+  const [signedMap, setSignedMap] = useState<Record<string, string>>({});
 
   const { data: catalogo = [] } = useQuery({
     queryKey: ["servicos-produtos-ativos"],
     queryFn: async () => {
       const { data } = await supabase
         .from("servicos_produtos")
-        .select("id, nome, tipo")
+        .select("id, nome, tipo, preco")
         .eq("ativo", true)
         .order("nome");
       return data || [];
@@ -59,8 +66,49 @@ export function OSDialog({
     },
   });
 
+  // Agentes: usuários com role 'agente' + o usuário logado (se agente)
+  const { data: agentes = [] } = useQuery({
+    queryKey: ["usuarios-agentes"],
+    enabled: open,
+    queryFn: async () => {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "agente" as any);
+      const ids = (roles ?? []).map((r: any) => r.user_id);
+      if (!ids.length) return [] as { id: string; nome: string }[];
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, nome")
+        .in("id", ids);
+      return (profs ?? []).filter((p: any) => p.nome).sort((a: any, b: any) => a.nome.localeCompare(b.nome));
+    },
+  });
+
+  const { data: currentUser } = useQuery({
+    queryKey: ["current-user-agente"],
+    enabled: open,
+    queryFn: async () => {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) return null;
+      const [{ data: p }, { data: r }] = await Promise.all([
+        supabase.from("profiles").select("nome").eq("id", data.user.id).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", data.user.id),
+      ]);
+      const isAgente = (r ?? []).some((x: any) => x.role === "agente");
+      return { id: data.user.id, nome: p?.nome ?? "", isAgente };
+    },
+  });
+
   useEffect(() => {
     if (!open || !servico) return;
+    let initialAnexos: Anexo[] = [];
+    if (Array.isArray(servico.os_arquivos) && servico.os_arquivos.length) {
+      initialAnexos = servico.os_arquivos as Anexo[];
+    } else if (servico.os_assinada_url) {
+      initialAnexos = [{ path: servico.os_assinada_url, name: "OS assinada", type: "image/*" }];
+    }
+    setAnexos(initialAnexos);
     setForm({
       os_data: servico.os_data || format(new Date(), "yyyy-MM-dd"),
       os_hora: servico.os_hora || format(new Date(), "HH:mm"),
@@ -72,35 +120,40 @@ export function OSDialog({
       veiculo_placa: servico.veiculo_placa || "",
       os_materiais: servico.os_materiais || "",
       status: servico.status || "Aberta",
-      os_assinada_url: servico.os_assinada_url || null,
     });
-    // Preload atendente from profile if empty
-    if (!servico.atendente_nome) {
-      supabase.auth.getUser().then(async ({ data }) => {
-        if (data.user) {
-          const { data: p } = await supabase
-            .from("profiles").select("nome").eq("id", data.user.id).maybeSingle();
-          if (p?.nome) setForm((f: any) => ({ ...f, atendente_nome: p.nome }));
-        }
-      });
+    if (!servico.atendente_nome && currentUser?.nome) {
+      setForm((f: any) => ({ ...f, atendente_nome: currentUser.nome }));
+    }
+    if (!servico.agente_funerario && currentUser?.isAgente && currentUser?.nome) {
+      setForm((f: any) => ({ ...f, agente_funerario: currentUser.nome }));
     }
     setChecklist(
       existingChecklist.length
         ? existingChecklist.map((c: any) => ({ item: c.item, concluido: !!c.concluido }))
         : []
     );
-    setSignedUrl(null);
-  }, [open, servico, existingChecklist.length]);
+  }, [open, servico, existingChecklist.length, currentUser?.id]);
 
-  // Fetch signed URL for preview
+  // Signed URLs para anexos
   useEffect(() => {
-    if (form.os_assinada_url) {
-      supabase.storage.from("os-assinadas").createSignedUrl(form.os_assinada_url, 3600)
-        .then(({ data }) => setSignedUrl(data?.signedUrl || null));
-    } else {
-      setSignedUrl(null);
-    }
-  }, [form.os_assinada_url]);
+    if (!anexos.length) { setSignedMap({}); return; }
+    let cancel = false;
+    (async () => {
+      const entries = await Promise.all(anexos.map(async (a) => {
+        const { data } = await supabase.storage.from("os-assinadas").createSignedUrl(a.path, 3600);
+        return [a.path, data?.signedUrl || ""] as const;
+      }));
+      if (!cancel) setSignedMap(Object.fromEntries(entries));
+    })();
+    return () => { cancel = true; };
+  }, [anexos]);
+
+  const totalChecklist = useMemo(() => {
+    return checklist.reduce((sum, c) => {
+      const p = catalogo.find((x: any) => x.nome === c.item);
+      return sum + (Number(p?.preco) || 0);
+    }, 0);
+  }, [checklist, catalogo]);
 
   const toggleItem = (nome: string) => {
     setChecklist((prev) => {
@@ -114,22 +167,34 @@ export function OSDialog({
     setChecklist((prev) => prev.map((c) => (c.item === nome ? { ...c, concluido: v } : c)));
   };
 
-  const handleUpload = async (file: File) => {
+  const handleUpload = async (files: FileList | File[]) => {
     if (!servico?.id) return;
+    const arr = Array.from(files);
+    if (!arr.length) return;
     setUploading(true);
     try {
-      const path = `${servico.id}/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("os-assinadas").upload(path, file, {
-        upsert: true, contentType: file.type,
-      });
-      if (error) throw error;
-      setForm((f: any) => ({ ...f, os_assinada_url: path }));
-      toast.success("Imagem enviada");
+      const uploaded: Anexo[] = [];
+      for (const file of arr) {
+        const safeName = file.name.replace(/[^\w.\-]+/g, "_");
+        const path = `${servico.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
+        const { error } = await supabase.storage.from("os-assinadas").upload(path, file, {
+          upsert: false, contentType: file.type || "application/octet-stream",
+        });
+        if (error) throw error;
+        uploaded.push({ path, name: file.name, type: file.type, size: file.size });
+      }
+      setAnexos((prev) => [...prev, ...uploaded]);
+      toast.success(`${uploaded.length} arquivo(s) enviado(s)`);
     } catch (e: any) {
       toast.error("Erro no upload: " + e.message);
     } finally {
       setUploading(false);
     }
+  };
+
+  const removeAnexo = async (a: Anexo) => {
+    setAnexos((prev) => prev.filter((x) => x.path !== a.path));
+    try { await supabase.storage.from("os-assinadas").remove([a.path]); } catch { /* noop */ }
   };
 
   const saveMutation = useMutation({
@@ -147,12 +212,12 @@ export function OSDialog({
           veiculo_placa: form.veiculo_placa || null,
           os_materiais: form.os_materiais || null,
           status: form.status,
-          os_assinada_url: form.os_assinada_url || null,
+          os_assinada_url: anexos[0]?.path ?? null,
+          os_arquivos: anexos as any,
         })
         .eq("id", servico.id);
       if (error) throw error;
 
-      // Replace checklist
       await supabase.from("servico_checklist").delete().eq("servico_id", servico.id);
       if (checklist.length) {
         const { error: cErr } = await supabase.from("servico_checklist").insert(
@@ -175,12 +240,21 @@ export function OSDialog({
     const w = window.open("", "_blank", "width=900,height=700");
     if (!w) return;
     const checklistHTML = checklist.length
-      ? `<ul style="padding-left:18px">${checklist
-          .map((c) => `<li>${c.concluido ? "☑" : "☐"} ${esc(c.item)}</li>`)
-          .join("")}</ul>`
+      ? `<table style="width:100%;border-collapse:collapse;margin-top:6px">
+          <thead><tr style="background:#f3f4f6"><th style="text-align:left;padding:6px;border:1px solid #ddd">Item</th><th style="text-align:right;padding:6px;border:1px solid #ddd;width:120px">Valor</th></tr></thead>
+          <tbody>${checklist.map((c) => {
+            const p = catalogo.find((x: any) => x.nome === c.item);
+            const preco = Number(p?.preco) || 0;
+            return `<tr><td style="padding:6px;border:1px solid #ddd">${c.concluido ? "☑" : "☐"} ${esc(c.item)}</td><td style="padding:6px;border:1px solid #ddd;text-align:right">${brl(preco)}</td></tr>`;
+          }).join("")}</tbody>
+          <tfoot><tr><td style="padding:6px;border:1px solid #ddd;text-align:right;font-weight:bold">Total</td><td style="padding:6px;border:1px solid #ddd;text-align:right;font-weight:bold">${brl(totalChecklist)}</td></tr></tfoot>
+        </table>`
       : '<p style="color:#666"><em>Nenhum item</em></p>';
-    const imgHTML = signedUrl
-      ? `<div style="margin-top:14px"><strong>OS Assinada:</strong><br/><img src="${signedUrl}" style="max-width:100%;max-height:400px;border:1px solid #ccc;margin-top:6px"/></div>`
+    const imgs = anexos.filter((a) => (a.type || "").startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(a.name));
+    const imgHTML = imgs.length
+      ? `<div style="margin-top:14px"><strong>OS Assinada / Anexos (imagens):</strong>${imgs
+          .map((a) => signedMap[a.path] ? `<div style="margin-top:6px"><img src="${signedMap[a.path]}" style="max-width:100%;max-height:400px;border:1px solid #ccc"/></div>` : "")
+          .join("")}</div>`
       : "";
     w.document.write(`<html><head><title>OS #${servico.numero_servico}</title>
 <style>body{font-family:Arial,sans-serif;padding:24px;color:#111}table{width:100%;border-collapse:collapse;margin-top:8px}td{padding:6px 4px;vertical-align:top}h2{margin:0 0 10px}.box{border:1px solid #ddd;padding:10px;border-radius:6px;margin-top:12px}.lbl{color:#666;font-size:11px;text-transform:uppercase}.val{font-size:13px;font-weight:600}.sig{margin-top:60px;border-top:1px solid #111;padding-top:6px;text-align:center;font-size:12px}</style>
@@ -226,6 +300,8 @@ ${imgHTML}
 
   if (!servico) return null;
 
+  const agenteEmLista = agentes.some((a: any) => a.nome === form.agente_funerario);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -261,17 +337,24 @@ ${imgHTML}
 
           {/* Checklist */}
           <div className="border rounded p-3">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
               <Label className="text-sm font-semibold">Serviços Solicitados (Checklist)</Label>
-              <Badge variant="outline">{checklist.length} selecionado(s)</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{checklist.length} selecionado(s)</Badge>
+                <Badge>Total: {brl(totalChecklist)}</Badge>
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-1 max-h-60 overflow-y-auto">
               {catalogo.map((item: any) => {
                 const sel = checklist.find((c) => c.item === item.nome);
+                const preco = Number(item.preco) || 0;
                 return (
                   <div key={item.id} className="flex items-center gap-2 p-1.5 hover:bg-muted/40 rounded">
                     <Checkbox checked={!!sel} onCheckedChange={() => toggleItem(item.nome)} />
-                    <span className="flex-1 text-sm">{item.nome} <span className="text-xs text-muted-foreground">({item.tipo})</span></span>
+                    <span className="flex-1 text-sm">
+                      {item.nome} <span className="text-xs text-muted-foreground">({item.tipo})</span>
+                      {preco > 0 && <span className="text-xs text-muted-foreground ml-1">· {brl(preco)}</span>}
+                    </span>
                     {sel && (
                       <label className="flex items-center gap-1 text-xs">
                         <Checkbox checked={sel.concluido} onCheckedChange={(v) => setConcluido(item.nome, !!v)} />
@@ -289,7 +372,34 @@ ${imgHTML}
 
           {/* Equipe / veículo / materiais */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><Label>Agente Responsável</Label><Input value={form.agente_funerario || ""} onChange={(e) => setForm({ ...form, agente_funerario: e.target.value })} /></div>
+            <div>
+              <Label>Agente Responsável</Label>
+              {agentes.length > 0 ? (
+                <Select
+                  value={agenteEmLista ? form.agente_funerario : (form.agente_funerario ? "__custom__" : "")}
+                  onValueChange={(v) => {
+                    if (v === "__custom__") return;
+                    setForm({ ...form, agente_funerario: v });
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Selecionar agente" /></SelectTrigger>
+                  <SelectContent>
+                    {agentes.map((a: any) => (
+                      <SelectItem key={a.id} value={a.nome}>{a.nome}</SelectItem>
+                    ))}
+                    {form.agente_funerario && !agenteEmLista && (
+                      <SelectItem value="__custom__">{form.agente_funerario}</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={form.agente_funerario || ""}
+                  onChange={(e) => setForm({ ...form, agente_funerario: e.target.value })}
+                  placeholder="Nenhum usuário com perfil Agente cadastrado"
+                />
+              )}
+            </div>
             <div><Label>Veículo (placa)</Label><Input value={form.veiculo_placa || ""} onChange={(e) => setForm({ ...form, veiculo_placa: e.target.value })} /></div>
           </div>
           <div>
@@ -297,28 +407,58 @@ ${imgHTML}
             <Textarea rows={3} value={form.os_materiais || ""} onChange={(e) => setForm({ ...form, os_materiais: e.target.value })} placeholder="Ex.: 2x velas, 1x urna modelo X, ..." />
           </div>
 
-          {/* Upload OS assinada */}
+          {/* Upload arquivos (múltiplos, qualquer tipo) */}
           <div className="border rounded p-3">
-            <Label className="text-sm font-semibold">OS Assinada (imagem)</Label>
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <Label className="text-sm font-semibold">Anexos da OS (qualquer tipo)</Label>
               <label className="inline-flex">
-                <input type="file" accept="image/*" className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => e.target.files && handleUpload(e.target.files)}
+                />
                 <Button type="button" variant="outline" size="sm" asChild disabled={uploading}>
                   <span className="cursor-pointer">
-                    {uploading ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
-                    <span className="ml-1">{form.os_assinada_url ? "Substituir imagem" : "Enviar imagem"}</span>
+                    {uploading ? <Loader2 className="animate-spin mr-1" size={14} /> : <Upload size={14} className="mr-1" />}
+                    Adicionar arquivos
                   </span>
                 </Button>
               </label>
-              {form.os_assinada_url && (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setForm({ ...form, os_assinada_url: null })}>
-                  Remover
-                </Button>
-              )}
             </div>
-            {signedUrl && (
-              <img src={signedUrl} alt="OS assinada" className="mt-3 max-h-64 border rounded" />
+
+            {anexos.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic mt-2">Nenhum anexo enviado.</p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {anexos.map((a) => {
+                  const url = signedMap[a.path];
+                  const isImg = (a.type || "").startsWith("image/") || /\.(png|jpe?g|gif|webp)$/i.test(a.name);
+                  return (
+                    <div key={a.path} className="flex items-center gap-2 border rounded p-2">
+                      {isImg && url ? (
+                        <img src={url} alt={a.name} className="w-12 h-12 object-cover rounded border" />
+                      ) : (
+                        <div className="w-12 h-12 flex items-center justify-center bg-muted rounded border">
+                          <Paperclip size={18} />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm truncate">{a.name}</div>
+                        {a.size && <div className="text-xs text-muted-foreground">{(a.size / 1024).toFixed(1)} KB</div>}
+                      </div>
+                      {url && (
+                        <a href={url} target="_blank" rel="noreferrer" download={a.name}>
+                          <Button type="button" variant="ghost" size="icon"><Download size={14} /></Button>
+                        </a>
+                      )}
+                      <Button type="button" variant="ghost" size="icon" onClick={() => removeAnexo(a)}>
+                        <X size={14} />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
