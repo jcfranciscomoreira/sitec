@@ -103,7 +103,7 @@ export const createUsuario = createServerFn({ method: "POST" })
 
 const updateRoleSchema = z.object({
   userId: z.string().uuid(),
-  role: z.enum(["admin", "operador", "vendedor", "cobrador"]),
+  role: z.enum(["admin", "operador", "vendedor", "cobrador", "agente"]),
 });
 
 export const updateUsuarioRole = createServerFn({ method: "POST" })
