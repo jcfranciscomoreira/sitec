@@ -247,6 +247,7 @@ export type Database = {
           fornecedor_cliente: string | null
           id: string
           observacoes: string | null
+          servico_id: string | null
           status: Database["public"]["Enums"]["status_conta"]
           tipo: Database["public"]["Enums"]["tipo_movimento"]
           updated_at: string
@@ -265,6 +266,7 @@ export type Database = {
           fornecedor_cliente?: string | null
           id?: string
           observacoes?: string | null
+          servico_id?: string | null
           status?: Database["public"]["Enums"]["status_conta"]
           tipo: Database["public"]["Enums"]["tipo_movimento"]
           updated_at?: string
@@ -283,6 +285,7 @@ export type Database = {
           fornecedor_cliente?: string | null
           id?: string
           observacoes?: string | null
+          servico_id?: string | null
           status?: Database["public"]["Enums"]["status_conta"]
           tipo?: Database["public"]["Enums"]["tipo_movimento"]
           updated_at?: string
@@ -295,6 +298,13 @@ export type Database = {
             columns: ["filial_id"]
             isOneToOne: false
             referencedRelation: "filiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_financeiras_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos_funerarios"
             referencedColumns: ["id"]
           },
         ]
@@ -444,6 +454,114 @@ export type Database = {
             columns: ["associado_id"]
             isOneToOne: false
             referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estoque_itens: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          estoque_minimo: number
+          filial_id: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          produto_id: string | null
+          quantidade: number
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          estoque_minimo?: number
+          filial_id?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          produto_id?: string | null
+          quantidade?: number
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          estoque_minimo?: number
+          filial_id?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          produto_id?: string | null
+          quantidade?: number
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_itens_filial_id_fkey"
+            columns: ["filial_id"]
+            isOneToOne: false
+            referencedRelation: "filiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "servicos_produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      estoque_movimentos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          item_id: string
+          observacao: string | null
+          quantidade: number
+          servico_id: string | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id: string
+          observacao?: string | null
+          quantidade: number
+          servico_id?: string | null
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id?: string
+          observacao?: string | null
+          quantidade?: number
+          servico_id?: string | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_movimentos_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "estoque_itens"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_movimentos_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "servicos_funerarios"
             referencedColumns: ["id"]
           },
         ]
