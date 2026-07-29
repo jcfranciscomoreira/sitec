@@ -36,6 +36,7 @@ export const MODULES: AppModule[] = [
     { key: "dashboard", label: "Dashboard" },
     { key: "atendimentos", label: "Atendimentos" },
     { key: "os", label: "Ordens de Serviço" },
+    { key: "estoque", label: "Estoque" },
     { key: "equipe", label: "Equipes e Veículos" },
     { key: "financeiro", label: "Financeiro Particular" },
     { key: "relatorios", label: "Relatórios" },
