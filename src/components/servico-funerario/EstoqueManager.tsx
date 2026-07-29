@@ -130,9 +130,14 @@ export function EstoqueManager() {
       {histItem && (
         <HistoricoDialog item={histItem} onOpenChange={(o: boolean) => !o && setHistItem(null)} />
       )}
+
+      <div className="pt-6 border-t">
+        <EstoqueHistoricoGeral />
+      </div>
     </div>
   );
 }
+
 
 function ItemDialog({ item, produtos, onOpenChange }: any) {
   const qc = useQueryClient();
