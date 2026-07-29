@@ -199,6 +199,33 @@ export function OSDialog({
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const wasConcluida = servico.status === "Concluída";
+      const isConcluida = form.status === "Concluída";
+
+      // Mapear itens do checklist → itens de estoque (via produto_id)
+      const produtoIds = checklist
+        .map((c) => catalogo.find((p: any) => p.nome === c.item)?.id)
+        .filter(Boolean) as string[];
+      let itensEstoque: any[] = [];
+      if (produtoIds.length) {
+        const { data } = await supabase
+          .from("estoque_itens").select("id, produto_id, quantidade, nome").in("produto_id", produtoIds);
+        itensEstoque = data ?? [];
+      }
+
+      // VALIDAÇÃO: bloquear conclusão sem estoque suficiente
+      if (isConcluida && !wasConcluida && itensEstoque.length) {
+        const { data: movsExist } = await supabase
+          .from("estoque_movimentos").select("item_id").eq("servico_id", servico.id).eq("tipo", "saida");
+        const jaBaixados = new Set((movsExist ?? []).map((m: any) => m.item_id));
+        const faltando = itensEstoque
+          .filter((i) => !jaBaixados.has(i.id) && Number(i.quantidade) < 1)
+          .map((i) => i.nome);
+        if (faltando.length) {
+          throw new Error(`Estoque insuficiente para concluir a OS. Itens sem saldo: ${faltando.join(", ")}`);
+        }
+      }
+
       const { error } = await supabase
         .from("servicos_funerarios")
         .update({
@@ -249,6 +276,12 @@ export function OSDialog({
       } else if (gerarConta) {
         const descricao = `OS #${servico.numero_servico} - ${servico.falecido_nome ?? ""}`.trim();
         const venc = form.os_data || new Date().toISOString().slice(0, 10);
+        // Reabrir: se estava cancelada e agora não está, volta pra pendente
+        const novoStatus = contaExistente?.status === "pago"
+          ? "pago"
+          : contaExistente?.status === "cancelado"
+            ? "pendente"
+            : (contaExistente?.status ?? "pendente");
         const payload: any = {
           tipo: "entrada",
           categoria: "Serviço Funerário",
@@ -256,7 +289,7 @@ export function OSDialog({
           valor: totalChecklist,
           data_emissao: venc,
           vencimento: venc,
-          status: contaExistente?.status === "pago" ? "pago" : "pendente",
+          status: novoStatus,
           fornecedor_cliente: form.responsavel_nome || null,
           filial_id: servico.filial_id || null,
           servico_id: servico.id,
@@ -268,51 +301,62 @@ export function OSDialog({
         }
       }
 
-      // Baixa de estoque ao concluir
-      if (form.status === "Concluída" && checklist.length) {
-        // Mapear itens do checklist → produto_id via catálogo
-        const produtoIds = checklist
-          .map((c) => catalogo.find((p: any) => p.nome === c.item)?.id)
-          .filter(Boolean) as string[];
-        if (produtoIds.length) {
-          const { data: itensEstoque } = await supabase
-            .from("estoque_itens").select("id, produto_id, quantidade, nome").in("produto_id", produtoIds);
-          if (itensEstoque?.length) {
-            // Movimentos já existentes para essa OS (idempotência)
-            const { data: movsExist } = await supabase
-              .from("estoque_movimentos").select("item_id").eq("servico_id", servico.id).eq("tipo", "saida");
-            const jaBaixados = new Set((movsExist ?? []).map((m: any) => m.item_id));
-            const avisosSemEstoque: string[] = [];
-            for (const item of itensEstoque as any[]) {
-              if (jaBaixados.has(item.id)) continue;
-              const qty = 1; // 1 unidade por item de checklist
-              const { error: mErr } = await supabase.from("estoque_movimentos").insert({
-                item_id: item.id, tipo: "saida", quantidade: qty,
-                servico_id: servico.id, observacao: `Baixa automática OS #${servico.numero_servico}`,
-              });
-              if (mErr && !mErr.message.includes("duplicate")) continue;
-              await supabase.from("estoque_itens").update({
-                quantidade: Number(item.quantidade) - qty,
-              }).eq("id", item.id);
-              if (Number(item.quantidade) - qty < 0) avisosSemEstoque.push(item.nome);
-            }
-            if (avisosSemEstoque.length) {
-              toast.warning(`Estoque negativo: ${avisosSemEstoque.join(", ")}`);
-            }
+      // REVERSÃO de estoque quando sai de "Concluída"
+      if (wasConcluida && !isConcluida) {
+        const { data: movs } = await supabase
+          .from("estoque_movimentos")
+          .select("id, item_id, quantidade")
+          .eq("servico_id", servico.id).eq("tipo", "saida");
+        for (const m of movs ?? []) {
+          const { data: it } = await supabase
+            .from("estoque_itens").select("quantidade").eq("id", m.item_id).maybeSingle();
+          if (it) {
+            await supabase.from("estoque_itens")
+              .update({ quantidade: Number(it.quantidade) + Number(m.quantidade) })
+              .eq("id", m.item_id);
           }
+          await supabase.from("estoque_movimentos").delete().eq("id", m.id);
+        }
+        if ((movs ?? []).length) {
+          toast.info(`Estoque revertido (${movs!.length} item[s]) — OS reaberta/cancelada.`);
+        }
+      }
+
+      // Baixa de estoque ao concluir (idempotente)
+      if (isConcluida && itensEstoque.length) {
+        const { data: movsExist } = await supabase
+          .from("estoque_movimentos").select("item_id").eq("servico_id", servico.id).eq("tipo", "saida");
+        const jaBaixados = new Set((movsExist ?? []).map((m: any) => m.item_id));
+        const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
+        for (const item of itensEstoque) {
+          if (jaBaixados.has(item.id)) continue;
+          const qty = 1;
+          const { error: mErr } = await supabase.from("estoque_movimentos").insert({
+            item_id: item.id, tipo: "saida", quantidade: qty,
+            servico_id: servico.id, created_by: uid,
+            observacao: `Baixa automática OS #${servico.numero_servico}`,
+          });
+          if (mErr && !mErr.message.includes("duplicate")) continue;
+          await supabase.from("estoque_itens").update({
+            quantidade: Number(item.quantidade) - qty,
+          }).eq("id", item.id);
         }
       }
     },
     onSuccess: () => {
       toast.success("OS salva");
       qc.invalidateQueries({ queryKey: ["servicos-funerarios-list"] });
+      qc.invalidateQueries({ queryKey: ["os-list"] });
+      qc.invalidateQueries({ queryKey: ["os-contas"] });
       qc.invalidateQueries({ queryKey: ["servico-checklist", servico.id] });
       qc.invalidateQueries({ queryKey: ["estoque-itens"] });
+      qc.invalidateQueries({ queryKey: ["estoque-mov-all"] });
       qc.invalidateQueries({ queryKey: ["contas-financeiras"] });
       onOpenChange(false);
     },
     onError: (e: any) => toast.error("Erro: " + e.message),
   });
+
 
 
   const handlePrint = async () => {
