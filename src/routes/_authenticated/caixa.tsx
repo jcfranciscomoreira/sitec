@@ -204,6 +204,9 @@ function totais(movs: Movimento[], abertura: number) {
 function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: string }) {
   const qc = useQueryClient();
   const [fecharOpen, setFecharOpen] = useState(false);
+  const [pagina, setPagina] = useState(0);
+  const porPagina = 6;
+
 
   const { data: movs = [], isLoading } = useQuery({
     queryKey: ["caixa-movs", caixa.id],
