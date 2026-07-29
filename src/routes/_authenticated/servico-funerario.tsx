@@ -71,13 +71,13 @@ function ServicoFunerarioPage() {
 
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 md:grid-cols-6 h-auto gap-1">
+        <TabsList className="grid grid-cols-2 md:grid-cols-7 h-auto gap-1">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="atendimentos">Atendimentos</TabsTrigger>
           <TabsTrigger value="os">O.S.</TabsTrigger>
+          <TabsTrigger value="estoque">Estoque</TabsTrigger>
           <TabsTrigger value="equipe">Equipes</TabsTrigger>
           <TabsTrigger value="catalogo">Serviços/Produtos</TabsTrigger>
-          <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
         </TabsList>
 
@@ -108,9 +108,15 @@ function ServicoFunerarioPage() {
         <TabsContent value="atendimentos">
           <AtendimentosTab />
         </TabsContent>
-        
-        {/* Placeholder for other tabs */}
-        <TabsContent value="os"><div className="p-8 text-center border rounded-lg bg-muted/20">Módulo de Ordens de Serviço em desenvolvimento</div></TabsContent>
+
+        <TabsContent value="os">
+          <OSListTab />
+        </TabsContent>
+
+        <TabsContent value="estoque" className="mt-4">
+          <EstoqueManager />
+        </TabsContent>
+
         <TabsContent value="equipe"><div className="p-8 text-center border rounded-lg bg-muted/20">Gestão de Equipes e Veículos em desenvolvimento</div></TabsContent>
         <TabsContent value="catalogo">
           <Card>
@@ -119,7 +125,6 @@ function ServicoFunerarioPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="financeiro"><div className="p-8 text-center border rounded-lg bg-muted/20">Controle Financeiro de Serviços Particulares em desenvolvimento</div></TabsContent>
         <TabsContent value="relatorios"><div className="p-8 text-center border rounded-lg bg-muted/20">Relatórios de Atendimento em desenvolvimento</div></TabsContent>
       </Tabs>
         </div>
