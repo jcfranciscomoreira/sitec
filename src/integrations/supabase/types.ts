@@ -150,6 +150,130 @@ export type Database = {
         }
         Relationships: []
       }
+      caixa_movimentos: {
+        Row: {
+          associado_id: string | null
+          caixa_id: string
+          created_at: string
+          created_by: string | null
+          descricao: string
+          forma_pagamento: string
+          id: string
+          mensalidade_id: string | null
+          tipo: string
+          valor: number
+        }
+        Insert: {
+          associado_id?: string | null
+          caixa_id: string
+          created_at?: string
+          created_by?: string | null
+          descricao: string
+          forma_pagamento?: string
+          id?: string
+          mensalidade_id?: string | null
+          tipo?: string
+          valor: number
+        }
+        Update: {
+          associado_id?: string | null
+          caixa_id?: string
+          created_at?: string
+          created_by?: string | null
+          descricao?: string
+          forma_pagamento?: string
+          id?: string
+          mensalidade_id?: string | null
+          tipo?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caixa_movimentos_associado_id_fkey"
+            columns: ["associado_id"]
+            isOneToOne: false
+            referencedRelation: "associados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caixa_movimentos_caixa_id_fkey"
+            columns: ["caixa_id"]
+            isOneToOne: false
+            referencedRelation: "caixa_sessoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caixa_movimentos_mensalidade_id_fkey"
+            columns: ["mensalidade_id"]
+            isOneToOne: false
+            referencedRelation: "mensalidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      caixa_sessoes: {
+        Row: {
+          aberto_em: string
+          conta_financeira_id: string | null
+          created_at: string
+          fechado_em: string | null
+          filial_id: string | null
+          id: string
+          observacoes: string | null
+          operador_id: string | null
+          operador_nome: string
+          status: string
+          updated_at: string
+          valor_abertura: number
+          valor_fechamento_informado: number | null
+        }
+        Insert: {
+          aberto_em?: string
+          conta_financeira_id?: string | null
+          created_at?: string
+          fechado_em?: string | null
+          filial_id?: string | null
+          id?: string
+          observacoes?: string | null
+          operador_id?: string | null
+          operador_nome: string
+          status?: string
+          updated_at?: string
+          valor_abertura?: number
+          valor_fechamento_informado?: number | null
+        }
+        Update: {
+          aberto_em?: string
+          conta_financeira_id?: string | null
+          created_at?: string
+          fechado_em?: string | null
+          filial_id?: string | null
+          id?: string
+          observacoes?: string | null
+          operador_id?: string | null
+          operador_nome?: string
+          status?: string
+          updated_at?: string
+          valor_abertura?: number
+          valor_fechamento_informado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caixa_sessoes_conta_financeira_id_fkey"
+            columns: ["conta_financeira_id"]
+            isOneToOne: false
+            referencedRelation: "contas_financeiras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caixa_sessoes_filial_id_fkey"
+            columns: ["filial_id"]
+            isOneToOne: false
+            referencedRelation: "filiais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cobradores: {
         Row: {
           ativo: boolean
