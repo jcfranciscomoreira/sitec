@@ -279,6 +279,30 @@ function OSListTab() {
     },
   });
 
+  const { data: contas = [] } = useQuery({
+    queryKey: ['os-contas'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('contas_financeiras')
+        .select('id, servico_id, status, valor')
+        .not('servico_id', 'is', null);
+      return data ?? [];
+    },
+  });
+  const contaByServico: Record<string, any> = Object.fromEntries(
+    contas.map((c: any) => [c.servico_id, c])
+  );
+
+  const statusBadge = (s: string) => {
+    const map: Record<string, string> = {
+      pago: 'bg-green-100 text-green-800',
+      pendente: 'bg-amber-100 text-amber-800',
+      atrasado: 'bg-red-100 text-red-800',
+      cancelado: 'bg-gray-200 text-gray-700',
+    };
+    return map[s] ?? 'bg-blue-100 text-blue-800';
+  };
+
   return (
     <div className="space-y-4 mt-4">
       <h2 className="text-xl font-semibold">Ordens de Serviço</h2>
@@ -295,37 +319,56 @@ function OSListTab() {
               <th>OS</th>
               <th>Falecido</th>
               <th>Data</th>
-              <th>Hora</th>
               <th>Agente</th>
               <th>Tipo</th>
               <th>Status</th>
+              <th>Conta a Receber</th>
               <th>Ações</th>
             </tr>
           </thead>
           <tbody>
-            {lista.map((o: any) => (
-              <tr key={o.id}>
-                <td className="font-mono">#{o.numero_servico}</td>
-                <td className="font-medium">{o.falecido_nome}</td>
-                <td>{o.os_data ? format(new Date(o.os_data), 'dd/MM/yyyy') : '-'}</td>
-                <td>{o.os_hora ?? '-'}</td>
-                <td className="text-sm">{o.agente_funerario ?? '-'}</td>
-                <td><Badge variant="outline">{o.tipo}</Badge></td>
-                <td>
-                  <Badge className={
-                    o.status === 'Concluída' || o.status === 'Finalizado' ? 'bg-green-100 text-green-800' :
-                    o.status === 'Cancelada' || o.status === 'Cancelado' ? 'bg-red-100 text-red-800' :
-                    o.status === 'Em Execução' ? 'bg-amber-100 text-amber-800' :
-                    'bg-blue-100 text-blue-800'
-                  }>{o.status ?? '-'}</Badge>
-                </td>
-                <td>
-                  <Button variant="ghost" size="sm" onClick={() => setOsServico(o)}>
-                    <FileText size={16} className="text-emerald-600 mr-1" />Abrir
-                  </Button>
-                </td>
-              </tr>
-            ))}
+            {lista.map((o: any) => {
+              const conta = contaByServico[o.id];
+              return (
+                <tr key={o.id}>
+                  <td className="font-mono">#{o.numero_servico}</td>
+                  <td className="font-medium">{o.falecido_nome}</td>
+                  <td>{o.os_data ? format(new Date(o.os_data), 'dd/MM/yyyy') : '-'} {o.os_hora ?? ''}</td>
+                  <td className="text-sm">{o.agente_funerario ?? '-'}</td>
+                  <td><Badge variant="outline">{o.tipo}</Badge></td>
+                  <td>
+                    <Badge className={
+                      o.status === 'Concluída' || o.status === 'Finalizado' ? 'bg-green-100 text-green-800' :
+                      o.status === 'Cancelada' || o.status === 'Cancelado' ? 'bg-red-100 text-red-800' :
+                      o.status === 'Em Execução' ? 'bg-amber-100 text-amber-800' :
+                      'bg-blue-100 text-blue-800'
+                    }>{o.status ?? '-'}</Badge>
+                  </td>
+                  <td>
+                    {conta ? (
+                      <div className="flex items-center gap-2">
+                        <Badge className={statusBadge(conta.status)}>{conta.status}</Badge>
+                        <span className="text-xs">R$ {Number(conta.valor).toFixed(2)}</span>
+                        <Link
+                          to="/contas"
+                          search={{ servico_id: o.id } as any}
+                          className="text-xs text-blue-600 underline"
+                        >
+                          abrir
+                        </Link>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">—</span>
+                    )}
+                  </td>
+                  <td>
+                    <Button variant="ghost" size="sm" onClick={() => setOsServico(o)}>
+                      <FileText size={16} className="text-emerald-600 mr-1" />Abrir
+                    </Button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </ResponsiveTable>
       )}
@@ -333,3 +376,4 @@ function OSListTab() {
     </div>
   );
 }
+
