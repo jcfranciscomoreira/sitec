@@ -264,3 +264,72 @@ function AtendimentosTab() {
     </div>
   );
 }
+
+function OSListTab() {
+  const [osServico, setOsServico] = useState<any>(null);
+  const { data: lista = [], isLoading } = useQuery({
+    queryKey: ['os-list'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('servicos_funerarios')
+        .select('id, numero_servico, falecido_nome, os_data, os_hora, status, agente_funerario, tipo, filial_id')
+        .order('numero_servico', { ascending: false })
+        .limit(500);
+      return data ?? [];
+    },
+  });
+
+  return (
+    <div className="space-y-4 mt-4">
+      <h2 className="text-xl font-semibold">Ordens de Serviço</h2>
+      {isLoading ? (
+        <div className="p-8 text-center italic text-muted-foreground">Carregando...</div>
+      ) : lista.length === 0 ? (
+        <div className="p-8 text-center border-2 border-dashed rounded-lg bg-muted/10">
+          <p className="text-muted-foreground">Nenhuma OS registrada.</p>
+        </div>
+      ) : (
+        <ResponsiveTable>
+          <thead>
+            <tr>
+              <th>OS</th>
+              <th>Falecido</th>
+              <th>Data</th>
+              <th>Hora</th>
+              <th>Agente</th>
+              <th>Tipo</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {lista.map((o: any) => (
+              <tr key={o.id}>
+                <td className="font-mono">#{o.numero_servico}</td>
+                <td className="font-medium">{o.falecido_nome}</td>
+                <td>{o.os_data ? format(new Date(o.os_data), 'dd/MM/yyyy') : '-'}</td>
+                <td>{o.os_hora ?? '-'}</td>
+                <td className="text-sm">{o.agente_funerario ?? '-'}</td>
+                <td><Badge variant="outline">{o.tipo}</Badge></td>
+                <td>
+                  <Badge className={
+                    o.status === 'Concluída' || o.status === 'Finalizado' ? 'bg-green-100 text-green-800' :
+                    o.status === 'Cancelada' || o.status === 'Cancelado' ? 'bg-red-100 text-red-800' :
+                    o.status === 'Em Execução' ? 'bg-amber-100 text-amber-800' :
+                    'bg-blue-100 text-blue-800'
+                  }>{o.status ?? '-'}</Badge>
+                </td>
+                <td>
+                  <Button variant="ghost" size="sm" onClick={() => setOsServico(o)}>
+                    <FileText size={16} className="text-emerald-600 mr-1" />Abrir
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </ResponsiveTable>
+      )}
+      <OSDialog servico={osServico} open={!!osServico} onOpenChange={(o) => !o && setOsServico(null)} />
+    </div>
+  );
+}
