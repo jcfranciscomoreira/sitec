@@ -49,6 +49,7 @@ export const MODULES: AppModule[] = [
     { key: "historico", label: "Histórico de baixas" },
     { key: "cobradores", label: "Cadastro de cobradores" },
   ] },
+  { group: "Gestão Financeira", key: "caixa", label: "Caixa", url: "/caixa", icon: Wallet },
   { group: "Gestão Financeira", key: "contas", label: "Entradas e Saidas", url: "/contas", icon: Receipt },
   { group: "Vendas", key: "vendas", label: "Mapa de Vendas", url: "/vendas", icon: MapPin },
   { group: "Vendas", key: "crm", label: "CRM (Kanban)", url: "/crm", icon: Layers },
