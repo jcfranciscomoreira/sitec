@@ -117,18 +117,18 @@ export function EstoqueManager() {
         <ItemDialog
           item={editing}
           produtos={produtos}
-          onOpenChange={(o) => !o && setEditing(null)}
+          onOpenChange={(o: boolean) => !o && setEditing(null)}
         />
       )}
       {movItem && (
         <MovimentoDialog
           item={movItem.item}
           tipoInicial={movItem.tipo}
-          onOpenChange={(o) => !o && setMovItem(null)}
+          onOpenChange={(o: boolean) => !o && setMovItem(null)}
         />
       )}
       {histItem && (
-        <HistoricoDialog item={histItem} onOpenChange={(o) => !o && setHistItem(null)} />
+        <HistoricoDialog item={histItem} onOpenChange={(o: boolean) => !o && setHistItem(null)} />
       )}
     </div>
   );
