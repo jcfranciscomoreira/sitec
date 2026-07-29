@@ -225,15 +225,95 @@ export function OSDialog({
         );
         if (cErr) throw cErr;
       }
+
+      // Upsert servico_financeiro (total)
+      const { data: sf } = await supabase
+        .from("servico_financeiro").select("id").eq("servico_id", servico.id).maybeSingle();
+      if (sf?.id) {
+        await supabase.from("servico_financeiro").update({
+          valor_total: totalChecklist, valor_final: totalChecklist,
+        }).eq("id", sf.id);
+      } else if (totalChecklist > 0) {
+        await supabase.from("servico_financeiro").insert({
+          servico_id: servico.id, valor_total: totalChecklist, valor_final: totalChecklist, status: "pendente",
+        });
+      }
+
+      // Contas a Receber (auto) — só para não-Plano e com valor > 0
+      const gerarConta = servico.tipo !== "Plano" && totalChecklist > 0;
+      const { data: contaExistente } = await supabase
+        .from("contas_financeiras").select("id, status").eq("servico_id", servico.id).maybeSingle();
+
+      if (form.status === "Cancelada" && contaExistente?.id) {
+        await supabase.from("contas_financeiras").update({ status: "cancelado" }).eq("id", contaExistente.id);
+      } else if (gerarConta) {
+        const descricao = `OS #${servico.numero_servico} - ${servico.falecido_nome ?? ""}`.trim();
+        const venc = form.os_data || new Date().toISOString().slice(0, 10);
+        const payload: any = {
+          tipo: "entrada",
+          categoria: "Serviço Funerário",
+          descricao,
+          valor: totalChecklist,
+          data_emissao: venc,
+          vencimento: venc,
+          status: contaExistente?.status === "pago" ? "pago" : "pendente",
+          fornecedor_cliente: form.responsavel_nome || null,
+          filial_id: servico.filial_id || null,
+          servico_id: servico.id,
+        };
+        if (contaExistente?.id) {
+          await supabase.from("contas_financeiras").update(payload).eq("id", contaExistente.id);
+        } else {
+          await supabase.from("contas_financeiras").insert(payload);
+        }
+      }
+
+      // Baixa de estoque ao concluir
+      if (form.status === "Concluída" && checklist.length) {
+        // Mapear itens do checklist → produto_id via catálogo
+        const produtoIds = checklist
+          .map((c) => catalogo.find((p: any) => p.nome === c.item)?.id)
+          .filter(Boolean) as string[];
+        if (produtoIds.length) {
+          const { data: itensEstoque } = await supabase
+            .from("estoque_itens").select("id, produto_id, quantidade, nome").in("produto_id", produtoIds);
+          if (itensEstoque?.length) {
+            // Movimentos já existentes para essa OS (idempotência)
+            const { data: movsExist } = await supabase
+              .from("estoque_movimentos").select("item_id").eq("servico_id", servico.id).eq("tipo", "saida");
+            const jaBaixados = new Set((movsExist ?? []).map((m: any) => m.item_id));
+            const avisosSemEstoque: string[] = [];
+            for (const item of itensEstoque as any[]) {
+              if (jaBaixados.has(item.id)) continue;
+              const qty = 1; // 1 unidade por item de checklist
+              const { error: mErr } = await supabase.from("estoque_movimentos").insert({
+                item_id: item.id, tipo: "saida", quantidade: qty,
+                servico_id: servico.id, observacao: `Baixa automática OS #${servico.numero_servico}`,
+              });
+              if (mErr && !mErr.message.includes("duplicate")) continue;
+              await supabase.from("estoque_itens").update({
+                quantidade: Number(item.quantidade) - qty,
+              }).eq("id", item.id);
+              if (Number(item.quantidade) - qty < 0) avisosSemEstoque.push(item.nome);
+            }
+            if (avisosSemEstoque.length) {
+              toast.warning(`Estoque negativo: ${avisosSemEstoque.join(", ")}`);
+            }
+          }
+        }
+      }
     },
     onSuccess: () => {
       toast.success("OS salva");
       qc.invalidateQueries({ queryKey: ["servicos-funerarios-list"] });
       qc.invalidateQueries({ queryKey: ["servico-checklist", servico.id] });
+      qc.invalidateQueries({ queryKey: ["estoque-itens"] });
+      qc.invalidateQueries({ queryKey: ["contas-financeiras"] });
       onOpenChange(false);
     },
     onError: (e: any) => toast.error("Erro: " + e.message),
   });
+
 
   const handlePrint = async () => {
     const header = await getEmpresaHeaderHTML();
