@@ -316,7 +316,7 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {movs.map((m) => (
+                  {movs.slice(pagina * porPagina, pagina * porPagina + porPagina).map((m) => (
                     <TableRow key={m.id}>
                       <TableCell className="whitespace-nowrap text-xs">{new Date(m.created_at).toLocaleTimeString("pt-BR")}</TableCell>
                       <TableCell><TipoBadge tipo={m.tipo} /></TableCell>
@@ -327,10 +327,29 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
                   ))}
                 </TableBody>
               </Table>
+              {movs.length > porPagina && (
+                <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-0">
+                  <p className="text-xs text-muted-foreground">
+                    Mostrando {pagina * porPagina + 1}–{Math.min((pagina + 1) * porPagina, movs.length)} de {movs.length}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" disabled={pagina === 0} onClick={() => setPagina((p) => p - 1)}>Anterior</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={(pagina + 1) * porPagina >= movs.length}
+                      onClick={() => setPagina((p) => p + 1)}
+                    >
+                      Próximos
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
+
 
       <Dialog open={fecharOpen} onOpenChange={setFecharOpen}>
         <DialogContent>
