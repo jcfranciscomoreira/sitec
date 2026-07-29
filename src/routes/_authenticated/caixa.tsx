@@ -299,7 +299,7 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
         <CardHeader><CardTitle className="font-serif text-base">Movimentações do caixa</CardTitle></CardHeader>
         <CardContent className="p-0 sm:p-6 sm:pt-0">
           {isLoading ? <SkeletonTable rows={3} /> : movs.length === 0 ? (
-            <EmptyState title="Nenhuma movimentação" description="Receba uma mensalidade ou registre um lançamento avulso." />
+            <EmptyState title="Nenhuma movimentação" message="Receba uma mensalidade ou registre um lançamento avulso." />
           ) : (
             <div className="overflow-x-auto">
               <Table>
@@ -581,7 +581,7 @@ function HistoricoSection() {
   });
 
   if (isLoading) return <SkeletonTable rows={5} />;
-  if (lista.length === 0) return <EmptyState title="Nenhum caixa registrado" description="Abra um caixa na aba de operação." />;
+  if (lista.length === 0) return <EmptyState title="Nenhum caixa registrado" message="Abra um caixa na aba de operação." />;
 
   return (
     <>
