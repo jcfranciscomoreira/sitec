@@ -218,8 +218,9 @@ function MovimentoDialog({ item, tipoInicial, onOpenChange }: any) {
     mutationFn: async () => {
       const q = Number(qty);
       if (!q || q <= 0) throw new Error("Quantidade inválida");
+      const uid = (await supabase.auth.getUser()).data.user?.id ?? null;
       const { error } = await supabase.from("estoque_movimentos").insert({
-        item_id: item.id, tipo, quantidade: q, observacao: obs || null,
+        item_id: item.id, tipo, quantidade: q, observacao: obs || null, created_by: uid,
       });
       if (error) throw error;
       const atual = Number(item.quantidade);
@@ -231,6 +232,7 @@ function MovimentoDialog({ item, tipoInicial, onOpenChange }: any) {
       toast.success("Movimento registrado");
       qc.invalidateQueries({ queryKey: ["estoque-itens"] });
       qc.invalidateQueries({ queryKey: ["estoque-mov", item.id] });
+      qc.invalidateQueries({ queryKey: ["estoque-mov-all"] });
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message),
@@ -268,30 +270,57 @@ function MovimentoDialog({ item, tipoInicial, onOpenChange }: any) {
   );
 }
 
+async function enrichMovs(raw: any[]) {
+  const uids = [...new Set(raw.map((m: any) => m.created_by).filter(Boolean))] as string[];
+  const sids = [...new Set(raw.map((m: any) => m.servico_id).filter(Boolean))] as string[];
+  const [profs, svs] = await Promise.all([
+    uids.length
+      ? supabase.from("profiles").select("id, nome").in("id", uids)
+      : Promise.resolve({ data: [] as any[] }),
+    sids.length
+      ? supabase.from("servicos_funerarios").select("id, numero_servico, falecido_nome").in("id", sids)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
+  const pMap = Object.fromEntries((profs.data ?? []).map((p: any) => [p.id, p.nome]));
+  const sMap = Object.fromEntries((svs.data ?? []).map((s: any) => [s.id, s]));
+  return raw.map((m: any) => ({
+    ...m,
+    _user: pMap[m.created_by] ?? (m.created_by ? "usuário" : "sistema"),
+    _os: sMap[m.servico_id],
+  }));
+}
+
 function HistoricoDialog({ item, onOpenChange }: any) {
   const { data: movs = [] } = useQuery({
     queryKey: ["estoque-mov", item.id],
     queryFn: async () => {
       const { data } = await supabase.from("estoque_movimentos")
         .select("*").eq("item_id", item.id).order("created_at", { ascending: false }).limit(200);
-      return data ?? [];
+      return enrichMovs(data ?? []);
     },
   });
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Histórico: {item.nome}</DialogTitle></DialogHeader>
         {movs.length === 0 ? (
           <p className="text-sm text-muted-foreground italic">Sem movimentações.</p>
         ) : (
           <ResponsiveTable>
-            <thead><tr><th>Data</th><th>Tipo</th><th>Qtd</th><th>Observação</th></tr></thead>
+            <thead><tr><th>Data</th><th>Tipo</th><th>Qtd</th><th>OS</th><th>Usuário</th><th>Observação</th></tr></thead>
             <tbody>
               {movs.map((m: any) => (
                 <tr key={m.id}>
                   <td>{format(new Date(m.created_at), "dd/MM/yyyy HH:mm")}</td>
-                  <td><Badge variant="outline">{m.tipo}</Badge></td>
+                  <td>
+                    <Badge variant="outline" className={
+                      m.tipo === "entrada" ? "text-green-700 border-green-300" :
+                      m.tipo === "saida" ? "text-orange-700 border-orange-300" : ""
+                    }>{m.tipo}</Badge>
+                  </td>
                   <td>{Number(m.quantidade)}</td>
+                  <td className="text-sm">{m._os ? `#${m._os.numero_servico}` : "-"}</td>
+                  <td className="text-sm">{m._user}</td>
                   <td className="text-sm">{m.observacao ?? "-"}</td>
                 </tr>
               ))}
@@ -302,3 +331,54 @@ function HistoricoDialog({ item, onOpenChange }: any) {
     </Dialog>
   );
 }
+
+export function EstoqueHistoricoGeral() {
+  const { data: movs = [], isLoading } = useQuery({
+    queryKey: ["estoque-mov-all"],
+    queryFn: async () => {
+      const { data } = await supabase.from("estoque_movimentos")
+        .select("*, estoque_itens(nome)")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      return enrichMovs(data ?? []);
+    },
+  });
+  return (
+    <div className="space-y-3">
+      <h3 className="text-lg font-semibold">Histórico geral de movimentações</h3>
+      {isLoading ? (
+        <div className="p-6 text-center italic text-muted-foreground">Carregando...</div>
+      ) : movs.length === 0 ? (
+        <div className="p-6 text-center border-2 border-dashed rounded-lg bg-muted/10 text-muted-foreground">
+          Nenhuma movimentação registrada.
+        </div>
+      ) : (
+        <ResponsiveTable>
+          <thead>
+            <tr><th>Data</th><th>Item</th><th>Tipo</th><th>Qtd</th><th>OS</th><th>Falecido</th><th>Usuário</th><th>Observação</th></tr>
+          </thead>
+          <tbody>
+            {movs.map((m: any) => (
+              <tr key={m.id}>
+                <td className="text-sm">{format(new Date(m.created_at), "dd/MM/yyyy HH:mm")}</td>
+                <td className="font-medium">{m.estoque_itens?.nome ?? "-"}</td>
+                <td>
+                  <Badge variant="outline" className={
+                    m.tipo === "entrada" ? "text-green-700 border-green-300" :
+                    m.tipo === "saida" ? "text-orange-700 border-orange-300" : ""
+                  }>{m.tipo}</Badge>
+                </td>
+                <td>{Number(m.quantidade)}</td>
+                <td className="text-sm">{m._os ? `#${m._os.numero_servico}` : "-"}</td>
+                <td className="text-sm">{m._os?.falecido_nome ?? "-"}</td>
+                <td className="text-sm">{m._user}</td>
+                <td className="text-sm">{m.observacao ?? "-"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </ResponsiveTable>
+      )}
+    </div>
+  );
+}
+
