@@ -791,6 +791,35 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
     onError: (e: any) => toast.error("Erro ao emitir boleto", { description: e.message }),
   });
 
+  const bonificarFn = useServerFn(bonificarParcelas);
+  const cancelarBonifFn = useServerFn(cancelarBonificacao);
+
+  const bonificar = useMutation({
+    mutationFn: async (p: { id: string; motivo: string }) =>
+      await bonificarFn({ data: { mensalidadeIds: [p.id], motivo: p.motivo } }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["mensalidades-associado", associado.id] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      setBonificando(null); setMotivoBonif("");
+      toast.success("Parcela bonificada");
+    },
+    onError: (e: any) => toast.error("Erro ao bonificar", { description: e.message }),
+  });
+
+  const desfazerBonificacao = useMutation({
+    mutationFn: async (id: string) => await cancelarBonifFn({ data: { mensalidadeId: id } }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["mensalidades-associado", associado.id] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      toast.success("Bonificação removida");
+    },
+    onError: (e: any) => toast.error("Erro", { description: e.message }),
+  });
+
+
+
   function reimprimirTodosCarnes() {
     const pendentes = mens.filter((m) => m.status === "pendente" || m.status === "atrasado");
     imprimirCarnesAssociado(associado as any, pendentes as any);
