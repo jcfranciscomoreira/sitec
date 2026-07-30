@@ -68,7 +68,11 @@ export function ContratoConfigTab() {
       const editor = editorRef.current;
       if (editor && editor.contains(range.commonAncestorContainer)) {
         savedRange.current = range.cloneRange();
+        const node = range.startContainer;
+        const el = (node.nodeType === 3 ? node.parentElement : (node as HTMLElement)) as HTMLElement | null;
+        if (el) setCurrentSize(`${Math.round(parseFloat(window.getComputedStyle(el).fontSize) || 16)}px`);
       }
+
     }
     document.addEventListener("selectionchange", onSelectionChange);
     return () => document.removeEventListener("selectionchange", onSelectionChange);
