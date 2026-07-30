@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard, MapPin, BookOpen, FileText, ExternalLink, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard, MapPin, BookOpen, FileText, ExternalLink, Loader2, Gift, Undo2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
