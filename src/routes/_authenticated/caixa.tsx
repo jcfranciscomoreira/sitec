@@ -18,6 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { getEmpresaHeaderHTML } from "@/lib/print-header";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/use-permissions";
+
 
 export const Route = createFileRoute("/_authenticated/caixa")({
   head: () => ({
