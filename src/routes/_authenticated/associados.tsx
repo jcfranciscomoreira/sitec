@@ -1042,6 +1042,34 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
             ))}
           </TableBody>
         </Table>
+
+        {bonificando && (
+          <Dialog open onOpenChange={(v) => !v && setBonificando(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-serif">Bonificar parcela</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                <p className="text-muted-foreground">
+                  Competência {competenciaLabel(bonificando.competencia)} · {brl(bonificando.valor)} — a parcela será quitada como bonificação, sem entrada financeira.
+                </p>
+                <div className="space-y-2">
+                  <Label>Motivo da bonificação *</Label>
+                  <Textarea rows={3} value={motivoBonif} onChange={(e) => setMotivoBonif(e.target.value)} placeholder="Ex.: cortesia por indicação, acordo com a diretoria..." />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setBonificando(null)}>Cancelar</Button>
+                <Button
+                  disabled={bonificar.isPending || motivoBonif.trim().length < 3}
+                  onClick={() => bonificar.mutate({ id: bonificando.id, motivo: motivoBonif.trim() })}
+                >
+                  {bonificar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar bonificação
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </DialogContent>
     </Dialog>
   );
