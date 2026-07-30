@@ -771,6 +771,48 @@ export type Database = {
         }
         Relationships: []
       }
+      logs_auditoria: {
+        Row: {
+          acao: string
+          created_at: string
+          dados_antes: Json | null
+          dados_depois: Json | null
+          descricao: string | null
+          id: string
+          registro_id: string | null
+          tabela: string
+          user_email: string | null
+          user_id: string | null
+          user_nome: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          dados_antes?: Json | null
+          dados_depois?: Json | null
+          descricao?: string | null
+          id?: string
+          registro_id?: string | null
+          tabela: string
+          user_email?: string | null
+          user_id?: string | null
+          user_nome?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          dados_antes?: Json | null
+          dados_depois?: Json | null
+          descricao?: string | null
+          id?: string
+          registro_id?: string | null
+          tabela?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_nome?: string | null
+        }
+        Relationships: []
+      }
       mensalidades: {
         Row: {
           agente_recebimento: string | null
