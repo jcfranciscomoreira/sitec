@@ -56,6 +56,9 @@ function ConfiguracoesPage() {
         <TabsContent value="maps" className="mt-4">
           <MapsConfig />
         </TabsContent>
+        <TabsContent value="logs" className="mt-4">
+          <LogsAuditoria />
+        </TabsContent>
       </Tabs>
     </AppShell>
   );
