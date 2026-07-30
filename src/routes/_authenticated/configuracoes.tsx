@@ -36,6 +36,7 @@ function ConfiguracoesPage() {
           <TabsTrigger value="contrato">Contrato padrão</TabsTrigger>
           <TabsTrigger value="integracao">Integração bancária</TabsTrigger>
           <TabsTrigger value="maps">Google Maps</TabsTrigger>
+          <TabsTrigger value="logs">Log de atividades</TabsTrigger>
         </TabsList>
         <TabsContent value="identidade" className="mt-4">
           <IdentidadeVisual />
