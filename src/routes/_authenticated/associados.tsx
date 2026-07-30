@@ -1016,6 +1016,20 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
                         <Receipt className="h-4 w-4" />
                       </Button>
                     )}
+                    {isAdmin && !m.bonificada && m.status !== "pago" && m.status !== "cancelado" && (
+                      <Button size="icon" variant="ghost" title="Bonificar parcela (admin)" onClick={() => { setMotivoBonif(""); setBonificando(m); }}>
+                        <Gift className="h-4 w-4 text-gold" />
+                      </Button>
+                    )}
+                    {isAdmin && m.bonificada && (
+                      <Button
+                        size="icon" variant="ghost" title="Desfazer bonificação (admin)"
+                        onClick={() => { if (confirm("Desfazer a bonificação desta parcela?")) desfazerBonificacao.mutate(m.id); }}
+                        disabled={desfazerBonificacao.isPending}
+                      >
+                        <Undo2 className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button size="icon" variant="ghost" title="Editar parcela" onClick={() => { setCreating(false); setEditing(m); }}>
                       <Pencil className="h-4 w-4" />
                     </Button>
