@@ -432,6 +432,61 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
           </form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!movCancelar} onOpenChange={(o) => { if (!o) setMovCancelar(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="font-serif">Cancelar recebimento</DialogTitle></DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const mov = movCancelar;
+              if (!mov) return;
+              if (!isAdmin) {
+                setValidando(true);
+                try {
+                  const r = await verificarAdmin({ data: { email: admEmail, senha: admSenha } });
+                  if (!r.ok) {
+                    toast.error(r.motivo === "sem_permissao" ? "Este usuário não é administrador" : "E-mail ou senha inválidos");
+                    return;
+                  }
+                } catch (err: any) {
+                  toast.error("Não foi possível validar", { description: err?.message });
+                  return;
+                } finally {
+                  setValidando(false);
+                }
+              }
+              setMovCancelar(null);
+              cancelar.mutate(mov);
+            }}
+          >
+            <div className="rounded-md bg-muted p-3 text-sm">
+              <p className="truncate">{movCancelar?.descricao}</p>
+              <p className="text-muted-foreground">Valor: <b>{movCancelar ? brl(movCancelar.valor) : ""}</b> — a parcela voltará para em aberto.</p>
+            </div>
+            {!isAdmin && (
+              <>
+                <p className="text-sm text-muted-foreground">Esta ação exige autorização de um administrador.</p>
+                <div className="space-y-2">
+                  <Label>E-mail do administrador</Label>
+                  <Input type="email" autoComplete="off" value={admEmail} onChange={(e) => setAdmEmail(e.target.value)} required maxLength={255} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Senha do administrador</Label>
+                  <Input type="password" autoComplete="off" value={admSenha} onChange={(e) => setAdmSenha(e.target.value)} required maxLength={200} />
+                </div>
+              </>
+            )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setMovCancelar(null)}>Voltar</Button>
+              <Button type="submit" variant="destructive" disabled={validando || cancelar.isPending}>
+                {validando ? "Validando..." : "Confirmar cancelamento"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
