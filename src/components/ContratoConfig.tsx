@@ -23,6 +23,9 @@ export function ContratoConfigTab() {
   const [previewHtml, setPreviewHtml] = useState("");
 
   const [initialHtml, setInitialHtml] = useState<string>("");
+  const [liveHtml, setLiveHtml] = useState<string>("");
+  const [currentSize, setCurrentSize] = useState<string>("—");
+  const [sections, setSections] = useState<{ level: number; text: string }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -33,11 +36,25 @@ export function ContratoConfigTab() {
     })();
   }, []);
 
+  function syncLive() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    setLiveHtml(editor.innerHTML);
+    setSections(
+      Array.from(editor.querySelectorAll("h1,h2,h3")).map((h) => ({
+        level: Number(h.tagName.slice(1)),
+        text: (h.textContent || "").trim(),
+      })).filter((s) => s.text),
+    );
+  }
+
   useEffect(() => {
     if (!loading && !preview && editorRef.current && initialHtml && !editorRef.current.innerHTML) {
       editorRef.current.innerHTML = initialHtml;
+      syncLive();
     }
   }, [loading, preview, initialHtml]);
+
 
 
   // Keep track of the last selection inside the editor (toolbar clicks steal focus)
