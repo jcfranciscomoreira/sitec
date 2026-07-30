@@ -414,55 +414,77 @@ type ParcelaPreview = {
 
 function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
   const qc = useQueryClient();
-  const [codigo, setCodigo] = useState("");
-  const [parcela, setParcela] = useState<ParcelaPreview | null>(null);
+  const [busca, setBusca] = useState("");
+  const [termo, setTermo] = useState("");
+  const [assoc, setAssoc] = useState<{ id: string; nome: string; codigo: number } | null>(null);
+  const [sel, setSel] = useState<Record<string, boolean>>({});
   const [forma, setForma] = useState("dinheiro");
-  const [valor, setValor] = useState("");
 
-  const buscar = async () => {
-    const cod = Number(codigo.trim());
-    if (!cod) return;
-    const { data, error } = await supabase
-      .from("mensalidades")
-      .select("id, codigo, competencia, vencimento, valor, status, associado_id, associados!inner(nome, codigo)")
-      .eq("codigo", cod)
-      .maybeSingle();
-    if (error || !data) { setParcela(null); toast.error("Parcela não encontrada"); return; }
-    const p = data as unknown as ParcelaPreview;
-    if (p.status === "pago") { setParcela(null); toast.info("Esta parcela já está paga"); return; }
-    setParcela(p);
-    setValor(String(Number(p.valor).toFixed(2)));
-  };
+  const { data: associados = [], isFetching: buscando } = useQuery({
+    queryKey: ["caixa-busca-assoc", termo],
+    enabled: termo.trim().length >= 2 && !assoc,
+    queryFn: async () => {
+      const t = termo.trim();
+      const num = Number(t);
+      let q = supabase.from("associados").select("id, nome, codigo").order("nome").limit(20);
+      q = Number.isFinite(num) && t !== "" && /^\d+$/.test(t)
+        ? q.or(`codigo.eq.${num},nome.ilike.%${t}%`)
+        : q.ilike("nome", `%${t}%`);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as { id: string; nome: string; codigo: number }[];
+    },
+  });
+
+  const { data: parcelas = [], isLoading: loadingParcelas } = useQuery({
+    queryKey: ["caixa-parcelas-abertas", assoc?.id],
+    enabled: !!assoc,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("id, codigo, competencia, vencimento, valor, status, associado_id, associados!inner(nome, codigo)")
+        .eq("associado_id", assoc!.id)
+        .neq("status", "pago")
+        .neq("status", "cancelado")
+        .order("vencimento");
+      if (error) throw error;
+      return (data ?? []) as unknown as ParcelaPreview[];
+    },
+  });
+
+  const selecionadas = parcelas.filter((p) => sel[p.id]);
+  const totalSel = selecionadas.reduce((s, p) => s + Number(p.valor), 0);
 
   const receber = useMutation({
     mutationFn: async () => {
-      if (!parcela) throw new Error("Selecione uma parcela");
-      const v = Number(valor.replace(",", ".")) || 0;
-      if (v <= 0) throw new Error("Informe um valor válido");
+      if (selecionadas.length === 0) throw new Error("Selecione ao menos uma parcela");
       const hoje = new Date().toISOString().slice(0, 10);
-      const { error: e1 } = await supabase.from("mensalidades").update({
-        status: "pago", data_pagamento: hoje, forma_pagamento: forma,
-        agente_recebimento: `Caixa — ${caixa.operador_nome}`,
-      } as any).eq("id", parcela.id);
-      if (e1) throw e1;
-      const { error: e2 } = await supabase.from("caixa_movimentos").insert({
-        caixa_id: caixa.id,
-        tipo: "entrada",
-        descricao: `Parcela #${parcela.codigo} — ${parcela.associados?.nome ?? ""} (${competenciaLabel(parcela.competencia)})`,
-        valor: v,
-        forma_pagamento: forma,
-        mensalidade_id: parcela.id,
-        associado_id: parcela.associado_id,
-      } as any);
-      if (e2) throw e2;
-      return { parcela, v, forma };
+      for (const p of selecionadas) {
+        const { error: e1 } = await supabase.from("mensalidades").update({
+          status: "pago", data_pagamento: hoje, forma_pagamento: forma,
+          agente_recebimento: `Caixa — ${caixa.operador_nome}`,
+        } as any).eq("id", p.id);
+        if (e1) throw e1;
+        const { error: e2 } = await supabase.from("caixa_movimentos").insert({
+          caixa_id: caixa.id,
+          tipo: "entrada",
+          descricao: `Parcela #${p.codigo} — ${p.associados?.nome ?? assoc?.nome ?? ""} (${competenciaLabel(p.competencia)})`,
+          valor: Number(p.valor),
+          forma_pagamento: forma,
+          mensalidade_id: p.id,
+          associado_id: p.associado_id,
+        } as any);
+        if (e2) throw e2;
+      }
+      return selecionadas;
     },
-    onSuccess: (r) => {
+    onSuccess: (lista) => {
       qc.invalidateQueries({ queryKey: ["caixa-movs", caixa.id] });
+      qc.invalidateQueries({ queryKey: ["caixa-parcelas-abertas"] });
       qc.invalidateQueries({ queryKey: ["mensalidades"] });
-      setParcela(null); setCodigo(""); setValor("");
-      toast.success("Recebimento registrado");
-      printComprovante(caixa, r.parcela, r.v, r.forma);
+      setSel({});
+      toast.success(`${lista.length} recebimento(s) registrado(s)`);
+      printComprovanteLote(caixa, lista, forma);
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
@@ -472,38 +494,77 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
       <CardHeader><CardTitle className="font-serif text-base">Receber mensalidade no balcão</CardTitle></CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-2">
-          <Label>Código da parcela</Label>
+          <Label>Buscar associado (nome ou código)</Label>
           <div className="flex gap-2">
-            <Input value={codigo} inputMode="numeric" placeholder="Ex: 1024"
-              onChange={(e) => setCodigo(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); buscar(); } }} />
-            <Button type="button" variant="outline" onClick={buscar}><Search className="h-4 w-4" /></Button>
+            <Input value={busca} placeholder="Ex: Maria Silva ou 1024"
+              onChange={(e) => { setBusca(e.target.value); if (assoc) { setAssoc(null); setSel({}); } }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setTermo(busca); } }} />
+            <Button type="button" variant="outline" onClick={() => setTermo(busca)}><Search className="h-4 w-4" /></Button>
           </div>
         </div>
-        {parcela && (
+
+        {!assoc && termo.trim().length >= 2 && (
+          <div className="max-h-48 overflow-auto rounded-md border">
+            {buscando ? (
+              <p className="p-3 text-sm text-muted-foreground">Buscando...</p>
+            ) : associados.length === 0 ? (
+              <p className="p-3 text-sm text-muted-foreground">Nenhum associado encontrado.</p>
+            ) : associados.map((a) => (
+              <button key={a.id} type="button"
+                className="flex w-full items-center justify-between gap-2 border-b px-3 py-2 text-left text-sm last:border-b-0 hover:bg-muted"
+                onClick={() => { setAssoc(a); setSel({}); setBusca(a.nome); }}>
+                <span>{a.nome}</span>
+                <span className="text-xs text-muted-foreground">#{String(a.codigo).padStart(4, "0")}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {assoc && (
           <div className="space-y-3 rounded-md border p-3 text-sm">
-            <p><span className="text-muted-foreground">Associado:</span> <b>{parcela.associados?.nome}</b></p>
-            <p><span className="text-muted-foreground">Competência:</span> <span className="capitalize">{competenciaLabel(parcela.competencia)}</span> · venc. {fmtDate(parcela.vencimento)}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Valor recebido</Label>
-                <Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Forma</Label>
-                <Select value={forma} onValueChange={setForma}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="cartao">Cartão</SelectItem>
-                    <SelectItem value="transferencia">Transferência</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center justify-between gap-2">
+              <p><span className="text-muted-foreground">Associado:</span> <b>{assoc.nome}</b></p>
+              <Button size="sm" variant="ghost" onClick={() => { setAssoc(null); setSel({}); }}>Trocar</Button>
             </div>
-            <Button className="w-full" onClick={() => receber.mutate()} disabled={receber.isPending}>
-              {receber.isPending ? "Registrando..." : "Confirmar recebimento e imprimir"}
+            {loadingParcelas ? (
+              <p className="text-muted-foreground">Carregando parcelas...</p>
+            ) : parcelas.length === 0 ? (
+              <p className="text-muted-foreground">Nenhuma parcela em aberto.</p>
+            ) : (
+              <div className="max-h-60 overflow-auto rounded-md border">
+                {parcelas.map((p) => (
+                  <label key={p.id} className="flex cursor-pointer items-center gap-3 border-b px-3 py-2 last:border-b-0 hover:bg-muted">
+                    <input type="checkbox" className="h-4 w-4 accent-primary"
+                      checked={!!sel[p.id]}
+                      onChange={(e) => setSel((s) => ({ ...s, [p.id]: e.target.checked }))} />
+                    <span className="flex-1">
+                      <span className="font-medium">#{p.codigo}</span>{" "}
+                      <span className="capitalize">{competenciaLabel(p.competencia)}</span>
+                      <span className="block text-xs text-muted-foreground">venc. {fmtDate(p.vencimento)} · {p.status}</span>
+                    </span>
+                    <span className="font-medium">{brl(p.valor)}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label className="text-xs">Forma de pagamento</Label>
+              <Select value={forma} onValueChange={setForma}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                  <SelectItem value="transferencia">Transferência</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
+              <span className="text-muted-foreground">{selecionadas.length} parcela(s) selecionada(s)</span>
+              <b>{brl(totalSel)}</b>
+            </div>
+            <Button className="w-full" onClick={() => receber.mutate()} disabled={receber.isPending || selecionadas.length === 0}>
+              {receber.isPending ? "Registrando..." : "Confirmar recebimento"}
             </Button>
           </div>
         )}
@@ -511,6 +572,7 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
     </Card>
   );
 }
+
 
 /* ---------------------------- Lançamento avulso ---------------------------- */
 
