@@ -446,6 +446,8 @@ function TipoBadge({ tipo }: { tipo: string }) {
     entrada: { label: "Recebimento", cls: "bg-success/15 text-success border-success/30" },
     sangria: { label: "Sangria", cls: "bg-destructive/15 text-destructive border-destructive/30" },
     suprimento: { label: "Suprimento", cls: "bg-gold/15 text-gold border-gold/30" },
+    cancelado: { label: "Cancelado", cls: "bg-muted text-muted-foreground line-through" },
+
   };
   const v = map[tipo] ?? { label: tipo, cls: "" };
   return <Badge variant="outline" className={v.cls}>{v.label}</Badge>;
