@@ -124,6 +124,7 @@ export type Database = {
           hora: number
           id: number
           periodicidade: string
+          retencao_dias: number
           tabelas: string[]
           ultima_execucao: string | null
           ultimo_erro: string | null
@@ -139,6 +140,7 @@ export type Database = {
           hora?: number
           id?: number
           periodicidade?: string
+          retencao_dias?: number
           tabelas?: string[]
           ultima_execucao?: string | null
           ultimo_erro?: string | null
@@ -154,6 +156,7 @@ export type Database = {
           hora?: number
           id?: number
           periodicidade?: string
+          retencao_dias?: number
           tabelas?: string[]
           ultima_execucao?: string | null
           ultimo_erro?: string | null
