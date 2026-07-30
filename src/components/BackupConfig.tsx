@@ -406,7 +406,7 @@ function AutomaticoTab() {
     (async () => {
       const { data, error } = await supabase.from("backup_config" as any).select("*").eq("id", 1).maybeSingle();
       if (error) toast.error(error.message);
-      setCfg(data ?? { id: 1, ativo: false, periodicidade: "diario", hora: 3, dia_semana: 1, dia_mes: 1, tabelas: [] });
+      setCfg(data ?? { id: 1, ativo: false, periodicidade: "diario", hora: 3, dia_semana: 1, dia_mes: 1, retencao_dias: 90, tabelas: [] });
       setLoading(false);
     })();
   }, []);
@@ -420,6 +420,7 @@ function AutomaticoTab() {
       dia_semana: Number(cfg.dia_semana) || 1,
       dia_mes: Number(cfg.dia_mes) || 1,
       alerta_email: cfg.alerta_email?.trim() || null,
+      retencao_dias: Math.max(0, Number(cfg.retencao_dias) || 0),
       tabelas: cfg.tabelas ?? [],
     } as any).eq("id", 1);
     setSaving(false);
@@ -477,14 +478,34 @@ function AutomaticoTab() {
           ) : <div />}
         </div>
 
-        <div>
-          <Label>E-mail para alertas de falha</Label>
-          <Input type="email" placeholder="responsavel@empresa.com" value={cfg.alerta_email ?? ""}
-            onChange={(e) => setCfg({ ...cfg, alerta_email: e.target.value })} />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Falhas sempre ficam registradas na aba Auditoria; o e-mail é enviado quando o serviço de e-mail está configurado.
-          </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label>Manter backups por (dias)</Label>
+            <Input type="number" min={0} max={3650} value={cfg.retencao_dias ?? 90}
+              onChange={(e) => setCfg({ ...cfg, retencao_dias: e.target.value })} />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Arquivos automáticos mais antigos que esse período são apagados na próxima execução. Use 0 para manter para sempre.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[
+                { l: "30 dias", v: 30 }, { l: "90 dias", v: 90 },
+                { l: "6 meses", v: 180 }, { l: "1 ano", v: 365 },
+              ].map((o) => (
+                <Button key={o.v} type="button" variant="outline" size="sm"
+                  onClick={() => setCfg({ ...cfg, retencao_dias: o.v })}>{o.l}</Button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <Label>E-mail para alertas de falha</Label>
+            <Input type="email" placeholder="responsavel@empresa.com" value={cfg.alerta_email ?? ""}
+              onChange={(e) => setCfg({ ...cfg, alerta_email: e.target.value })} />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Falhas sempre ficam registradas na aba Auditoria; o e-mail é enviado quando o serviço de e-mail está configurado.
+            </p>
+          </div>
         </div>
+
 
         <div className="space-y-2">
           <Label>Tabelas incluídas</Label>

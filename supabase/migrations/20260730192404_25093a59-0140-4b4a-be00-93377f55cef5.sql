@@ -1,0 +1,1 @@
+ALTER TABLE public.backup_config ADD COLUMN IF NOT EXISTS retencao_dias integer NOT NULL DEFAULT 90;

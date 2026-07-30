@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/public/hooks/backup-automatico")({
     handlers: {
       POST: async () => {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { registrarLog, enviarAlertaFalha } = await import("@/lib/backup-helpers.server");
+        const { registrarLog, enviarAlertaFalha, limparBackupsAntigos } = await import("@/lib/backup-helpers.server");
 
         const { data: cfg } = await supabaseAdmin.from("backup_config").select("*").eq("id", 1).maybeSingle();
         const agora = new Date();
@@ -50,15 +50,31 @@ export const Route = createFileRoute("/api/public/hooks/backup-automatico")({
           if (up.error) throw new Error(up.error.message);
 
           const total = resumo.reduce((s, r) => s + r.registros, 0);
+
+          let removidos: string[] = [];
+          let erroRetencao: string | null = null;
+          try {
+            const r = await limparBackupsAntigos(Number((cfg as any)?.retencao_dias ?? 0));
+            removidos = r.removidos;
+          } catch (e: any) {
+            erroRetencao = e?.message ?? "falha ao aplicar retenção";
+          }
+
           await registrarLog({
             acao: "automatico", origem: "cron", formato: "json",
-            tabelas, registros: total, detalhes: { arquivo: nome, resumo },
+            tabelas, registros: total,
+            detalhes: {
+              arquivo: nome, resumo,
+              retencao_dias: (cfg as any)?.retencao_dias ?? 0,
+              removidos, erro_retencao: erroRetencao,
+            },
           });
           await supabaseAdmin.from("backup_config").update({
             ultima_execucao: agora.toISOString(), ultimo_status: "sucesso", ultimo_erro: null,
           } as any).eq("id", 1);
 
-          return Response.json({ ok: true, executado: true, arquivo: nome, registros: total });
+          return Response.json({ ok: true, executado: true, arquivo: nome, registros: total, removidos });
+
         } catch (e: any) {
           const msg = e?.message ?? "erro desconhecido";
           await registrarLog({

@@ -39,6 +39,33 @@ export async function registrarLog(entrada: LogBackup) {
   } as any);
 }
 
+/** Remove arquivos de backup automático mais antigos que `dias`. 0 = manter para sempre. */
+export async function limparBackupsAntigos(dias: number) {
+  if (!dias || dias <= 0) return { removidos: [] as string[] };
+  const limite = Date.now() - dias * 24 * 60 * 60 * 1000;
+  const removidos: string[] = [];
+
+  for (let offset = 0; ; offset += 100) {
+    const { data, error } = await supabaseAdmin.storage
+      .from("backups")
+      .list("auto", { limit: 100, offset, sortBy: { column: "name", order: "asc" } });
+    if (error) throw new Error(error.message);
+    if (!data?.length) break;
+
+    for (const arq of data) {
+      const criado = arq.created_at ? new Date(arq.created_at).getTime() : NaN;
+      if (Number.isFinite(criado) && criado < limite) removidos.push(`auto/${arq.name}`);
+    }
+    if (data.length < 100) break;
+  }
+
+  if (removidos.length) {
+    const { error } = await supabaseAdmin.storage.from("backups").remove(removidos);
+    if (error) throw new Error(error.message);
+  }
+  return { removidos };
+}
+
 /** Envia alerta de falha de backup (e-mail via Resend quando configurado). */
 export async function enviarAlertaFalha(destino: string | null | undefined, mensagem: string) {
   if (!destino) return { enviado: false, motivo: "sem destinatário" };
