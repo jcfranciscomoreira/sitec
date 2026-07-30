@@ -28,6 +28,7 @@ import { Route as AuthenticatedServicoFunerarioRouteImport } from './routes/_aut
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated/vendas'
 import { Route as AuthenticatedVendasRelatorioRouteImport } from './routes/_authenticated/vendas-relatorio'
+import { Route as ApiPublicHooksBackupAutomaticoRouteImport } from './routes/api/public/hooks/backup-automatico'
 import { Route as ApiPublicWebhooksCobrancaProvedorRouteImport } from './routes/api/public/webhooks/cobranca.$provedor'
 
 const IndexRoute = IndexRouteImport.update({
@@ -130,6 +131,12 @@ const AuthenticatedVendasRelatorioRoute =
     path: '/vendas-relatorio',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksBackupAutomaticoRoute =
+  ApiPublicHooksBackupAutomaticoRouteImport.update({
+    id: '/api/public/hooks/backup-automatico',
+    path: '/api/public/hooks/backup-automatico',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicWebhooksCobrancaProvedorRoute =
   ApiPublicWebhooksCobrancaProvedorRouteImport.update({
     id: '/api/public/webhooks/cobranca/$provedor',
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
   '/api/public/webhooks/cobranca/$provedor': typeof ApiPublicWebhooksCobrancaProvedorRoute
 }
 export interface FileRoutesByTo {
@@ -177,6 +185,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
   '/api/public/webhooks/cobranca/$provedor': typeof ApiPublicWebhooksCobrancaProvedorRoute
 }
 export interface FileRoutesById {
@@ -200,6 +209,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
   '/_authenticated/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
   '/api/public/webhooks/cobranca/$provedor': typeof ApiPublicWebhooksCobrancaProvedorRoute
 }
 export interface FileRouteTypes {
@@ -223,6 +233,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
+    | '/api/public/hooks/backup-automatico'
     | '/api/public/webhooks/cobranca/$provedor'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -244,6 +255,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
+    | '/api/public/hooks/backup-automatico'
     | '/api/public/webhooks/cobranca/$provedor'
   id:
     | '__root__'
@@ -266,6 +278,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/_authenticated/vendas'
     | '/_authenticated/vendas-relatorio'
+    | '/api/public/hooks/backup-automatico'
     | '/api/public/webhooks/cobranca/$provedor'
   fileRoutesById: FileRoutesById
 }
@@ -273,6 +286,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicHooksBackupAutomaticoRoute: typeof ApiPublicHooksBackupAutomaticoRoute
   ApiPublicWebhooksCobrancaProvedorRoute: typeof ApiPublicWebhooksCobrancaProvedorRoute
 }
 
@@ -411,6 +425,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVendasRelatorioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/backup-automatico': {
+      id: '/api/public/hooks/backup-automatico'
+      path: '/api/public/hooks/backup-automatico'
+      fullPath: '/api/public/hooks/backup-automatico'
+      preLoaderRoute: typeof ApiPublicHooksBackupAutomaticoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/webhooks/cobranca/$provedor': {
       id: '/api/public/webhooks/cobranca/$provedor'
       path: '/api/public/webhooks/cobranca/$provedor'
@@ -466,6 +487,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicHooksBackupAutomaticoRoute: ApiPublicHooksBackupAutomaticoRoute,
   ApiPublicWebhooksCobrancaProvedorRoute:
     ApiPublicWebhooksCobrancaProvedorRoute,
 }
