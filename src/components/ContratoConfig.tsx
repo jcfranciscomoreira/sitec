@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import {
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered,
   AlignLeft, AlignCenter, AlignRight, AlignJustify, Loader2, Save, RotateCcw,
-  Heading1, Heading2, Undo2, Redo2, Eye,
+  Heading1, Heading2, Undo2, Redo2, Eye, Plus, Minus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
