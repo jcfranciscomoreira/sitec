@@ -817,6 +817,11 @@ export type Database = {
         Row: {
           agente_recebimento: string | null
           associado_id: string
+          bonificacao_motivo: string | null
+          bonificada: boolean
+          bonificado_em: string | null
+          bonificado_por: string | null
+          bonificado_por_nome: string | null
           cobranca_id: string | null
           cobranca_provedor: string | null
           cobranca_status: string | null
@@ -841,6 +846,11 @@ export type Database = {
         Insert: {
           agente_recebimento?: string | null
           associado_id: string
+          bonificacao_motivo?: string | null
+          bonificada?: boolean
+          bonificado_em?: string | null
+          bonificado_por?: string | null
+          bonificado_por_nome?: string | null
           cobranca_id?: string | null
           cobranca_provedor?: string | null
           cobranca_status?: string | null
@@ -865,6 +875,11 @@ export type Database = {
         Update: {
           agente_recebimento?: string | null
           associado_id?: string
+          bonificacao_motivo?: string | null
+          bonificada?: boolean
+          bonificado_em?: string | null
+          bonificado_por?: string | null
+          bonificado_por_nome?: string | null
           cobranca_id?: string | null
           cobranca_provedor?: string | null
           cobranca_status?: string | null
