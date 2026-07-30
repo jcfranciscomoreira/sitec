@@ -209,6 +209,11 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
   const [fecharOpen, setFecharOpen] = useState(false);
   const [pagina, setPagina] = useState(0);
   const porPagina = 6;
+  const [movCancelar, setMovCancelar] = useState<Movimento | null>(null);
+  const [admEmail, setAdmEmail] = useState("");
+  const [admSenha, setAdmSenha] = useState("");
+  const [validando, setValidando] = useState(false);
+  const verificarAdmin = useServerFn(verificarSenhaAdmin);
 
   const cancelar = useMutation({
     mutationFn: async (m: Movimento) => {
