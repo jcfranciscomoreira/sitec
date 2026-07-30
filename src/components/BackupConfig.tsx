@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import { gerarBackup } from "@/lib/backup.functions";
 import { BACKUP_TABELAS } from "@/lib/backup-tabelas";
+import { usePermissions } from "@/hooks/use-permissions";
+
 
 
 const LABELS: Record<string, string> = {
