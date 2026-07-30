@@ -527,6 +527,8 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
   const [assoc, setAssoc] = useState<{ id: string; nome: string; codigo: number } | null>(null);
   const [sel, setSel] = useState<Record<string, boolean>>({});
   const [forma, setForma] = useState("dinheiro");
+  const [valorRec, setValorRec] = useState("");
+
 
   const { data: associados = [], isFetching: buscando } = useQuery({
     queryKey: ["caixa-busca-assoc", termo],
