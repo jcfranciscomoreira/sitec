@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState, useEffect } from "react";
-import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard, MapPin, BookOpen, FileText, ExternalLink, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Printer, Receipt, FileSignature, CreditCard, MapPin, BookOpen, FileText, ExternalLink, Loader2, Gift, Undo2 } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,8 @@ import { criarCobranca } from "@/lib/cobranca.functions";
 import { imprimirCarnesAssociado } from "@/lib/carne-print";
 import { DEFAULT_CARTEIRINHA, renderCarteirinhaHTML, type CarteirinhaConfig } from "@/lib/carteirinha-template";
 import { DEFAULT_CONTRATO_HTML, renderContratoHTML } from "@/lib/contrato-template";
+import { bonificarParcelas, cancelarBonificacao } from "@/lib/bonificacao.functions";
+import { usePermissions } from "@/hooks/use-permissions";
 
 export const Route = createFileRoute("/_authenticated/associados")({
   head: () => ({ meta: [{ title: "Associados — Memorial" }] }),
@@ -717,6 +719,9 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any | null>(null);
   const [creating, setCreating] = useState(false);
+  const { isAdmin } = usePermissions();
+  const [bonificando, setBonificando] = useState<any | null>(null);
+  const [motivoBonif, setMotivoBonif] = useState("");
 
   const { data: mens = [], isLoading } = useQuery({
     queryKey: ["mensalidades-associado", associado.id],
@@ -785,6 +790,35 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
     },
     onError: (e: any) => toast.error("Erro ao emitir boleto", { description: e.message }),
   });
+
+  const bonificarFn = useServerFn(bonificarParcelas);
+  const cancelarBonifFn = useServerFn(cancelarBonificacao);
+
+  const bonificar = useMutation({
+    mutationFn: async (p: { id: string; motivo: string }) =>
+      await bonificarFn({ data: { mensalidadeIds: [p.id], motivo: p.motivo } }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["mensalidades-associado", associado.id] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      setBonificando(null); setMotivoBonif("");
+      toast.success("Parcela bonificada");
+    },
+    onError: (e: any) => toast.error("Erro ao bonificar", { description: e.message }),
+  });
+
+  const desfazerBonificacao = useMutation({
+    mutationFn: async (id: string) => await cancelarBonifFn({ data: { mensalidadeId: id } }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["mensalidades-associado", associado.id] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      toast.success("Bonificação removida");
+    },
+    onError: (e: any) => toast.error("Erro", { description: e.message }),
+  });
+
+
 
   function reimprimirTodosCarnes() {
     const pendentes = mens.filter((m) => m.status === "pendente" || m.status === "atrasado");
@@ -936,7 +970,16 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
                 <TableCell>{competenciaLabel(m.competencia)}</TableCell>
                 <TableCell>{fmtDate(m.vencimento)}</TableCell>
                 <TableCell>{brl(m.valor)}</TableCell>
-                <TableCell><StatusBadge status={m.status} /></TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <StatusBadge status={m.status} />
+                    {m.bonificada && (
+                      <Badge variant="outline" title={`Bonificada por ${m.bonificado_por_nome ?? "—"}${m.bonificacao_motivo ? ` · ${m.bonificacao_motivo}` : ""}`}>
+                        Bonificada
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
@@ -973,6 +1016,20 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
                         <Receipt className="h-4 w-4" />
                       </Button>
                     )}
+                    {isAdmin && !m.bonificada && m.status !== "pago" && m.status !== "cancelado" && (
+                      <Button size="icon" variant="ghost" title="Bonificar parcela (admin)" onClick={() => { setMotivoBonif(""); setBonificando(m); }}>
+                        <Gift className="h-4 w-4 text-gold" />
+                      </Button>
+                    )}
+                    {isAdmin && m.bonificada && (
+                      <Button
+                        size="icon" variant="ghost" title="Desfazer bonificação (admin)"
+                        onClick={() => { if (confirm("Desfazer a bonificação desta parcela?")) desfazerBonificacao.mutate(m.id); }}
+                        disabled={desfazerBonificacao.isPending}
+                      >
+                        <Undo2 className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button size="icon" variant="ghost" title="Editar parcela" onClick={() => { setCreating(false); setEditing(m); }}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -985,6 +1042,34 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
             ))}
           </TableBody>
         </Table>
+
+        {bonificando && (
+          <Dialog open onOpenChange={(v) => !v && setBonificando(null)}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle className="font-serif">Bonificar parcela</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                <p className="text-muted-foreground">
+                  Competência {competenciaLabel(bonificando.competencia)} · {brl(bonificando.valor)} — a parcela será quitada como bonificação, sem entrada financeira.
+                </p>
+                <div className="space-y-2">
+                  <Label>Motivo da bonificação *</Label>
+                  <Textarea rows={3} value={motivoBonif} onChange={(e) => setMotivoBonif(e.target.value)} placeholder="Ex.: cortesia por indicação, acordo com a diretoria..." />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="ghost" onClick={() => setBonificando(null)}>Cancelar</Button>
+                <Button
+                  disabled={bonificar.isPending || motivoBonif.trim().length < 3}
+                  onClick={() => bonificar.mutate({ id: bonificando.id, motivo: motivoBonif.trim() })}
+                >
+                  {bonificar.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Confirmar bonificação
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </DialogContent>
     </Dialog>
   );
