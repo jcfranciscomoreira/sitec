@@ -19,6 +19,8 @@ import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { getEmpresaHeaderHTML } from "@/lib/print-header";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useServerFn } from "@tanstack/react-start";
+import { verificarSenhaAdmin } from "@/lib/caixa-admin.functions";
 
 
 export const Route = createFileRoute("/_authenticated/caixa")({
