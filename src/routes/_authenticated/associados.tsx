@@ -719,6 +719,9 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any | null>(null);
   const [creating, setCreating] = useState(false);
+  const { isAdmin } = usePermissions();
+  const [bonificando, setBonificando] = useState<any | null>(null);
+  const [motivoBonif, setMotivoBonif] = useState("");
 
   const { data: mens = [], isLoading } = useQuery({
     queryKey: ["mensalidades-associado", associado.id],
