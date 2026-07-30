@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/public/hooks/backup-automatico")({
     handlers: {
       POST: async () => {
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { registrarLog, enviarAlertaFalha } = await import("@/lib/backup-helpers.server");
+        const { registrarLog, enviarAlertaFalha, limparBackupsAntigos } = await import("@/lib/backup-helpers.server");
 
         const { data: cfg } = await supabaseAdmin.from("backup_config").select("*").eq("id", 1).maybeSingle();
         const agora = new Date();
