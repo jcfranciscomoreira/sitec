@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.registrar_log_auditoria() FROM PUBLIC, anon, authenticated;
