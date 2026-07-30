@@ -203,9 +203,34 @@ function totais(movs: Movimento[], abertura: number) {
 
 function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: string }) {
   const qc = useQueryClient();
+  const { isAdmin } = usePermissions();
   const [fecharOpen, setFecharOpen] = useState(false);
   const [pagina, setPagina] = useState(0);
   const porPagina = 6;
+
+  const cancelar = useMutation({
+    mutationFn: async (m: Movimento) => {
+      if (m.mensalidade_id) {
+        const { error: e1 } = await supabase.from("mensalidades").update({
+          status: "pendente", data_pagamento: null, forma_pagamento: null, agente_recebimento: null,
+        } as any).eq("id", m.mensalidade_id);
+        if (e1) throw e1;
+      }
+      const { error } = await supabase.from("caixa_movimentos").update({
+        tipo: "cancelado",
+        descricao: `[CANCELADO] ${m.descricao}`,
+      } as any).eq("id", m.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["caixa-movs", caixa.id] });
+      qc.invalidateQueries({ queryKey: ["caixa-parcelas-abertas"] });
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      toast.success("Recebimento cancelado", { description: "A parcela voltou para em aberto." });
+    },
+    onError: (e: any) => toast.error("Erro ao cancelar", { description: e.message }),
+  });
+
 
 
   const { data: movs = [], isLoading } = useQuery({
