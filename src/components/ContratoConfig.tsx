@@ -23,6 +23,9 @@ export function ContratoConfigTab() {
   const [previewHtml, setPreviewHtml] = useState("");
 
   const [initialHtml, setInitialHtml] = useState<string>("");
+  const [liveHtml, setLiveHtml] = useState<string>("");
+  const [currentSize, setCurrentSize] = useState<string>("—");
+  const [sections, setSections] = useState<{ level: number; text: string }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -33,11 +36,25 @@ export function ContratoConfigTab() {
     })();
   }, []);
 
+  function syncLive() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    setLiveHtml(editor.innerHTML);
+    setSections(
+      Array.from(editor.querySelectorAll("h1,h2,h3")).map((h) => ({
+        level: Number(h.tagName.slice(1)),
+        text: (h.textContent || "").trim(),
+      })).filter((s) => s.text),
+    );
+  }
+
   useEffect(() => {
     if (!loading && !preview && editorRef.current && initialHtml && !editorRef.current.innerHTML) {
       editorRef.current.innerHTML = initialHtml;
+      syncLive();
     }
   }, [loading, preview, initialHtml]);
+
 
 
   // Keep track of the last selection inside the editor (toolbar clicks steal focus)
@@ -51,7 +68,11 @@ export function ContratoConfigTab() {
       const editor = editorRef.current;
       if (editor && editor.contains(range.commonAncestorContainer)) {
         savedRange.current = range.cloneRange();
+        const node = range.startContainer;
+        const el = (node.nodeType === 3 ? node.parentElement : (node as HTMLElement)) as HTMLElement | null;
+        if (el) setCurrentSize(`${Math.round(parseFloat(window.getComputedStyle(el).fontSize) || 16)}px`);
       }
+
     }
     document.addEventListener("selectionchange", onSelectionChange);
     return () => document.removeEventListener("selectionchange", onSelectionChange);
@@ -74,7 +95,9 @@ export function ContratoConfigTab() {
     exec(cmd, value);
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) savedRange.current = sel.getRangeAt(0).cloneRange();
+    syncLive();
   }
+
 
   function insertPlaceholder(key: string) {
     run("insertText", `{{${key}}}`);
@@ -102,7 +125,10 @@ export function ContratoConfigTab() {
     sel.removeAllRanges();
     sel.addRange(newRange);
     savedRange.current = newRange.cloneRange();
+    setCurrentSize(px);
+    syncLive();
   }
+
 
   function adjustFontSize(delta: number) {
     if (!restoreSelection()) { toast.info("Selecione o texto antes de mudar o tamanho"); return; }
@@ -219,16 +245,54 @@ export function ContratoConfigTab() {
               </div>
             </div>
 
-            <div
-              ref={editorRef}
-              contentEditable
-              suppressContentEditableWarning
-              className="border rounded-md bg-white p-6 min-h-[500px] max-h-[70vh] overflow-auto text-black focus:outline-none prose max-w-none"
-              style={{ fontFamily: "Georgia, serif", lineHeight: 1.55 }}
-            />
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div
+                ref={editorRef}
+                contentEditable
+                suppressContentEditableWarning
+                onInput={syncLive}
+                onKeyUp={syncLive}
+                className="border rounded-md bg-white p-6 min-h-[500px] max-h-[70vh] overflow-auto text-black focus:outline-none prose max-w-none"
+                style={{ fontFamily: "Georgia, serif", lineHeight: 1.55 }}
+              />
+
+              <aside className="space-y-3">
+                <div className="border rounded-md p-3 bg-muted/40">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs">Tamanho da fonte selecionada</Label>
+                    <span className="text-sm font-semibold tabular-nums">{currentSize}</span>
+                  </div>
+                  <p className="mt-2 text-black bg-white rounded border p-2 truncate" style={{ fontFamily: "Georgia, serif", fontSize: currentSize === "—" ? "16px" : currentSize }}>
+                    Exemplo de texto
+                  </p>
+                </div>
+
+                <div className="border rounded-md p-3">
+                  <Label className="text-xs">Seções do documento ({sections.length})</Label>
+                  <ul className="mt-2 space-y-1 max-h-[180px] overflow-auto text-xs">
+                    {sections.length === 0 && <li className="text-muted-foreground">Nenhuma seção (H1/H2) encontrada.</li>}
+                    {sections.map((s, i) => (
+                      <li key={i} className={s.level === 1 ? "font-semibold" : "pl-3 text-muted-foreground"}>
+                        {s.text}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="border rounded-md">
+                  <div className="px-3 py-2 border-b"><Label className="text-xs">Prévia ao vivo</Label></div>
+                  <div
+                    className="bg-white text-black p-3 overflow-auto max-h-[40vh] prose prose-sm max-w-none"
+                    style={{ fontFamily: "Georgia, serif", lineHeight: 1.55, zoom: 0.6 }}
+                    dangerouslySetInnerHTML={{ __html: liveHtml }}
+                  />
+                </div>
+              </aside>
+            </div>
             <p className="text-xs text-muted-foreground">
               As variáveis entre <code>{`{{ }}`}</code> são substituídas automaticamente pelos dados do associado quando o contrato é gerado.
             </p>
+
           </>
         )}
       </CardContent>
