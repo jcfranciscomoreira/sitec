@@ -40,24 +40,82 @@ export function ContratoConfigTab() {
   }, [loading, preview, initialHtml]);
 
 
+  // Keep track of the last selection inside the editor (toolbar clicks steal focus)
+  const savedRange = useRef<Range | null>(null);
+
+  useEffect(() => {
+    function onSelectionChange() {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      const editor = editorRef.current;
+      if (editor && editor.contains(range.commonAncestorContainer)) {
+        savedRange.current = range.cloneRange();
+      }
+    }
+    document.addEventListener("selectionchange", onSelectionChange);
+    return () => document.removeEventListener("selectionchange", onSelectionChange);
+  }, []);
+
+  function restoreSelection() {
+    const editor = editorRef.current;
+    const range = savedRange.current;
+    if (!editor || !range) return false;
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel) return false;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return true;
+  }
+
+  function run(cmd: string, value?: string) {
+    restoreSelection();
+    exec(cmd, value);
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) savedRange.current = sel.getRangeAt(0).cloneRange();
+  }
+
   function insertPlaceholder(key: string) {
-    editorRef.current?.focus();
-    exec("insertText", `{{${key}}}`);
+    run("insertText", `{{${key}}}`);
   }
 
   function insertHeading(level: 1 | 2) {
-    exec("formatBlock", `H${level}`);
+    run("formatBlock", `H${level}`);
   }
 
   function setFontSize(px: string) {
-    // wrap selection in span with fontSize
+    if (!restoreSelection()) { toast.info("Selecione o texto antes de mudar o tamanho"); return; }
     const sel = window.getSelection();
-    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+      toast.info("Selecione o texto antes de mudar o tamanho");
+      return;
+    }
     const range = sel.getRangeAt(0);
     const span = document.createElement("span");
     span.style.fontSize = px;
     span.appendChild(range.extractContents());
     range.insertNode(span);
+    // re-select the styled content
+    const newRange = document.createRange();
+    newRange.selectNodeContents(span);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+    savedRange.current = newRange.cloneRange();
+  }
+
+  function adjustFontSize(delta: number) {
+    if (!restoreSelection()) { toast.info("Selecione o texto antes de mudar o tamanho"); return; }
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+      toast.info("Selecione o texto antes de mudar o tamanho");
+      return;
+    }
+    const node = sel.getRangeAt(0).startContainer;
+    const el = (node.nodeType === 3 ? node.parentElement : (node as HTMLElement)) as HTMLElement | null;
+    const current = el ? parseFloat(window.getComputedStyle(el).fontSize) || 16 : 16;
+    const next = Math.min(72, Math.max(8, Math.round(current + delta)));
+    setFontSize(`${next}px`);
   }
 
   async function save() {
