@@ -161,43 +161,51 @@ export function ContratoConfigTab() {
           <div className="border rounded-md bg-white p-6 overflow-auto max-h-[70vh]" dangerouslySetInnerHTML={{ __html: previewHtml }} />
         ) : (
           <>
-            <div className="flex flex-wrap gap-1 border rounded-md p-2 bg-muted/40 sticky top-0 z-10">
-              <Button variant="ghost" size="icon" title="Desfazer" onClick={() => exec("undo")}><Undo2 className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" title="Refazer" onClick={() => exec("redo")}><Redo2 className="h-4 w-4" /></Button>
+            <div
+              className="flex flex-wrap gap-1 border rounded-md p-2 bg-muted/40 sticky top-0 z-10"
+              onMouseDown={(e) => e.preventDefault()}
+            >
+              <Button variant="ghost" size="icon" title="Desfazer" onClick={() => run("undo")}><Undo2 className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" title="Refazer" onClick={() => run("redo")}><Redo2 className="h-4 w-4" /></Button>
               <div className="w-px h-6 bg-border mx-1 self-center" />
-              <Button variant="ghost" size="icon" title="Negrito" onClick={() => exec("bold")}><Bold className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" title="Itálico" onClick={() => exec("italic")}><Italic className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" title="Sublinhado" onClick={() => exec("underline")}><UnderlineIcon className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" title="Negrito" onClick={() => run("bold")}><Bold className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" title="Itálico" onClick={() => run("italic")}><Italic className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" title="Sublinhado" onClick={() => run("underline")}><UnderlineIcon className="h-4 w-4" /></Button>
               <div className="w-px h-6 bg-border mx-1 self-center" />
               <Button variant="ghost" size="icon" title="Título 1" onClick={() => insertHeading(1)}><Heading1 className="h-4 w-4" /></Button>
               <Button variant="ghost" size="icon" title="Título 2" onClick={() => insertHeading(2)}><Heading2 className="h-4 w-4" /></Button>
               <div className="w-px h-6 bg-border mx-1 self-center" />
-              <Button variant="ghost" size="icon" title="Lista com marcadores" onClick={() => exec("insertUnorderedList")}><List className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" title="Lista numerada" onClick={() => exec("insertOrderedList")}><ListOrdered className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" title="Lista com marcadores" onClick={() => run("insertUnorderedList")}><List className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" title="Lista numerada" onClick={() => run("insertOrderedList")}><ListOrdered className="h-4 w-4" /></Button>
               <div className="w-px h-6 bg-border mx-1 self-center" />
-              <Button variant="ghost" size="icon" title="Alinhar à esquerda" onClick={() => exec("justifyLeft")}><AlignLeft className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" title="Centralizar" onClick={() => exec("justifyCenter")}><AlignCenter className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" title="Alinhar à direita" onClick={() => exec("justifyRight")}><AlignRight className="h-4 w-4" /></Button>
-              <Button variant="ghost" size="icon" title="Justificar" onClick={() => exec("justifyFull")}><AlignJustify className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" title="Alinhar à esquerda" onClick={() => run("justifyLeft")}><AlignLeft className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" title="Centralizar" onClick={() => run("justifyCenter")}><AlignCenter className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" title="Alinhar à direita" onClick={() => run("justifyRight")}><AlignRight className="h-4 w-4" /></Button>
+              <Button variant="ghost" size="icon" title="Justificar" onClick={() => run("justifyFull")}><AlignJustify className="h-4 w-4" /></Button>
               <div className="w-px h-6 bg-border mx-1 self-center" />
+              <Button variant="ghost" size="icon" title="Diminuir fonte" onClick={() => adjustFontSize(-2)}><Minus className="h-4 w-4" /></Button>
               <select
-                className="h-8 rounded border bg-background text-sm px-2"
-                defaultValue=""
-                onChange={(e) => { if (e.target.value) { setFontSize(e.target.value); e.target.value = ""; } }}
+                className="h-8 rounded border bg-background text-sm px-2 self-center"
+                value=""
+                onMouseDown={(e) => e.stopPropagation()}
+                onChange={(e) => { const v = e.target.value; if (v) { setFontSize(v); e.target.value = ""; } }}
                 title="Tamanho da fonte"
               >
                 <option value="">Tamanho</option>
-                {["10px", "11px", "12px", "13px", "14px", "16px", "18px", "20px", "24px"].map((s) => (
+                {["10px", "11px", "12px", "13px", "14px", "16px", "18px", "20px", "24px", "28px", "32px"].map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
               </select>
+              <Button variant="ghost" size="icon" title="Aumentar fonte" onClick={() => adjustFontSize(2)}><Plus className="h-4 w-4" /></Button>
               <input
                 type="color"
                 title="Cor do texto"
-                className="h-8 w-10 rounded border"
-                onChange={(e) => exec("foreColor", e.target.value)}
+                className="h-8 w-10 rounded border self-center"
+                onMouseDown={(e) => e.stopPropagation()}
+                onChange={(e) => run("foreColor", e.target.value)}
               />
             </div>
+
 
             <div>
               <Label className="text-xs">Inserir variável do associado/plano:</Label>
