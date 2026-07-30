@@ -532,17 +532,44 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
 
   const { data: associados = [], isFetching: buscando } = useQuery({
     queryKey: ["caixa-busca-assoc", termo],
-    enabled: termo.trim().length >= 2 && !assoc,
+    enabled: termo.trim().length >= 1 && !assoc,
     queryFn: async () => {
       const t = termo.trim();
       const num = Number(t);
+      const apenasNumero = Number.isFinite(num) && /^\d+$/.test(t);
       let q = supabase.from("associados").select("id, nome, codigo").order("nome").limit(20);
-      q = Number.isFinite(num) && t !== "" && /^\d+$/.test(t)
+      q = apenasNumero
         ? q.or(`codigo.eq.${num},nome.ilike.%${t}%`)
         : q.ilike("nome", `%${t}%`);
-      const { data, error } = await q;
+      const [associadosResult, parcelasResult] = await Promise.all([
+        q,
+        apenasNumero
+          ? supabase
+              .from("mensalidades")
+              .select("id, associado_id, associados!inner(id, nome, codigo)")
+              .eq("codigo", num)
+              .neq("status", "pago")
+              .neq("status", "cancelado")
+              .limit(20)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      const { data, error } = associadosResult;
       if (error) throw error;
-      return (data ?? []) as { id: string; nome: string; codigo: number }[];
+      if (parcelasResult.error) throw parcelasResult.error;
+
+      const resultados = (data ?? []).map((a) => ({ ...a, parcelaId: null as string | null, parcelaCodigo: null as number | null }));
+      for (const parcela of parcelasResult.data ?? []) {
+        const titular = parcela.associados as unknown as { id: string; nome: string; codigo: number } | null;
+        if (!titular) continue;
+        const existente = resultados.find((item) => item.id === titular.id);
+        if (existente) {
+          existente.parcelaId = parcela.id;
+          existente.parcelaCodigo = num;
+        } else {
+          resultados.unshift({ ...titular, parcelaId: parcela.id, parcelaCodigo: num });
+        }
+      }
+      return resultados;
     },
   });
 
@@ -665,16 +692,16 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
       <CardHeader><CardTitle className="font-serif text-base">Receber mensalidade no balcão</CardTitle></CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-2">
-          <Label>Buscar associado (nome ou código)</Label>
+          <Label>Buscar por associado ou número da parcela</Label>
           <div className="flex gap-2">
-            <Input value={busca} placeholder="Ex: Maria Silva ou 1024"
+            <Input value={busca} placeholder="Ex: Maria Silva, cód. associado ou nº parcela"
               onChange={(e) => { setBusca(e.target.value); if (assoc) { setAssoc(null); setSel({}); } }}
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setTermo(busca); } }} />
             <Button type="button" variant="outline" onClick={() => setTermo(busca)}><Search className="h-4 w-4" /></Button>
           </div>
         </div>
 
-        {!assoc && termo.trim().length >= 2 && (
+        {!assoc && termo.trim().length >= 1 && (
           <div className="max-h-48 overflow-auto rounded-md border">
             {buscando ? (
               <p className="p-3 text-sm text-muted-foreground">Buscando...</p>
@@ -683,9 +710,16 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
             ) : associados.map((a) => (
               <button key={a.id} type="button"
                 className="flex w-full items-center justify-between gap-2 border-b px-3 py-2 text-left text-sm last:border-b-0 hover:bg-muted"
-                onClick={() => { setAssoc(a); setSel({}); setBusca(a.nome); }}>
-                <span>{a.nome}</span>
-                <span className="text-xs text-muted-foreground">#{String(a.codigo).padStart(4, "0")}</span>
+                onClick={() => {
+                  setAssoc(a);
+                  setSel(a.parcelaId ? { [a.parcelaId]: true } : {});
+                  setBusca(a.nome);
+                }}>
+                <span>
+                  {a.nome}
+                  {a.parcelaCodigo ? <span className="block text-xs text-primary">Parcela #{a.parcelaCodigo}</span> : null}
+                </span>
+                <span className="text-xs text-muted-foreground">Associado #{String(a.codigo).padStart(4, "0")}</span>
               </button>
             ))}
           </div>
