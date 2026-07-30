@@ -125,7 +125,10 @@ export function ContratoConfigTab() {
     sel.removeAllRanges();
     sel.addRange(newRange);
     savedRange.current = newRange.cloneRange();
+    setCurrentSize(px);
+    syncLive();
   }
+
 
   function adjustFontSize(delta: number) {
     if (!restoreSelection()) { toast.info("Selecione o texto antes de mudar o tamanho"); return; }
