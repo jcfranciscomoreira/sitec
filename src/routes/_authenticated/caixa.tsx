@@ -841,18 +841,41 @@ async function printCaixa(caixa: Caixa, movs: Movimento[]) {
     <div style="margin-top:48px;font-size:12px">____________________________________<br/>${caixa.operador_nome}</div>`);
 }
 
-async function printComprovante(caixa: Caixa, p: ParcelaPreview, valor: number, forma: string) {
+async function printComprovanteLote(caixa: Caixa, parcelas: ParcelaPreview[], forma: string) {
   const header = await getEmpresaHeaderHTML();
+  const total = parcelas.reduce((s, p) => s + Number(p.valor), 0);
+  const linhas = parcelas.map((p) => `<tr>
+    <td>#${p.codigo}</td>
+    <td>${competenciaLabel(p.competencia)}</td>
+    <td>${fmtDate(p.vencimento)}</td>
+    <td style="text-align:right">${brl(p.valor)}</td>
+  </tr>`).join("");
+  const a = parcelas[0]?.associados;
   openPrint(`${header}
     <h2 style="font-size:16px;margin:0 0 10px">Comprovante de Pagamento</h2>
+    <p style="font-size:13px;margin:0 0 4px">Associado: <b>${a?.nome ?? ""}</b>${a?.codigo ? ` (#${String(a.codigo).padStart(4, "0")})` : ""}</p>
+    <p style="font-size:13px;margin:0 0 10px">Forma: ${forma} · Data: ${new Date().toLocaleString("pt-BR")}</p>
     <table style="width:100%;border-collapse:collapse;font-size:13px" border="1" cellpadding="6">
-      <tr><td>Associado</td><td>${p.associados?.nome ?? ""} (#${String(p.associados?.codigo ?? "").padStart(4, "0")})</td></tr>
-      <tr><td>Parcela</td><td>#${p.codigo} — ${competenciaLabel(p.competencia)}</td></tr>
-      <tr><td>Vencimento</td><td>${fmtDate(p.vencimento)}</td></tr>
-      <tr><td>Valor pago</td><td><b>${brl(valor)}</b></td></tr>
-      <tr><td>Forma</td><td>${forma}</td></tr>
-      <tr><td>Data</td><td>${new Date().toLocaleString("pt-BR")}</td></tr>
+      <thead style="background:#eee"><tr><th>Parcela</th><th>Competência</th><th>Vencimento</th><th style="text-align:right">Valor</th></tr></thead>
+      <tbody>${linhas}</tbody>
+      <tfoot><tr><td colspan="3" style="text-align:right"><b>Total</b></td><td style="text-align:right"><b>${brl(total)}</b></td></tr></tfoot>
+    </table>
+    <p style="font-size:13px;margin-top:8px">Recebido por: ${caixa.operador_nome} (caixa)</p>
+    <div style="margin-top:48px;font-size:12px">____________________________________<br/>${caixa.operador_nome}</div>`);
+}
+
+async function printComprovanteMov(caixa: Caixa, m: Movimento) {
+  const header = await getEmpresaHeaderHTML();
+  openPrint(`${header}
+    <h2 style="font-size:16px;margin:0 0 10px">Comprovante — ${m.tipo === "cancelado" ? "Recebimento cancelado" : "Movimentação de caixa"}</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px" border="1" cellpadding="6">
+      <tr><td>Descrição</td><td>${m.descricao}</td></tr>
+      <tr><td>Tipo</td><td>${m.tipo}</td></tr>
+      <tr><td>Valor</td><td><b>${brl(m.valor)}</b></td></tr>
+      <tr><td>Forma</td><td>${m.forma_pagamento}</td></tr>
+      <tr><td>Data</td><td>${new Date(m.created_at).toLocaleString("pt-BR")}</td></tr>
       <tr><td>Recebido por</td><td>${caixa.operador_nome} (caixa)</td></tr>
     </table>
     <div style="margin-top:48px;font-size:12px">____________________________________<br/>${caixa.operador_nome}</div>`);
 }
+
