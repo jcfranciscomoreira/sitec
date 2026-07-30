@@ -95,7 +95,9 @@ export function ContratoConfigTab() {
     exec(cmd, value);
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) savedRange.current = sel.getRangeAt(0).cloneRange();
+    syncLive();
   }
+
 
   function insertPlaceholder(key: string) {
     run("insertText", `{{${key}}}`);
