@@ -970,7 +970,16 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
                 <TableCell>{competenciaLabel(m.competencia)}</TableCell>
                 <TableCell>{fmtDate(m.vencimento)}</TableCell>
                 <TableCell>{brl(m.valor)}</TableCell>
-                <TableCell><StatusBadge status={m.status} /></TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap items-center gap-1">
+                    <StatusBadge status={m.status} />
+                    {m.bonificada && (
+                      <Badge variant="outline" title={`Bonificada por ${m.bonificado_por_nome ?? "—"}${m.bonificacao_motivo ? ` · ${m.bonificacao_motivo}` : ""}`}>
+                        Bonificada
+                      </Badge>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>{m.data_pagamento ? fmtDate(m.data_pagamento) : "—"}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
