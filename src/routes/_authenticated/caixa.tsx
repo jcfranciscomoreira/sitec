@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { Wallet, Lock, Unlock, Plus, Printer, History, Search, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { Wallet, Lock, Unlock, Plus, Printer, History, Search, XCircle } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { getEmpresaHeaderHTML } from "@/lib/print-header";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/use-permissions";
+
 
 export const Route = createFileRoute("/_authenticated/caixa")({
   head: () => ({
@@ -203,9 +205,34 @@ function totais(movs: Movimento[], abertura: number) {
 
 function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: string }) {
   const qc = useQueryClient();
+  const { isAdmin } = usePermissions();
   const [fecharOpen, setFecharOpen] = useState(false);
   const [pagina, setPagina] = useState(0);
   const porPagina = 6;
+
+  const cancelar = useMutation({
+    mutationFn: async (m: Movimento) => {
+      if (m.mensalidade_id) {
+        const { error: e1 } = await supabase.from("mensalidades").update({
+          status: "pendente", data_pagamento: null, forma_pagamento: null, agente_recebimento: null,
+        } as any).eq("id", m.mensalidade_id);
+        if (e1) throw e1;
+      }
+      const { error } = await supabase.from("caixa_movimentos").update({
+        tipo: "cancelado",
+        descricao: `[CANCELADO] ${m.descricao}`,
+      } as any).eq("id", m.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["caixa-movs", caixa.id] });
+      qc.invalidateQueries({ queryKey: ["caixa-parcelas-abertas"] });
+      qc.invalidateQueries({ queryKey: ["mensalidades"] });
+      toast.success("Recebimento cancelado", { description: "A parcela voltou para em aberto." });
+    },
+    onError: (e: any) => toast.error("Erro ao cancelar", { description: e.message }),
+  });
+
 
 
   const { data: movs = [], isLoading } = useQuery({
@@ -313,19 +340,38 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
                     <TableHead>Descrição</TableHead>
                     <TableHead>Forma</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {movs.slice(pagina * porPagina, pagina * porPagina + porPagina).map((m) => (
-                    <TableRow key={m.id}>
+                    <TableRow key={m.id} className={m.tipo === "cancelado" ? "opacity-60" : ""}>
                       <TableCell className="whitespace-nowrap text-xs">{new Date(m.created_at).toLocaleTimeString("pt-BR")}</TableCell>
                       <TableCell><TipoBadge tipo={m.tipo} /></TableCell>
                       <TableCell className="max-w-[280px] truncate">{m.descricao}</TableCell>
                       <TableCell className="capitalize">{m.forma_pagamento}</TableCell>
                       <TableCell className="text-right font-medium">{m.tipo === "sangria" ? "-" : ""}{brl(m.valor)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button size="icon" variant="ghost" title="Imprimir comprovante" onClick={() => printComprovanteMov(caixa, m)}>
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          {isAdmin && m.tipo === "entrada" && (
+                            <Button size="icon" variant="ghost" title="Cancelar recebimento"
+                              className="text-destructive"
+                              disabled={cancelar.isPending}
+                              onClick={() => {
+                                if (confirm("Cancelar este recebimento? A parcela voltará para em aberto.")) cancelar.mutate(m);
+                              }}>
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
+
               </Table>
               {movs.length > porPagina && (
                 <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-0">
@@ -400,6 +446,8 @@ function TipoBadge({ tipo }: { tipo: string }) {
     entrada: { label: "Recebimento", cls: "bg-success/15 text-success border-success/30" },
     sangria: { label: "Sangria", cls: "bg-destructive/15 text-destructive border-destructive/30" },
     suprimento: { label: "Suprimento", cls: "bg-gold/15 text-gold border-gold/30" },
+    cancelado: { label: "Cancelado", cls: "bg-muted text-muted-foreground line-through" },
+
   };
   const v = map[tipo] ?? { label: tipo, cls: "" };
   return <Badge variant="outline" className={v.cls}>{v.label}</Badge>;
@@ -414,55 +462,77 @@ type ParcelaPreview = {
 
 function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
   const qc = useQueryClient();
-  const [codigo, setCodigo] = useState("");
-  const [parcela, setParcela] = useState<ParcelaPreview | null>(null);
+  const [busca, setBusca] = useState("");
+  const [termo, setTermo] = useState("");
+  const [assoc, setAssoc] = useState<{ id: string; nome: string; codigo: number } | null>(null);
+  const [sel, setSel] = useState<Record<string, boolean>>({});
   const [forma, setForma] = useState("dinheiro");
-  const [valor, setValor] = useState("");
 
-  const buscar = async () => {
-    const cod = Number(codigo.trim());
-    if (!cod) return;
-    const { data, error } = await supabase
-      .from("mensalidades")
-      .select("id, codigo, competencia, vencimento, valor, status, associado_id, associados!inner(nome, codigo)")
-      .eq("codigo", cod)
-      .maybeSingle();
-    if (error || !data) { setParcela(null); toast.error("Parcela não encontrada"); return; }
-    const p = data as unknown as ParcelaPreview;
-    if (p.status === "pago") { setParcela(null); toast.info("Esta parcela já está paga"); return; }
-    setParcela(p);
-    setValor(String(Number(p.valor).toFixed(2)));
-  };
+  const { data: associados = [], isFetching: buscando } = useQuery({
+    queryKey: ["caixa-busca-assoc", termo],
+    enabled: termo.trim().length >= 2 && !assoc,
+    queryFn: async () => {
+      const t = termo.trim();
+      const num = Number(t);
+      let q = supabase.from("associados").select("id, nome, codigo").order("nome").limit(20);
+      q = Number.isFinite(num) && t !== "" && /^\d+$/.test(t)
+        ? q.or(`codigo.eq.${num},nome.ilike.%${t}%`)
+        : q.ilike("nome", `%${t}%`);
+      const { data, error } = await q;
+      if (error) throw error;
+      return (data ?? []) as { id: string; nome: string; codigo: number }[];
+    },
+  });
+
+  const { data: parcelas = [], isLoading: loadingParcelas } = useQuery({
+    queryKey: ["caixa-parcelas-abertas", assoc?.id],
+    enabled: !!assoc,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("mensalidades")
+        .select("id, codigo, competencia, vencimento, valor, status, associado_id, associados!inner(nome, codigo)")
+        .eq("associado_id", assoc!.id)
+        .neq("status", "pago")
+        .neq("status", "cancelado")
+        .order("vencimento");
+      if (error) throw error;
+      return (data ?? []) as unknown as ParcelaPreview[];
+    },
+  });
+
+  const selecionadas = parcelas.filter((p) => sel[p.id]);
+  const totalSel = selecionadas.reduce((s, p) => s + Number(p.valor), 0);
 
   const receber = useMutation({
     mutationFn: async () => {
-      if (!parcela) throw new Error("Selecione uma parcela");
-      const v = Number(valor.replace(",", ".")) || 0;
-      if (v <= 0) throw new Error("Informe um valor válido");
+      if (selecionadas.length === 0) throw new Error("Selecione ao menos uma parcela");
       const hoje = new Date().toISOString().slice(0, 10);
-      const { error: e1 } = await supabase.from("mensalidades").update({
-        status: "pago", data_pagamento: hoje, forma_pagamento: forma,
-        agente_recebimento: `Caixa — ${caixa.operador_nome}`,
-      } as any).eq("id", parcela.id);
-      if (e1) throw e1;
-      const { error: e2 } = await supabase.from("caixa_movimentos").insert({
-        caixa_id: caixa.id,
-        tipo: "entrada",
-        descricao: `Parcela #${parcela.codigo} — ${parcela.associados?.nome ?? ""} (${competenciaLabel(parcela.competencia)})`,
-        valor: v,
-        forma_pagamento: forma,
-        mensalidade_id: parcela.id,
-        associado_id: parcela.associado_id,
-      } as any);
-      if (e2) throw e2;
-      return { parcela, v, forma };
+      for (const p of selecionadas) {
+        const { error: e1 } = await supabase.from("mensalidades").update({
+          status: "pago", data_pagamento: hoje, forma_pagamento: forma,
+          agente_recebimento: `Caixa — ${caixa.operador_nome}`,
+        } as any).eq("id", p.id);
+        if (e1) throw e1;
+        const { error: e2 } = await supabase.from("caixa_movimentos").insert({
+          caixa_id: caixa.id,
+          tipo: "entrada",
+          descricao: `Parcela #${p.codigo} — ${p.associados?.nome ?? assoc?.nome ?? ""} (${competenciaLabel(p.competencia)})`,
+          valor: Number(p.valor),
+          forma_pagamento: forma,
+          mensalidade_id: p.id,
+          associado_id: p.associado_id,
+        } as any);
+        if (e2) throw e2;
+      }
+      return selecionadas;
     },
-    onSuccess: (r) => {
+    onSuccess: (lista) => {
       qc.invalidateQueries({ queryKey: ["caixa-movs", caixa.id] });
+      qc.invalidateQueries({ queryKey: ["caixa-parcelas-abertas"] });
       qc.invalidateQueries({ queryKey: ["mensalidades"] });
-      setParcela(null); setCodigo(""); setValor("");
-      toast.success("Recebimento registrado");
-      printComprovante(caixa, r.parcela, r.v, r.forma);
+      setSel({});
+      toast.success(`${lista.length} recebimento(s) registrado(s)`);
+      printComprovanteLote(caixa, lista, forma);
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
@@ -472,38 +542,77 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
       <CardHeader><CardTitle className="font-serif text-base">Receber mensalidade no balcão</CardTitle></CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-2">
-          <Label>Código da parcela</Label>
+          <Label>Buscar associado (nome ou código)</Label>
           <div className="flex gap-2">
-            <Input value={codigo} inputMode="numeric" placeholder="Ex: 1024"
-              onChange={(e) => setCodigo(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); buscar(); } }} />
-            <Button type="button" variant="outline" onClick={buscar}><Search className="h-4 w-4" /></Button>
+            <Input value={busca} placeholder="Ex: Maria Silva ou 1024"
+              onChange={(e) => { setBusca(e.target.value); if (assoc) { setAssoc(null); setSel({}); } }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setTermo(busca); } }} />
+            <Button type="button" variant="outline" onClick={() => setTermo(busca)}><Search className="h-4 w-4" /></Button>
           </div>
         </div>
-        {parcela && (
+
+        {!assoc && termo.trim().length >= 2 && (
+          <div className="max-h-48 overflow-auto rounded-md border">
+            {buscando ? (
+              <p className="p-3 text-sm text-muted-foreground">Buscando...</p>
+            ) : associados.length === 0 ? (
+              <p className="p-3 text-sm text-muted-foreground">Nenhum associado encontrado.</p>
+            ) : associados.map((a) => (
+              <button key={a.id} type="button"
+                className="flex w-full items-center justify-between gap-2 border-b px-3 py-2 text-left text-sm last:border-b-0 hover:bg-muted"
+                onClick={() => { setAssoc(a); setSel({}); setBusca(a.nome); }}>
+                <span>{a.nome}</span>
+                <span className="text-xs text-muted-foreground">#{String(a.codigo).padStart(4, "0")}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {assoc && (
           <div className="space-y-3 rounded-md border p-3 text-sm">
-            <p><span className="text-muted-foreground">Associado:</span> <b>{parcela.associados?.nome}</b></p>
-            <p><span className="text-muted-foreground">Competência:</span> <span className="capitalize">{competenciaLabel(parcela.competencia)}</span> · venc. {fmtDate(parcela.vencimento)}</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label className="text-xs">Valor recebido</Label>
-                <Input value={valor} onChange={(e) => setValor(e.target.value)} type="number" step="0.01" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Forma</Label>
-                <Select value={forma} onValueChange={setForma}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="cartao">Cartão</SelectItem>
-                    <SelectItem value="transferencia">Transferência</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center justify-between gap-2">
+              <p><span className="text-muted-foreground">Associado:</span> <b>{assoc.nome}</b></p>
+              <Button size="sm" variant="ghost" onClick={() => { setAssoc(null); setSel({}); }}>Trocar</Button>
             </div>
-            <Button className="w-full" onClick={() => receber.mutate()} disabled={receber.isPending}>
-              {receber.isPending ? "Registrando..." : "Confirmar recebimento e imprimir"}
+            {loadingParcelas ? (
+              <p className="text-muted-foreground">Carregando parcelas...</p>
+            ) : parcelas.length === 0 ? (
+              <p className="text-muted-foreground">Nenhuma parcela em aberto.</p>
+            ) : (
+              <div className="max-h-60 overflow-auto rounded-md border">
+                {parcelas.map((p) => (
+                  <label key={p.id} className="flex cursor-pointer items-center gap-3 border-b px-3 py-2 last:border-b-0 hover:bg-muted">
+                    <input type="checkbox" className="h-4 w-4 accent-primary"
+                      checked={!!sel[p.id]}
+                      onChange={(e) => setSel((s) => ({ ...s, [p.id]: e.target.checked }))} />
+                    <span className="flex-1">
+                      <span className="font-medium">#{p.codigo}</span>{" "}
+                      <span className="capitalize">{competenciaLabel(p.competencia)}</span>
+                      <span className="block text-xs text-muted-foreground">venc. {fmtDate(p.vencimento)} · {p.status}</span>
+                    </span>
+                    <span className="font-medium">{brl(p.valor)}</span>
+                  </label>
+                ))}
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label className="text-xs">Forma de pagamento</Label>
+              <Select value={forma} onValueChange={setForma}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                  <SelectItem value="transferencia">Transferência</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
+              <span className="text-muted-foreground">{selecionadas.length} parcela(s) selecionada(s)</span>
+              <b>{brl(totalSel)}</b>
+            </div>
+            <Button className="w-full" onClick={() => receber.mutate()} disabled={receber.isPending || selecionadas.length === 0}>
+              {receber.isPending ? "Registrando..." : "Confirmar recebimento"}
             </Button>
           </div>
         )}
@@ -511,6 +620,7 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
     </Card>
   );
 }
+
 
 /* ---------------------------- Lançamento avulso ---------------------------- */
 
@@ -733,18 +843,41 @@ async function printCaixa(caixa: Caixa, movs: Movimento[]) {
     <div style="margin-top:48px;font-size:12px">____________________________________<br/>${caixa.operador_nome}</div>`);
 }
 
-async function printComprovante(caixa: Caixa, p: ParcelaPreview, valor: number, forma: string) {
+async function printComprovanteLote(caixa: Caixa, parcelas: ParcelaPreview[], forma: string) {
   const header = await getEmpresaHeaderHTML();
+  const total = parcelas.reduce((s, p) => s + Number(p.valor), 0);
+  const linhas = parcelas.map((p) => `<tr>
+    <td>#${p.codigo}</td>
+    <td>${competenciaLabel(p.competencia)}</td>
+    <td>${fmtDate(p.vencimento)}</td>
+    <td style="text-align:right">${brl(p.valor)}</td>
+  </tr>`).join("");
+  const a = parcelas[0]?.associados;
   openPrint(`${header}
     <h2 style="font-size:16px;margin:0 0 10px">Comprovante de Pagamento</h2>
+    <p style="font-size:13px;margin:0 0 4px">Associado: <b>${a?.nome ?? ""}</b>${a?.codigo ? ` (#${String(a.codigo).padStart(4, "0")})` : ""}</p>
+    <p style="font-size:13px;margin:0 0 10px">Forma: ${forma} · Data: ${new Date().toLocaleString("pt-BR")}</p>
     <table style="width:100%;border-collapse:collapse;font-size:13px" border="1" cellpadding="6">
-      <tr><td>Associado</td><td>${p.associados?.nome ?? ""} (#${String(p.associados?.codigo ?? "").padStart(4, "0")})</td></tr>
-      <tr><td>Parcela</td><td>#${p.codigo} — ${competenciaLabel(p.competencia)}</td></tr>
-      <tr><td>Vencimento</td><td>${fmtDate(p.vencimento)}</td></tr>
-      <tr><td>Valor pago</td><td><b>${brl(valor)}</b></td></tr>
-      <tr><td>Forma</td><td>${forma}</td></tr>
-      <tr><td>Data</td><td>${new Date().toLocaleString("pt-BR")}</td></tr>
+      <thead style="background:#eee"><tr><th>Parcela</th><th>Competência</th><th>Vencimento</th><th style="text-align:right">Valor</th></tr></thead>
+      <tbody>${linhas}</tbody>
+      <tfoot><tr><td colspan="3" style="text-align:right"><b>Total</b></td><td style="text-align:right"><b>${brl(total)}</b></td></tr></tfoot>
+    </table>
+    <p style="font-size:13px;margin-top:8px">Recebido por: ${caixa.operador_nome} (caixa)</p>
+    <div style="margin-top:48px;font-size:12px">____________________________________<br/>${caixa.operador_nome}</div>`);
+}
+
+async function printComprovanteMov(caixa: Caixa, m: Movimento) {
+  const header = await getEmpresaHeaderHTML();
+  openPrint(`${header}
+    <h2 style="font-size:16px;margin:0 0 10px">Comprovante — ${m.tipo === "cancelado" ? "Recebimento cancelado" : "Movimentação de caixa"}</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:13px" border="1" cellpadding="6">
+      <tr><td>Descrição</td><td>${m.descricao}</td></tr>
+      <tr><td>Tipo</td><td>${m.tipo}</td></tr>
+      <tr><td>Valor</td><td><b>${brl(m.valor)}</b></td></tr>
+      <tr><td>Forma</td><td>${m.forma_pagamento}</td></tr>
+      <tr><td>Data</td><td>${new Date(m.created_at).toLocaleString("pt-BR")}</td></tr>
       <tr><td>Recebido por</td><td>${caixa.operador_nome} (caixa)</td></tr>
     </table>
     <div style="margin-top:48px;font-size:12px">____________________________________<br/>${caixa.operador_nome}</div>`);
 }
+
