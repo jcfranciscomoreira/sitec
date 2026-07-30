@@ -313,19 +313,38 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
                     <TableHead>Descrição</TableHead>
                     <TableHead>Forma</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {movs.slice(pagina * porPagina, pagina * porPagina + porPagina).map((m) => (
-                    <TableRow key={m.id}>
+                    <TableRow key={m.id} className={m.tipo === "cancelado" ? "opacity-60" : ""}>
                       <TableCell className="whitespace-nowrap text-xs">{new Date(m.created_at).toLocaleTimeString("pt-BR")}</TableCell>
                       <TableCell><TipoBadge tipo={m.tipo} /></TableCell>
                       <TableCell className="max-w-[280px] truncate">{m.descricao}</TableCell>
                       <TableCell className="capitalize">{m.forma_pagamento}</TableCell>
                       <TableCell className="text-right font-medium">{m.tipo === "sangria" ? "-" : ""}{brl(m.valor)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button size="icon" variant="ghost" title="Imprimir comprovante" onClick={() => printComprovanteMov(caixa, m)}>
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          {isAdmin && m.tipo === "entrada" && (
+                            <Button size="icon" variant="ghost" title="Cancelar recebimento"
+                              className="text-destructive"
+                              disabled={cancelar.isPending}
+                              onClick={() => {
+                                if (confirm("Cancelar este recebimento? A parcela voltará para em aberto.")) cancelar.mutate(m);
+                              }}>
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
+
               </Table>
               {movs.length > porPagina && (
                 <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 sm:px-0">
