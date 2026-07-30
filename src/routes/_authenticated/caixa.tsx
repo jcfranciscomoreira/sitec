@@ -562,40 +562,84 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
 
   const selecionadas = parcelas.filter((p) => sel[p.id]);
   const totalSel = selecionadas.reduce((s, p) => s + Number(p.valor), 0);
+  const valorRecebido = valorRec.trim() === "" ? totalSel : Number(valorRec.replace(",", "."));
+  const valorValido = Number.isFinite(valorRecebido) && valorRecebido > 0;
 
   const receber = useMutation({
     mutationFn: async () => {
       if (selecionadas.length === 0) throw new Error("Selecione ao menos uma parcela");
+      if (!valorValido) throw new Error("Informe um valor recebido válido");
       const hoje = new Date().toISOString().slice(0, 10);
-      for (const p of selecionadas) {
+      const selIds = new Set(selecionadas.map((p) => p.id));
+      // ordem: selecionadas por vencimento, depois demais em aberto (para abater excedente)
+      const fila = [
+        ...selecionadas.slice().sort((a, b) => a.vencimento.localeCompare(b.vencimento)),
+        ...parcelas.filter((p) => !selIds.has(p.id)).sort((a, b) => a.vencimento.localeCompare(b.vencimento)),
+      ];
+
+      let restante = Math.round(valorRecebido * 100) / 100;
+      const pagas: ParcelaPreview[] = [];
+
+      for (const p of fila) {
+        if (restante <= 0.001) break;
+        const valorParcela = Number(p.valor);
+        const aplicado = Math.min(restante, valorParcela);
+        const diff = Math.round((valorParcela - aplicado) * 100) / 100;
+
         const { error: e1 } = await supabase.from("mensalidades").update({
           status: "pago", data_pagamento: hoje, forma_pagamento: forma,
+          valor: aplicado,
           agente_recebimento: `Caixa — ${caixa.operador_nome}`,
+          ...(diff > 0 ? { observacoes: `Pagamento parcial — saldo de ${brl(diff)} lançado em nova parcela` } : {}),
         } as any).eq("id", p.id);
         if (e1) throw e1;
+
         const { error: e2 } = await supabase.from("caixa_movimentos").insert({
           caixa_id: caixa.id,
           tipo: "entrada",
-          descricao: `Parcela #${p.codigo} — ${p.associados?.nome ?? assoc?.nome ?? ""} (${competenciaLabel(p.competencia)})`,
-          valor: Number(p.valor),
+          descricao: `Parcela #${p.codigo} — ${p.associados?.nome ?? assoc?.nome ?? ""} (${competenciaLabel(p.competencia)})${diff > 0 ? " — pagamento parcial" : ""}`,
+          valor: aplicado,
           forma_pagamento: forma,
           mensalidade_id: p.id,
           associado_id: p.associado_id,
         } as any);
         if (e2) throw e2;
+
+        if (diff > 0.001) {
+          const d = new Date(p.vencimento + "T00:00:00");
+          d.setMonth(d.getMonth() + 1);
+          const novoVenc = d.toISOString().slice(0, 10);
+          const { error: e3 } = await supabase.from("mensalidades").insert({
+            associado_id: p.associado_id,
+            competencia: novoVenc.slice(0, 7) + "-01",
+            vencimento: novoVenc,
+            valor: diff,
+            status: "pendente",
+            observacoes: `Diferença de pagamento parcial da parcela #${p.codigo}`,
+          } as any);
+          if (e3) throw e3;
+        }
+
+        pagas.push({ ...p, valor: aplicado });
+        restante = Math.round((restante - aplicado) * 100) / 100;
       }
-      return selecionadas;
+
+      return { pagas, restante };
     },
-    onSuccess: (lista) => {
+    onSuccess: ({ pagas, restante }) => {
       qc.invalidateQueries({ queryKey: ["caixa-movs", caixa.id] });
       qc.invalidateQueries({ queryKey: ["caixa-parcelas-abertas"] });
       qc.invalidateQueries({ queryKey: ["mensalidades"] });
       setSel({});
-      toast.success(`${lista.length} recebimento(s) registrado(s)`);
-      printComprovanteLote(caixa, lista, forma);
+      setValorRec("");
+      toast.success(`${pagas.length} recebimento(s) registrado(s)`, {
+        description: restante > 0.001 ? `Sobra de ${brl(restante)} não aplicada (sem parcelas em aberto)` : undefined,
+      });
+      printComprovanteLote(caixa, pagas, forma);
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
+
 
   return (
     <Card className="border-border/60 shadow-soft">
