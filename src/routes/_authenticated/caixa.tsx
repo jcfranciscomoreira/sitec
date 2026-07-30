@@ -609,11 +609,27 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
 
         if (diff > 0.001) {
           const d = new Date(p.vencimento + "T00:00:00");
-          d.setMonth(d.getMonth() + 1);
-          const novoVenc = d.toISOString().slice(0, 10);
+          // encontra o próximo mês livre (evita violar a competência única por associado)
+          let novoVenc = "";
+          let comp = "";
+          for (let i = 0; i < 36; i++) {
+            d.setMonth(d.getMonth() + 1);
+            novoVenc = d.toISOString().slice(0, 10);
+            comp = novoVenc.slice(0, 7) + "-01";
+            const { data: exist, error: eChk } = await supabase
+              .from("mensalidades")
+              .select("id")
+              .eq("associado_id", p.associado_id)
+              .eq("competencia", comp)
+              .maybeSingle();
+            if (eChk) throw eChk;
+            if (!exist) break;
+            comp = "";
+          }
+          if (!comp) throw new Error("Não foi possível criar a parcela do saldo: competências ocupadas");
           const { error: e3 } = await supabase.from("mensalidades").insert({
             associado_id: p.associado_id,
-            competencia: novoVenc.slice(0, 7) + "-01",
+            competencia: comp,
             vencimento: novoVenc,
             valor: diff,
             status: "pendente",
@@ -621,6 +637,7 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
           } as any);
           if (e3) throw e3;
         }
+
 
         pagas.push({ ...p, valor: aplicado });
         restante = Math.round((restante - aplicado) * 100) / 100;
