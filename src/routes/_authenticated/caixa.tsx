@@ -19,6 +19,8 @@ import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { getEmpresaHeaderHTML } from "@/lib/print-header";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useServerFn } from "@tanstack/react-start";
+import { verificarSenhaAdmin } from "@/lib/caixa-admin.functions";
 
 
 export const Route = createFileRoute("/_authenticated/caixa")({
@@ -209,6 +211,11 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
   const [fecharOpen, setFecharOpen] = useState(false);
   const [pagina, setPagina] = useState(0);
   const porPagina = 6;
+  const [movCancelar, setMovCancelar] = useState<Movimento | null>(null);
+  const [admEmail, setAdmEmail] = useState("");
+  const [admSenha, setAdmSenha] = useState("");
+  const [validando, setValidando] = useState(false);
+  const verificarAdmin = useServerFn(verificarSenhaAdmin);
 
   const cancelar = useMutation({
     mutationFn: async (m: Movimento) => {
@@ -356,13 +363,11 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
                           <Button size="icon" variant="ghost" title="Imprimir comprovante" onClick={() => printComprovanteMov(caixa, m)}>
                             <Printer className="h-4 w-4" />
                           </Button>
-                          {isAdmin && m.tipo === "entrada" && (
-                            <Button size="icon" variant="ghost" title="Cancelar recebimento"
+                          {m.tipo === "entrada" && (
+                            <Button size="icon" variant="ghost" title="Cancelar recebimento (requer senha do administrador)"
                               className="text-destructive"
                               disabled={cancelar.isPending}
-                              onClick={() => {
-                                if (confirm("Cancelar este recebimento? A parcela voltará para em aberto.")) cancelar.mutate(m);
-                              }}>
+                              onClick={() => { setAdmEmail(""); setAdmSenha(""); setMovCancelar(m); }}>
                               <XCircle className="h-4 w-4" />
                             </Button>
                           )}
@@ -423,6 +428,61 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
             <div className="space-y-2"><Label>Observações</Label><Textarea name="obs" rows={2} /></div>
             <DialogFooter>
               <Button type="submit" disabled={fechar.isPending}>{fechar.isPending ? "Fechando..." : "Confirmar fechamento"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!movCancelar} onOpenChange={(o) => { if (!o) setMovCancelar(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="font-serif">Cancelar recebimento</DialogTitle></DialogHeader>
+          <form
+            className="space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const mov = movCancelar;
+              if (!mov) return;
+              if (!isAdmin) {
+                setValidando(true);
+                try {
+                  const r = await verificarAdmin({ data: { email: admEmail, senha: admSenha } });
+                  if (!r.ok) {
+                    toast.error(r.motivo === "sem_permissao" ? "Este usuário não é administrador" : "E-mail ou senha inválidos");
+                    return;
+                  }
+                } catch (err: any) {
+                  toast.error("Não foi possível validar", { description: err?.message });
+                  return;
+                } finally {
+                  setValidando(false);
+                }
+              }
+              setMovCancelar(null);
+              cancelar.mutate(mov);
+            }}
+          >
+            <div className="rounded-md bg-muted p-3 text-sm">
+              <p className="truncate">{movCancelar?.descricao}</p>
+              <p className="text-muted-foreground">Valor: <b>{movCancelar ? brl(movCancelar.valor) : ""}</b> — a parcela voltará para em aberto.</p>
+            </div>
+            {!isAdmin && (
+              <>
+                <p className="text-sm text-muted-foreground">Esta ação exige autorização de um administrador.</p>
+                <div className="space-y-2">
+                  <Label>E-mail do administrador</Label>
+                  <Input type="email" autoComplete="off" value={admEmail} onChange={(e) => setAdmEmail(e.target.value)} required maxLength={255} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Senha do administrador</Label>
+                  <Input type="password" autoComplete="off" value={admSenha} onChange={(e) => setAdmSenha(e.target.value)} required maxLength={200} />
+                </div>
+              </>
+            )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setMovCancelar(null)}>Voltar</Button>
+              <Button type="submit" variant="destructive" disabled={validando || cancelar.isPending}>
+                {validando ? "Validando..." : "Confirmar cancelamento"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
