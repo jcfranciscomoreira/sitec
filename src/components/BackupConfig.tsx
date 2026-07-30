@@ -406,7 +406,7 @@ function AutomaticoTab() {
     (async () => {
       const { data, error } = await supabase.from("backup_config" as any).select("*").eq("id", 1).maybeSingle();
       if (error) toast.error(error.message);
-      setCfg(data ?? { id: 1, ativo: false, periodicidade: "diario", hora: 3, dia_semana: 1, dia_mes: 1, tabelas: [] });
+      setCfg(data ?? { id: 1, ativo: false, periodicidade: "diario", hora: 3, dia_semana: 1, dia_mes: 1, retencao_dias: 90, tabelas: [] });
       setLoading(false);
     })();
   }, []);
@@ -420,6 +420,7 @@ function AutomaticoTab() {
       dia_semana: Number(cfg.dia_semana) || 1,
       dia_mes: Number(cfg.dia_mes) || 1,
       alerta_email: cfg.alerta_email?.trim() || null,
+      retencao_dias: Math.max(0, Number(cfg.retencao_dias) || 0),
       tabelas: cfg.tabelas ?? [],
     } as any).eq("id", 1);
     setSaving(false);
