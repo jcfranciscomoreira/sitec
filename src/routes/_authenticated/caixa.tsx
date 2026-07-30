@@ -713,13 +713,30 @@ function ReceberParcelaCard({ caixa }: { caixa: Caixa }) {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Valor recebido</Label>
+              <Input inputMode="decimal" placeholder={totalSel ? brl(totalSel) : "0,00"}
+                value={valorRec} onChange={(e) => setValorRec(e.target.value)} />
+              <p className="text-[11px] text-muted-foreground">
+                Deixe em branco para receber o total selecionado. Se for menor, o saldo vira nova parcela para o mês seguinte; se for maior, o excedente abate as demais parcelas em aberto.
+              </p>
+            </div>
             <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
               <span className="text-muted-foreground">{selecionadas.length} parcela(s) selecionada(s)</span>
               <b>{brl(totalSel)}</b>
             </div>
-            <Button className="w-full" onClick={() => receber.mutate()} disabled={receber.isPending || selecionadas.length === 0}>
+            {valorRec.trim() !== "" && valorValido && (
+              <div className="flex items-center justify-between rounded-md border px-3 py-2 text-xs">
+                <span className="text-muted-foreground">
+                  {valorRecebido < totalSel ? "Saldo a gerar em nova parcela" : valorRecebido > totalSel ? "Excedente a abater" : "Valor exato"}
+                </span>
+                <b>{brl(Math.abs(valorRecebido - totalSel))}</b>
+              </div>
+            )}
+            <Button className="w-full" onClick={() => receber.mutate()} disabled={receber.isPending || selecionadas.length === 0 || !valorValido}>
               {receber.isPending ? "Registrando..." : "Confirmar recebimento"}
             </Button>
+
           </div>
         )}
       </CardContent>
