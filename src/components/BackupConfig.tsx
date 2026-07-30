@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Database, Download, FileJson, FileSpreadsheet, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
-import { gerarBackup, BACKUP_TABELAS } from "@/lib/backup.functions";
-import { usePermissions } from "@/hooks/use-permissions";
+import { gerarBackup } from "@/lib/backup.functions";
+import { BACKUP_TABELAS } from "@/lib/backup-tabelas";
+
 
 const LABELS: Record<string, string> = {
   configuracoes: "Configurações",
