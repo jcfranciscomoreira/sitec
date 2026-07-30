@@ -363,13 +363,11 @@ function CaixaAberto({ caixa, operadorNome }: { caixa: Caixa; operadorNome: stri
                           <Button size="icon" variant="ghost" title="Imprimir comprovante" onClick={() => printComprovanteMov(caixa, m)}>
                             <Printer className="h-4 w-4" />
                           </Button>
-                          {isAdmin && m.tipo === "entrada" && (
-                            <Button size="icon" variant="ghost" title="Cancelar recebimento"
+                          {m.tipo === "entrada" && (
+                            <Button size="icon" variant="ghost" title="Cancelar recebimento (requer senha do administrador)"
                               className="text-destructive"
                               disabled={cancelar.isPending}
-                              onClick={() => {
-                                if (confirm("Cancelar este recebimento? A parcela voltará para em aberto.")) cancelar.mutate(m);
-                              }}>
+                              onClick={() => { setAdmEmail(""); setAdmSenha(""); setMovCancelar(m); }}>
                               <XCircle className="h-4 w-4" />
                             </Button>
                           )}
