@@ -114,6 +114,102 @@ export type Database = {
           },
         ]
       }
+      backup_config: {
+        Row: {
+          alerta_email: string | null
+          ativo: boolean
+          created_at: string
+          dia_mes: number
+          dia_semana: number
+          hora: number
+          id: number
+          periodicidade: string
+          tabelas: string[]
+          ultima_execucao: string | null
+          ultimo_erro: string | null
+          ultimo_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          alerta_email?: string | null
+          ativo?: boolean
+          created_at?: string
+          dia_mes?: number
+          dia_semana?: number
+          hora?: number
+          id?: number
+          periodicidade?: string
+          tabelas?: string[]
+          ultima_execucao?: string | null
+          ultimo_erro?: string | null
+          ultimo_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alerta_email?: string | null
+          ativo?: boolean
+          created_at?: string
+          dia_mes?: number
+          dia_semana?: number
+          hora?: number
+          id?: number
+          periodicidade?: string
+          tabelas?: string[]
+          ultima_execucao?: string | null
+          ultimo_erro?: string | null
+          ultimo_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      backup_logs: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhes: Json | null
+          erro: string | null
+          formato: string | null
+          id: string
+          origem: string
+          registros: number
+          status: string
+          tabelas: string[]
+          user_email: string | null
+          user_id: string | null
+          user_nome: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhes?: Json | null
+          erro?: string | null
+          formato?: string | null
+          id?: string
+          origem?: string
+          registros?: number
+          status?: string
+          tabelas?: string[]
+          user_email?: string | null
+          user_id?: string | null
+          user_nome?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhes?: Json | null
+          erro?: string | null
+          formato?: string | null
+          id?: string
+          origem?: string
+          registros?: number
+          status?: string
+          tabelas?: string[]
+          user_email?: string | null
+          user_id?: string | null
+          user_nome?: string | null
+        }
+        Relationships: []
+      }
       baixa_sessoes: {
         Row: {
           agente: string
