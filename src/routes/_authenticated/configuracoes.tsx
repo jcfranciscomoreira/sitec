@@ -15,6 +15,7 @@ import { CarteirinhaConfigTab } from "@/components/CarteirinhaConfig";
 import { ContratoConfigTab } from "@/components/ContratoConfig";
 import { FiliaisConfig } from "@/components/FiliaisConfig";
 import { MapsConfig } from "@/components/MapsConfig";
+import { LogsAuditoria } from "@/components/LogsAuditoria";
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
   component: ConfiguracoesPage,
