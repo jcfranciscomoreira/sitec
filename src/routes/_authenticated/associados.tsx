@@ -1118,7 +1118,7 @@ function PendingDependentesSection({ list, onChange }: { list: PendingDep[]; onC
             <div className="space-y-2 col-span-2"><Label>Nome</Label><Input id="pd_nome" defaultValue={form.nome} /></div>
             <div className="space-y-2"><Label>Parentesco</Label><Input id="pd_par" defaultValue={form.parentesco} placeholder="Cônjuge, Filho(a)..." /></div>
             <div className="space-y-2"><Label>Data de nascimento</Label><Input id="pd_nasc" type="date" defaultValue={form.data_nascimento} /></div>
-            <div className="space-y-2 col-span-2"><Label>CPF</Label><Input id="pd_cpf" defaultValue={form.cpf} /></div>
+            <div className="space-y-2 col-span-2"><Label>CPF</Label><Input id="pd_cpf" inputMode="numeric" placeholder="000.000.000-00" defaultValue={maskCPF(form.cpf ?? "")} onInput={(e) => { const el = e.currentTarget; el.value = maskCPF(el.value); }} /></div>
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => { setAdding(false); setEditIdx(null); }}>Cancelar</Button>
