@@ -285,6 +285,23 @@ function AssociadosPage() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const get = (k: string) => { const v = String(fd.get(k) || ""); return v.trim() ? v : null; };
+
+    const cpfRaw = get("cpf");
+    if (cpfRaw) {
+      const digits = onlyDigits(cpfRaw);
+      if (!isValidCPF(digits)) {
+        toast.error("CPF inválido", { description: "Confira os números digitados." });
+        return;
+      }
+      const dup = associados.find((a) => a.id !== editing?.id && onlyDigits(a.cpf ?? "") === digits);
+      if (dup) {
+        toast.error("CPF já cadastrado", {
+          description: `Este CPF pertence ao associado ${dup.nome} (código #${String(dup.codigo).padStart(4, "0")}).`,
+        });
+        return;
+      }
+    }
+
     upsert.mutate({
       id: editing?.id,
       nome: String(fd.get("nome")),
