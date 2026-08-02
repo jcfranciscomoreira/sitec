@@ -329,7 +329,7 @@ function AssociadosPage() {
 
   const filtered = associados.filter((a) =>
     (!search || a.nome.toLowerCase().includes(search.toLowerCase()) ||
-      (a.cpf ?? "").includes(search) || String(a.codigo).includes(search)) &&
+      onlyDigits(a.cpf ?? "").includes(onlyDigits(search)) && onlyDigits(search).length > 0 || (a.cpf ?? "").includes(search) || String(a.codigo).includes(search)) &&
     (statusFilter === "todos" || a.status === statusFilter)
   );
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
