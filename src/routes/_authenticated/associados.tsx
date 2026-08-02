@@ -784,8 +784,13 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
 
+  const cancelarCobrancaFn = useServerFn(cancelarCobranca);
   const cancelar = useMutation({
     mutationFn: async (id: string) => {
+      const alvo = mens.find((m: any) => m.id === id) as any;
+      if (alvo?.cobranca_id) {
+        await cancelarCobrancaFn({ data: { mensalidade_id: id } });
+      }
       const { error } = await supabase.from("mensalidades").delete().eq("id", id);
       if (error) throw error;
     },
@@ -795,6 +800,7 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
+
 
   const totalPago = mens.filter((m) => m.status === "pago").reduce((s, m) => s + Number(m.valor), 0);
   const totalAberto = mens.filter((m) => m.status !== "pago" && m.status !== "cancelado").reduce((s, m) => s + Number(m.valor), 0);
