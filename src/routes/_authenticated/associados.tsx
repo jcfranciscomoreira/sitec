@@ -23,6 +23,7 @@ import { DEFAULT_CARTEIRINHA, renderCarteirinhaHTML, type CarteirinhaConfig } fr
 import { DEFAULT_CONTRATO_HTML, renderContratoHTML } from "@/lib/contrato-template";
 import { bonificarParcelas, cancelarBonificacao } from "@/lib/bonificacao.functions";
 import { usePermissions } from "@/hooks/use-permissions";
+import { maskCPF, maskRG, maskTelefone, maskCEP, onlyDigits, isValidCPF } from "@/lib/masks";
 
 export const Route = createFileRoute("/_authenticated/associados")({
   head: () => ({ meta: [{ title: "Associados — Memorial" }] }),
@@ -285,6 +286,23 @@ function AssociadosPage() {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const get = (k: string) => { const v = String(fd.get(k) || ""); return v.trim() ? v : null; };
+
+    const cpfRaw = get("cpf");
+    if (cpfRaw) {
+      const digits = onlyDigits(cpfRaw);
+      if (!isValidCPF(digits)) {
+        toast.error("CPF inválido", { description: "Confira os números digitados." });
+        return;
+      }
+      const dup = associados.find((a) => a.id !== editing?.id && onlyDigits(a.cpf ?? "") === digits);
+      if (dup) {
+        toast.error("CPF já cadastrado", {
+          description: `Este CPF pertence ao associado ${dup.nome} (código #${String(dup.codigo).padStart(4, "0")}).`,
+        });
+        return;
+      }
+    }
+
     upsert.mutate({
       id: editing?.id,
       nome: String(fd.get("nome")),
@@ -311,7 +329,7 @@ function AssociadosPage() {
 
   const filtered = associados.filter((a) =>
     (!search || a.nome.toLowerCase().includes(search.toLowerCase()) ||
-      (a.cpf ?? "").includes(search) || String(a.codigo).includes(search)) &&
+      onlyDigits(a.cpf ?? "").includes(onlyDigits(search)) && onlyDigits(search).length > 0 || (a.cpf ?? "").includes(search) || String(a.codigo).includes(search)) &&
     (statusFilter === "todos" || a.status === statusFilter)
   );
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -332,15 +350,16 @@ function AssociadosPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2 col-span-2"><Label>Nome completo *</Label><Input name="nome" defaultValue={editing?.nome} required /></div>
-                <div className="space-y-2"><Label>CPF</Label><Input name="cpf" defaultValue={editing?.cpf ?? ""} /></div>
-                <div className="space-y-2"><Label>RG</Label><Input name="rg" defaultValue={editing?.rg ?? ""} /></div>
+                <div className="space-y-2"><Label>CPF</Label><Input name="cpf" inputMode="numeric" placeholder="000.000.000-00" defaultValue={maskCPF(editing?.cpf ?? "")} onInput={(e) => { const el = e.currentTarget; el.value = maskCPF(el.value); }} /></div>
+                <div className="space-y-2"><Label>RG</Label><Input name="rg" placeholder="Somente números/letras" defaultValue={editing?.rg ?? ""} onInput={(e) => { const el = e.currentTarget; el.value = maskRG(el.value); }} /></div>
                 <div className="space-y-2"><Label>Data de nascimento</Label><Input name="data_nascimento" type="date" defaultValue={editing?.data_nascimento ?? ""} /></div>
-                <div className="space-y-2"><Label>Telefone</Label><Input name="telefone" defaultValue={editing?.telefone ?? ""} /></div>
+                <div className="space-y-2"><Label>Telefone</Label><Input name="telefone" inputMode="tel" placeholder="(00) 00000-0000" defaultValue={maskTelefone(editing?.telefone ?? "")} onInput={(e) => { const el = e.currentTarget; el.value = maskTelefone(el.value); }} /></div>
                 <div className="space-y-2 col-span-2"><Label>E-mail</Label><Input name="email" type="email" defaultValue={editing?.email ?? ""} /></div>
                 <div className="space-y-2 col-span-2"><Label>Endereço</Label><Input name="endereco" defaultValue={editing?.endereco ?? ""} /></div>
                 <div className="space-y-2"><Label>Cidade</Label><Input name="cidade" defaultValue={editing?.cidade ?? ""} /></div>
-                <div className="space-y-2"><Label>Estado</Label><Input name="estado" maxLength={2} defaultValue={editing?.estado ?? ""} /></div>
-                <div className="space-y-2"><Label>CEP</Label><Input name="cep" defaultValue={editing?.cep ?? ""} /></div>
+                <div className="space-y-2"><Label>Estado</Label><Input name="estado" maxLength={2} defaultValue={editing?.estado ?? ""} onInput={(e) => { const el = e.currentTarget; el.value = el.value.replace(/[^a-zA-Z]/g, "").toUpperCase(); }} /></div>
+                <div className="space-y-2"><Label>CEP</Label><Input name="cep" inputMode="numeric" placeholder="00000-000" defaultValue={maskCEP(editing?.cep ?? "")} onInput={(e) => { const el = e.currentTarget; el.value = maskCEP(el.value); }} /></div>
+
                 <div className="space-y-2"><Label>Status</Label>
                   <Select name="status" defaultValue={editing?.status ?? "ativo"}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -602,7 +621,7 @@ function DependentesSection({ associado }: { associado: Associado }) {
             <div className="space-y-2 col-span-2"><Label>Nome</Label><Input name="nome" defaultValue={form.nome ?? ""} required /></div>
             <div className="space-y-2"><Label>Parentesco</Label><Input name="parentesco" defaultValue={form.parentesco ?? ""} placeholder="Cônjuge, Filho(a)..." required /></div>
             <div className="space-y-2"><Label>Data de nascimento</Label><Input name="data_nascimento" type="date" defaultValue={form.data_nascimento ?? ""} /></div>
-            <div className="space-y-2"><Label>CPF</Label><Input name="cpf" defaultValue={form.cpf ?? ""} /></div>
+            <div className="space-y-2"><Label>CPF</Label><Input name="cpf" inputMode="numeric" placeholder="000.000.000-00" defaultValue={maskCPF(form.cpf ?? "")} onInput={(e) => { const el = e.currentTarget; el.value = maskCPF(el.value); }} /></div>
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={formStatus} onValueChange={(v) => setFormStatus(v as any)}>
@@ -1099,7 +1118,7 @@ function PendingDependentesSection({ list, onChange }: { list: PendingDep[]; onC
             <div className="space-y-2 col-span-2"><Label>Nome</Label><Input id="pd_nome" defaultValue={form.nome} /></div>
             <div className="space-y-2"><Label>Parentesco</Label><Input id="pd_par" defaultValue={form.parentesco} placeholder="Cônjuge, Filho(a)..." /></div>
             <div className="space-y-2"><Label>Data de nascimento</Label><Input id="pd_nasc" type="date" defaultValue={form.data_nascimento} /></div>
-            <div className="space-y-2 col-span-2"><Label>CPF</Label><Input id="pd_cpf" defaultValue={form.cpf} /></div>
+            <div className="space-y-2 col-span-2"><Label>CPF</Label><Input id="pd_cpf" inputMode="numeric" placeholder="000.000.000-00" defaultValue={maskCPF(form.cpf ?? "")} onInput={(e) => { const el = e.currentTarget; el.value = maskCPF(el.value); }} /></div>
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => { setAdding(false); setEditIdx(null); }}>Cancelar</Button>
