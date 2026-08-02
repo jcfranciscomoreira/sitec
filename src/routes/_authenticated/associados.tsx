@@ -621,7 +621,7 @@ function DependentesSection({ associado }: { associado: Associado }) {
             <div className="space-y-2 col-span-2"><Label>Nome</Label><Input name="nome" defaultValue={form.nome ?? ""} required /></div>
             <div className="space-y-2"><Label>Parentesco</Label><Input name="parentesco" defaultValue={form.parentesco ?? ""} placeholder="Cônjuge, Filho(a)..." required /></div>
             <div className="space-y-2"><Label>Data de nascimento</Label><Input name="data_nascimento" type="date" defaultValue={form.data_nascimento ?? ""} /></div>
-            <div className="space-y-2"><Label>CPF</Label><Input name="cpf" defaultValue={form.cpf ?? ""} /></div>
+            <div className="space-y-2"><Label>CPF</Label><Input name="cpf" inputMode="numeric" placeholder="000.000.000-00" defaultValue={maskCPF(form.cpf ?? "")} onInput={(e) => { const el = e.currentTarget; el.value = maskCPF(el.value); }} /></div>
             <div className="space-y-2">
               <Label>Status</Label>
               <Select value={formStatus} onValueChange={(v) => setFormStatus(v as any)}>
