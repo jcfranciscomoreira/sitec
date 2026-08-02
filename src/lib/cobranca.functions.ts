@@ -172,6 +172,46 @@ export const criarCobranca = createServerFn({ method: "POST" })
     throw new Error("Provedor não implementado");
   });
 
+// Cancela a cobrança no provedor bancário e limpa os dados na mensalidade.
+export const cancelarCobranca = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ mensalidade_id: z.string().uuid() }).parse(d))
+  .handler(async ({ context, data }) => {
+    const { data: m } = await context.supabase
+      .from("mensalidades")
+      .select("id, cobranca_id, cobranca_provedor")
+      .eq("id", data.mensalidade_id)
+      .maybeSingle();
+    if (!m) throw new Error("Mensalidade não encontrada");
+    const cobrancaId = (m as any).cobranca_id as string | null;
+    if (!cobrancaId) return { ok: true, cancelado: false };
+
+    const provedor = (m as any).cobranca_provedor as string | null;
+    if (provedor === "asaas") {
+      const { secrets, row } = await loadIntegracao(provedor);
+      const apiKey = secrets["api_key"];
+      if (!apiKey) throw new Error("API Key do Asaas não configurada.");
+      const { cancelarCobrancaAsaas } = await import("@/lib/cobranca/asaas.server");
+      await cancelarCobrancaAsaas(apiKey, row.ambiente as any, cobrancaId);
+    } else if (provedor) {
+      throw new Error(`Cancelamento não implementado para o provedor ${provedor}`);
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("mensalidades").update({
+      cobranca_id: null,
+      cobranca_provedor: null,
+      cobranca_status: null,
+      linha_digitavel: null,
+      codigo_barras: null,
+      pix_copia_cola: null,
+      qr_code_base64: null,
+      link_boleto: null,
+    }).eq("id", (m as any).id);
+
+    return { ok: true, cancelado: true };
+  });
+
 export const sincronizarCobranca = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ mensalidade_id: z.string().uuid() }).parse(d))
