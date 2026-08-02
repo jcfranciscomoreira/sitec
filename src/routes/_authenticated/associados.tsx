@@ -23,6 +23,7 @@ import { DEFAULT_CARTEIRINHA, renderCarteirinhaHTML, type CarteirinhaConfig } fr
 import { DEFAULT_CONTRATO_HTML, renderContratoHTML } from "@/lib/contrato-template";
 import { bonificarParcelas, cancelarBonificacao } from "@/lib/bonificacao.functions";
 import { usePermissions } from "@/hooks/use-permissions";
+import { maskCPF, maskRG, maskTelefone, maskCEP, onlyDigits, isValidCPF } from "@/lib/masks";
 
 export const Route = createFileRoute("/_authenticated/associados")({
   head: () => ({ meta: [{ title: "Associados — Memorial" }] }),
