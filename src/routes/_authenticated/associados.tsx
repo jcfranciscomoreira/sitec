@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
-import { criarCobranca } from "@/lib/cobranca.functions";
+import { criarCobranca, cancelarCobranca } from "@/lib/cobranca.functions";
 import { imprimirCarnesAssociado } from "@/lib/carne-print";
 import { DEFAULT_CARTEIRINHA, renderCarteirinhaHTML, type CarteirinhaConfig } from "@/lib/carteirinha-template";
 import { DEFAULT_CONTRATO_HTML, renderContratoHTML } from "@/lib/contrato-template";
