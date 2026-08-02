@@ -350,15 +350,16 @@ function AssociadosPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2 col-span-2"><Label>Nome completo *</Label><Input name="nome" defaultValue={editing?.nome} required /></div>
-                <div className="space-y-2"><Label>CPF</Label><Input name="cpf" defaultValue={editing?.cpf ?? ""} /></div>
-                <div className="space-y-2"><Label>RG</Label><Input name="rg" defaultValue={editing?.rg ?? ""} /></div>
+                <div className="space-y-2"><Label>CPF</Label><Input name="cpf" inputMode="numeric" placeholder="000.000.000-00" defaultValue={maskCPF(editing?.cpf ?? "")} onInput={(e) => { const el = e.currentTarget; el.value = maskCPF(el.value); }} /></div>
+                <div className="space-y-2"><Label>RG</Label><Input name="rg" placeholder="Somente números/letras" defaultValue={editing?.rg ?? ""} onInput={(e) => { const el = e.currentTarget; el.value = maskRG(el.value); }} /></div>
                 <div className="space-y-2"><Label>Data de nascimento</Label><Input name="data_nascimento" type="date" defaultValue={editing?.data_nascimento ?? ""} /></div>
-                <div className="space-y-2"><Label>Telefone</Label><Input name="telefone" defaultValue={editing?.telefone ?? ""} /></div>
+                <div className="space-y-2"><Label>Telefone</Label><Input name="telefone" inputMode="tel" placeholder="(00) 00000-0000" defaultValue={maskTelefone(editing?.telefone ?? "")} onInput={(e) => { const el = e.currentTarget; el.value = maskTelefone(el.value); }} /></div>
                 <div className="space-y-2 col-span-2"><Label>E-mail</Label><Input name="email" type="email" defaultValue={editing?.email ?? ""} /></div>
                 <div className="space-y-2 col-span-2"><Label>Endereço</Label><Input name="endereco" defaultValue={editing?.endereco ?? ""} /></div>
                 <div className="space-y-2"><Label>Cidade</Label><Input name="cidade" defaultValue={editing?.cidade ?? ""} /></div>
-                <div className="space-y-2"><Label>Estado</Label><Input name="estado" maxLength={2} defaultValue={editing?.estado ?? ""} /></div>
-                <div className="space-y-2"><Label>CEP</Label><Input name="cep" defaultValue={editing?.cep ?? ""} /></div>
+                <div className="space-y-2"><Label>Estado</Label><Input name="estado" maxLength={2} defaultValue={editing?.estado ?? ""} onInput={(e) => { const el = e.currentTarget; el.value = el.value.replace(/[^a-zA-Z]/g, "").toUpperCase(); }} /></div>
+                <div className="space-y-2"><Label>CEP</Label><Input name="cep" inputMode="numeric" placeholder="00000-000" defaultValue={maskCEP(editing?.cep ?? "")} onInput={(e) => { const el = e.currentTarget; el.value = maskCEP(el.value); }} /></div>
+
                 <div className="space-y-2"><Label>Status</Label>
                   <Select name="status" defaultValue={editing?.status ?? "ativo"}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
