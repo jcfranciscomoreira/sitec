@@ -118,6 +118,19 @@ export async function criarCobrancaAsaas(input: CriarCobrancaInput) {
   };
 }
 
+// Cancela/remove a cobrança no Asaas
+export async function cancelarCobrancaAsaas(apiKey: string, ambiente: Env, cobrancaId: string) {
+  try {
+    const r = await asaasFetch({ apiKey, ambiente }, `/payments/${cobrancaId}`, { method: "DELETE" });
+    return { ok: true, deleted: r?.deleted ?? true };
+  } catch (e: any) {
+    const msg = String(e?.message ?? "");
+    // Se já não existe no provedor, tratamos como sucesso
+    if (/not found|não encontrad|inexistente|invalid object/i.test(msg)) return { ok: true, deleted: true };
+    throw e;
+  }
+}
+
 // Consulta status para reconciliação
 export async function consultarCobrancaAsaas(apiKey: string, ambiente: Env, cobrancaId: string) {
   const r = await asaasFetch({ apiKey, ambiente }, `/payments/${cobrancaId}`);

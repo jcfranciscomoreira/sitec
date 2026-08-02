@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate, competenciaLabel } from "@/lib/format";
 import { toast } from "sonner";
-import { criarCobranca } from "@/lib/cobranca.functions";
+import { criarCobranca, cancelarCobranca } from "@/lib/cobranca.functions";
 import { imprimirCarnesAssociado } from "@/lib/carne-print";
 import { DEFAULT_CARTEIRINHA, renderCarteirinhaHTML, type CarteirinhaConfig } from "@/lib/carteirinha-template";
 import { DEFAULT_CONTRATO_HTML, renderContratoHTML } from "@/lib/contrato-template";
@@ -784,8 +784,13 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
 
+  const cancelarCobrancaFn = useServerFn(cancelarCobranca);
   const cancelar = useMutation({
     mutationFn: async (id: string) => {
+      const alvo = mens.find((m: any) => m.id === id) as any;
+      if (alvo?.cobranca_id) {
+        await cancelarCobrancaFn({ data: { mensalidade_id: id } });
+      }
       const { error } = await supabase.from("mensalidades").delete().eq("id", id);
       if (error) throw error;
     },
@@ -795,6 +800,7 @@ function MensalidadesDialog({ associado, onClose }: { associado: Associado; onCl
     },
     onError: (e: any) => toast.error("Erro", { description: e.message }),
   });
+
 
   const totalPago = mens.filter((m) => m.status === "pago").reduce((s, m) => s + Number(m.valor), 0);
   const totalAberto = mens.filter((m) => m.status !== "pago" && m.status !== "cancelado").reduce((s, m) => s + Number(m.valor), 0);
