@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { usePermissions } from "@/hooks/use-permissions";
 
 export const Route = createFileRoute("/_authenticated/recebimento")({
-  head: () => ({ meta: [{ title: "Recebimento — Memorial" }] }),
+  head: () => ({ meta: [{ title: "Recebimento — LINHATEC" }] }),
   component: RecebimentoPage,
 });
 
@@ -611,7 +611,7 @@ function imprimirRelatorio(session: Session, items: RecebItem[]) {
       <td class="r">${i.diferenca === 0 ? "—" : brl(i.diferenca)}</td>
       <td>${i.acao}</td>
     </tr>`).join("");
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Relatório de Baixa — Memorial</title>
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Relatório de Baixa — LINHATEC</title>
     <style>
       body{font-family:Georgia,serif;color:#111;margin:24px}
       h1{font-size:18px;color:#1e3a5f;margin:0 0 4px}
@@ -628,7 +628,7 @@ function imprimirRelatorio(session: Session, items: RecebItem[]) {
       .ass{margin-top:50px;display:grid;grid-template-columns:1fr 1fr;gap:40px;text-align:center;font-size:11px}
       .linha{border-top:1px solid #111;padding-top:4px}
     </style></head><body>
-    <div class="brand">Memorial</div>
+    <div class="brand">LINHATEC</div>
     <h1>Relatório de Baixa por Agente</h1>
     <div class="meta">
       <div><span>Agente</span><b>${session.agente}</b></div>
@@ -1323,7 +1323,7 @@ function imprimirComprovante(c: {
       .pid{margin-top:8px;font-family:monospace;font-size:10px;text-align:center;color:#666}
       @media print{ body{padding:6px} }
     </style></head><body>
-    <div class="brand">Memorial</div>
+    <div class="brand">LINHATEC</div>
     <h1>Comprovante de Recebimento</h1>
     <div class="alert">PROVISÓRIO — baixa sujeita a conciliação com o supervisor</div>
     <table>
