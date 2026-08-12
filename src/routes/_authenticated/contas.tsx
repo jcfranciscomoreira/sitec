@@ -21,7 +21,7 @@ import { brl, fmtDate } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/contas")({
-  head: () => ({ meta: [{ title: "Entradas e Saidas — Memorial" }] }),
+  head: () => ({ meta: [{ title: "Entradas e Saidas — LINHATEC" }] }),
   component: ContasPage,
 });
 

@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Acessar — Memorial" }] }),
+  head: () => ({ meta: [{ title: "Acessar — LINHATEC" }] }),
   component: AuthPage,
 });
 
@@ -59,7 +59,7 @@ function AuthPage() {
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gold text-gold-foreground shadow-elevated">
             <Cross className="h-7 w-7" />
           </div>
-          <h1 className="font-serif text-3xl font-semibold">Memorial</h1>
+          <h1 className="font-serif text-3xl font-semibold">LINHATEC</h1>
           <p className="mt-1 text-sm text-primary-foreground/70">Gestão de Planos Funerários</p>
         </div>
 

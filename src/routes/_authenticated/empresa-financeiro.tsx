@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { brl, fmtDate } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/empresa-financeiro")({
-  head: () => ({ meta: [{ title: "Painel Financeiro — Memorial" }] }),
+  head: () => ({ meta: [{ title: "Painel Financeiro — LINHATEC" }] }),
   component: PainelFinanceiroPage,
 });
 

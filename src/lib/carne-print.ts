@@ -32,7 +32,7 @@ export function imprimirCarnesAssociado(associado: AssocInfo, mensalidades: Mens
     return `
       <div class="carne">
         <div class="canhoto">
-          <div class="brand">Memorial</div>
+          <div class="brand">LINHATEC</div>
           <div class="small">Plano Funerário · Via do associado</div>
           <table>
             <tr><td>Associado</td><td><b>${associado.nome}</b></td></tr>
@@ -46,7 +46,7 @@ export function imprimirCarnesAssociado(associado: AssocInfo, mensalidades: Mens
         <div class="ficha">
           <div class="head">
             <div>
-              <div class="brand">Memorial</div>
+              <div class="brand">LINHATEC</div>
               <div class="small">Carnê de pagamento · Plano Funerário</div>
             </div>
             <div class="valor">${brl(Number(m.valor))}</div>

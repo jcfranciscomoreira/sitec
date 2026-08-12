@@ -20,7 +20,7 @@ export async function loadEmpresaHeader(): Promise<EmpresaHeader> {
     .maybeSingle();
   const d = (data as any) ?? {};
   cache = {
-    nome: d.nome_sistema ?? "Memorial",
+    nome: d.nome_sistema ?? "LINHATEC",
     subtitulo: d.subtitulo ?? null,
     logo_url: d.logo_url ?? null,
     cnpj: d.cnpj ?? null,

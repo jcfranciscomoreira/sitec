@@ -26,7 +26,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { maskCPF, maskRG, maskTelefone, maskCEP, onlyDigits, isValidCPF } from "@/lib/masks";
 
 export const Route = createFileRoute("/_authenticated/associados")({
-  head: () => ({ meta: [{ title: "Associados — Memorial" }] }),
+  head: () => ({ meta: [{ title: "Associados — LINHATEC" }] }),
   component: AssociadosPage,
 });
 
@@ -709,7 +709,7 @@ function gerarComprovante(a: Associado, m: any) {
     </style></head><body>
     <div class="box">
       <h1>Comprovante de Pagamento</h1>
-      <div class="sub">Memorial · Recibo ${recibo}</div>
+      <div class="sub">LINHATEC · Recibo ${recibo}</div>
       <div class="valor">${brl(m.valor)}</div>
       <table>
         <tr><td>Associado</td><td><b>${a.nome}</b> &nbsp;${codigo}</td></tr>
@@ -724,7 +724,7 @@ function gerarComprovante(a: Associado, m: any) {
       <p style="margin-top:18px;font-size:12px;text-align:justify">Declaramos para os devidos fins que recebemos do(a) associado(a) acima identificado(a) a importância correspondente à mensalidade do plano funerário, referente à competência indicada, dando plena, geral e irrevogável quitação.</p>
       <div class="ass">
         <div class="linha"></div>
-        Memorial — Plano Funerário
+        LINHATEC — Plano Funerário
       </div>
     </div>
     <script>window.onload=()=>{window.print();}</script>

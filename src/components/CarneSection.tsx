@@ -409,7 +409,7 @@ function imprimirCarnes(list: any[]) {
     return `
       <div class="carne">
         <div class="canhoto">
-          <div class="brand">Memorial</div>
+          <div class="brand">LINHATEC</div>
           <div class="small">Plano Funerário · Via do associado</div>
           <table>
             <tr><td>Associado</td><td><b>${a?.nome ?? ""}</b></td></tr>
@@ -423,7 +423,7 @@ function imprimirCarnes(list: any[]) {
         <div class="ficha">
           <div class="head">
             <div>
-              <div class="brand">Memorial</div>
+              <div class="brand">LINHATEC</div>
               <div class="small">Carnê de pagamento · Plano Funerário</div>
             </div>
             <div class="valor">${brl(m.valor)}</div>
@@ -446,7 +446,7 @@ function imprimirCarnes(list: any[]) {
     `;
   }).join("");
 
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Carnês — Memorial</title>
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Carnês — LINHATEC</title>
     <style>
       *{box-sizing:border-box}
       body{font-family:Georgia,serif;color:#111;margin:0;padding:0}

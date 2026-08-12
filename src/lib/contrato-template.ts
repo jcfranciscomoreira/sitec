@@ -2,9 +2,9 @@ import { brl, fmtDate } from "@/lib/format";
 
 export const DEFAULT_CONTRATO_HTML = `
 <h1 style="text-align:center;color:#1e3a5f;text-transform:uppercase;letter-spacing:1px">Contrato de Adesão — Plano Funerário</h1>
-<p style="text-align:center;color:#666;font-size:11px">Memorial · Emitido em {{data_hoje}}</p>
+<p style="text-align:center;color:#666;font-size:11px">LINHATEC · Emitido em {{data_hoje}}</p>
 
-<p>Pelo presente instrumento particular, de um lado a <b>MEMORIAL</b>, doravante denominada <b>CONTRATADA</b>, e de outro lado o(a) associado(a) abaixo qualificado, doravante denominado(a) <b>CONTRATANTE</b>, têm entre si justo e contratado o seguinte:</p>
+<p>Pelo presente instrumento particular, de um lado a <b>LINHATEC</b>, doravante denominada <b>CONTRATADA</b>, e de outro lado o(a) associado(a) abaixo qualificado, doravante denominado(a) <b>CONTRATANTE</b>, têm entre si justo e contratado o seguinte:</p>
 
 <h2 style="color:#1e3a5f;text-transform:uppercase;border-bottom:1px solid #1e3a5f">I. Identificação do Contratante</h2>
 <p><b>Código:</b> {{codigo}} &nbsp; <b>Nome:</b> {{nome}}<br>
@@ -36,7 +36,7 @@ export const DEFAULT_CONTRATO_HTML = `
 <table style="width:100%;margin-top:60px"><tr>
 <td style="text-align:center;border-top:1px solid #111;padding-top:6px">CONTRATANTE<br>{{nome}}<br>CPF: {{cpf}}</td>
 <td style="width:40px"></td>
-<td style="text-align:center;border-top:1px solid #111;padding-top:6px">CONTRATADA<br>Memorial</td>
+<td style="text-align:center;border-top:1px solid #111;padding-top:6px">CONTRATADA<br>LINHATEC</td>
 </tr></table>
 `.trim();
 
