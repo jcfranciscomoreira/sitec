@@ -20,6 +20,10 @@ type Tenant = {
   id: string;
   nome: string;
   dominio: string | null;
+  cnpj: string | null;
+  email: string | null;
+  telefone: string | null;
+  endereco: string | null;
   status: string;
   created_at: string;
 };
@@ -143,21 +147,62 @@ function EmpresasPage() {
           <DialogHeader>
             <DialogTitle>{selected?.id ? "Editar Empresa" : "Cadastrar Nova Empresa"}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
+          <div className="grid gap-4 py-4 sm:grid-cols-2">
+            <div className="space-y-2 sm:col-span-2">
               <Label>Nome da Empresa *</Label>
               <Input 
                 value={selected?.nome || ""} 
-                onChange={(e) => setSelected({ ...selected, nome: e.target.value })}
+                onChange={(e) => {
+                  const nome = e.target.value;
+                  const slug = nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+                  setSelected({ 
+                    ...selected, 
+                    nome,
+                    dominio: selected.id ? selected.dominio : (slug ? `${slug}.nuvemplanos.com.br` : "")
+                  });
+                }}
                 placeholder="Ex: Memorial Paz Ltda"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Domínio Customizado (opcional)</Label>
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Subdomínio (automático)</Label>
               <Input 
                 value={selected?.dominio || ""} 
                 onChange={(e) => setSelected({ ...selected, dominio: e.target.value })}
-                placeholder="empresa.nuvemplanos.com"
+                placeholder="slug.nuvemplanos.com.br"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>CNPJ</Label>
+              <Input 
+                value={selected?.cnpj || ""} 
+                onChange={(e) => setSelected({ ...selected, cnpj: e.target.value })}
+                placeholder="00.000.000/0000-00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <Input 
+                value={selected?.telefone || ""} 
+                onChange={(e) => setSelected({ ...selected, telefone: e.target.value })}
+                placeholder="(00) 00000-0000"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>E-mail</Label>
+              <Input 
+                type="email"
+                value={selected?.email || ""} 
+                onChange={(e) => setSelected({ ...selected, email: e.target.value })}
+                placeholder="contato@empresa.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Endereço</Label>
+              <Input 
+                value={selected?.endereco || ""} 
+                onChange={(e) => setSelected({ ...selected, endereco: e.target.value })}
+                placeholder="Rua, Número, Bairro, Cidade"
               />
             </div>
           </div>

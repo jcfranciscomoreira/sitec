@@ -1542,30 +1542,42 @@ export type Database = {
       }
       tenants: {
         Row: {
+          cnpj: string | null
           configuracoes: Json | null
           created_at: string | null
           dominio: string | null
+          email: string | null
+          endereco: string | null
           id: string
           nome: string
           status: string
+          telefone: string | null
           updated_at: string | null
         }
         Insert: {
+          cnpj?: string | null
           configuracoes?: Json | null
           created_at?: string | null
           dominio?: string | null
+          email?: string | null
+          endereco?: string | null
           id?: string
           nome: string
           status?: string
+          telefone?: string | null
           updated_at?: string | null
         }
         Update: {
+          cnpj?: string | null
           configuracoes?: Json | null
           created_at?: string | null
           dominio?: string | null
+          email?: string | null
+          endereco?: string | null
           id?: string
           nome?: string
           status?: string
+          telefone?: string | null
           updated_at?: string | null
         }
         Relationships: []
