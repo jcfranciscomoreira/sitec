@@ -17,7 +17,7 @@ import { brl } from "@/lib/format";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/planos")({
-  head: () => ({ meta: [{ title: "Planos — LINHATEC" }] }),
+  head: () => ({ meta: [{ title: "Planos — Nuvem Planos" }] }),
   component: PlanosPage,
 });
 

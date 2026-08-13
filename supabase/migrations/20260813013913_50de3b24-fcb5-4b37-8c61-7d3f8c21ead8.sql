@@ -1,0 +1,1 @@
+UPDATE public.configuracoes SET nome_sistema = 'Nuvem Planos' WHERE id = 1;

@@ -9,7 +9,7 @@ export type Configuracoes = {
   google_maps_tracking_id?: string | null;
 };
 
-const DEFAULT: Configuracoes = { nome_sistema: "LINHATEC", subtitulo: "Gestão de Planos", logo_url: null };
+const DEFAULT: Configuracoes = { nome_sistema: "Nuvem Planos", subtitulo: "Gestão de Planos", logo_url: null };
 const STORAGE_KEY = "configuracoes_cache_v1";
 
 function readStorage(): Configuracoes | null {
