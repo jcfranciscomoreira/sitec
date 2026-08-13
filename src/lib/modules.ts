@@ -64,6 +64,7 @@ export const MODULES: AppModule[] = [
     { key: "inadimplencia", label: "Inadimplência" },
   ] },
   { group: "Administração", key: "usuarios", label: "Usuários", url: "/usuarios", icon: Shield },
+  { group: "Administração", key: "tenants", label: "Gestão de Empresas", url: "/tenants", icon: Layers },
 ];
 
 export const MODULE_GROUPS: string[] = Array.from(new Set(MODULES.map((m) => m.group)));
