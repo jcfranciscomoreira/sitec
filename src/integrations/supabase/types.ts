@@ -1540,6 +1540,36 @@ export type Database = {
         }
         Relationships: []
       }
+      tenants: {
+        Row: {
+          configuracoes: Json | null
+          created_at: string | null
+          dominio: string | null
+          id: string
+          nome: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          configuracoes?: Json | null
+          created_at?: string | null
+          dominio?: string | null
+          id?: string
+          nome: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          configuracoes?: Json | null
+          created_at?: string | null
+          dominio?: string | null
+          id?: string
+          nome?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           allowed: boolean
