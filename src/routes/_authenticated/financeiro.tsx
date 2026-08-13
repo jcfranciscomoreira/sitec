@@ -20,7 +20,7 @@ import { criarCobranca, sincronizarCobranca } from "@/lib/cobranca.functions";
 import { CarneSection } from "@/components/CarneSection";
 
 export const Route = createFileRoute("/_authenticated/financeiro")({
-  head: () => ({ meta: [{ title: "Financeiro — LINHATEC" }] }),
+  head: () => ({ meta: [{ title: "Financeiro — Nuvem Planos" }] }),
   component: FinanceiroPage,
 });
 

@@ -30,7 +30,7 @@ function buildMonthOptions(count = 12) {
 }
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Painel — LINHATEC" }] }),
+  head: () => ({ meta: [{ title: "Painel — Nuvem Planos" }] }),
   component: Dashboard,
 });
 

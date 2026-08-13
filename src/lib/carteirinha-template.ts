@@ -23,7 +23,7 @@ export const DEFAULT_CARTEIRINHA: CarteirinhaConfig = {
   background: "linear-gradient(135deg,#1e3a5f 0%,#2c5282 100%)",
   color: "#ffffff",
   elements: [
-    { id: "brand", kind: "text", content: "LINHATEC", x: 22, y: 16, fontSize: 11, bold: true, color: "#ffffff" },
+    { id: "brand", kind: "text", content: "Nuvem Planos", x: 22, y: 16, fontSize: 11, bold: true, color: "#ffffff" },
     { id: "tipo", kind: "field", content: "tipo", x: 22, y: 34, fontSize: 13, color: "#d4af37" },
     { id: "labelNome", kind: "text", content: "NOME", x: 22, y: 78, fontSize: 9, color: "#ffffff" },
     { id: "nome", kind: "field", content: "nome", x: 22, y: 94, fontSize: 18, bold: true, color: "#ffffff" },

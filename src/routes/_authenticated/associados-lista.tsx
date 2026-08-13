@@ -25,7 +25,7 @@ function normalizeStatusFilter(status?: string) {
 }
 
 export const Route = createFileRoute("/_authenticated/associados-lista")({
-  head: () => ({ meta: [{ title: "Lista de associados — LINHATEC" }] }),
+  head: () => ({ meta: [{ title: "Lista de associados — Nuvem Planos" }] }),
   validateSearch: searchSchema,
   component: AssociadosListaPage,
 });
