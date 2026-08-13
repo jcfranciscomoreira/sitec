@@ -156,9 +156,9 @@ function EmpresasPage() {
                   const nome = e.target.value;
                   const slug = nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
                   setSelected({ 
-                    ...selected, 
+                    ...selected!, 
                     nome,
-                    dominio: selected.id ? selected.dominio : (slug ? `${slug}.nuvemplanos.com.br` : "")
+                    dominio: selected?.id ? selected.dominio : (slug ? `${slug}.nuvemplanos.com.br` : "")
                   });
                 }}
                 placeholder="Ex: Memorial Paz Ltda"
@@ -168,7 +168,7 @@ function EmpresasPage() {
               <Label>Subdomínio (automático)</Label>
               <Input 
                 value={selected?.dominio || ""} 
-                onChange={(e) => setSelected({ ...selected, dominio: e.target.value })}
+                onChange={(e) => setSelected({ ...selected!, dominio: e.target.value })}
                 placeholder="slug.nuvemplanos.com.br"
               />
             </div>
@@ -176,7 +176,7 @@ function EmpresasPage() {
               <Label>CNPJ</Label>
               <Input 
                 value={selected?.cnpj || ""} 
-                onChange={(e) => setSelected({ ...selected, cnpj: e.target.value })}
+                onChange={(e) => setSelected({ ...selected!, cnpj: e.target.value })}
                 placeholder="00.000.000/0000-00"
               />
             </div>
@@ -184,7 +184,7 @@ function EmpresasPage() {
               <Label>Telefone</Label>
               <Input 
                 value={selected?.telefone || ""} 
-                onChange={(e) => setSelected({ ...selected, telefone: e.target.value })}
+                onChange={(e) => setSelected({ ...selected!, telefone: e.target.value })}
                 placeholder="(00) 00000-0000"
               />
             </div>
@@ -193,7 +193,7 @@ function EmpresasPage() {
               <Input 
                 type="email"
                 value={selected?.email || ""} 
-                onChange={(e) => setSelected({ ...selected, email: e.target.value })}
+                onChange={(e) => setSelected({ ...selected!, email: e.target.value })}
                 placeholder="contato@empresa.com"
               />
             </div>
@@ -201,7 +201,7 @@ function EmpresasPage() {
               <Label>Endereço</Label>
               <Input 
                 value={selected?.endereco || ""} 
-                onChange={(e) => setSelected({ ...selected, endereco: e.target.value })}
+                onChange={(e) => setSelected({ ...selected!, endereco: e.target.value })}
                 placeholder="Rua, Número, Bairro, Cidade"
               />
             </div>
