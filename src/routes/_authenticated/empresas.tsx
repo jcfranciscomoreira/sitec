@@ -37,13 +37,13 @@ function EmpresasPage() {
 
   async function fetchTenants() {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("tenants")
       .select("*")
       .order("created_at", { ascending: false });
     
     if (error) toast.error("Erro ao carregar empresas: " + error.message);
-    else setTenants(data || []);
+    else setTenants((data as any[]) || []);
     setLoading(false);
   }
 
@@ -52,8 +52,8 @@ function EmpresasPage() {
     setSaving(true);
     
     const promise = selected.id 
-      ? supabase.from("tenants").update(selected).eq("id", selected.id)
-      : supabase.from("tenants").insert([selected]);
+      ? (supabase as any).from("tenants").update(selected).eq("id", selected.id)
+      : (supabase as any).from("tenants").insert([selected]);
       
     const { error } = await promise;
     setSaving(false);
@@ -68,7 +68,7 @@ function EmpresasPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Deseja realmente excluir esta empresa?")) return;
-    const { error } = await supabase.from("tenants").delete().eq("id", id);
+    const { error } = await (supabase as any).from("tenants").delete().eq("id", id);
     if (error) toast.error("Erro ao excluir: " + error.message);
     else {
       toast.success("Empresa excluída");

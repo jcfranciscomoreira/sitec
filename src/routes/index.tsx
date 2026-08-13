@@ -21,6 +21,7 @@ export const Route = createFileRoute("/")({
 });
 
 const HIGHLIGHTS = [
+  { icon: Users, title: "Multi-empresa", text: "Venda o acesso ao seu sistema para outras funerárias com gestão centralizada." },
   { icon: Users, title: "Carteira organizada", text: "Associados, dependentes e planos com contrato e carteirinha personalizados." },
   { icon: Receipt, title: "Cobrança automática", text: "Boletos e PIX com baixa automática, carnês em massa e comprovantes." },
   { icon: MapPin, title: "Equipe em campo", text: "Recebimento pelo celular, mapa de vendas e CRM em Kanban." },
