@@ -38,8 +38,8 @@ function createSupabaseAdminClient() {
       ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
       ...(!SUPABASE_SERVICE_ROLE_KEY ? ['SUPABASE_SERVICE_ROLE_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
+    const message = `Atenção: Variável(is) de ambiente Supabase ausente(s): ${missing.join(', ')}. No Lovable Cloud, isso é configurado automaticamente. Em servidores próprios (VPN/Self-hosted), você deve configurar essas chaves no seu painel de variáveis de ambiente.`;
+    console.error(`[Supabase Admin] ${message}`);
     throw new Error(message);
   }
 
