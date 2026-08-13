@@ -24,6 +24,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ env.DEPLOY_KEY }}
+          debug: true
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
             git pull origin main
