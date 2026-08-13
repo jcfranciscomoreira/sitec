@@ -1,0 +1,30 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }} || exit 1
+            git fetch origin main
+            git reset --hard origin/main
+            npm install
+            NITRO_PRESET=node-server npm run build
+            if [ ! -d ".output/public" ]; then
+              echo "$(date): ERRO - build não gerou .output/public, abortando deploy." >> /var/log/deploy.log
+              exit 1
+            fi
+            cp -r .output/public/* /var/www/nuvemplanos/
+            pm2 restart nuvemplanos
+            echo "$(date): Deploy via GitHub Actions concluído." >> /var/log/deploy.log
