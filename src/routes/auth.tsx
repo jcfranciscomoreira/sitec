@@ -66,7 +66,7 @@ function AuthPage() {
         <Card className="border-border/40 shadow-elevated">
           <CardHeader>
             <CardTitle className="font-serif">Acessar o sistema</CardTitle>
-            <CardDescription>Restrito a administradores e operadores.</CardDescription>
+            <CardDescription>Restrito a administradores e operadores...</CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login">
