@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ContatoRouteImport } from './routes/contato'
+import { Route as PlanosPrecosRouteImport } from './routes/planos-precos'
+import { Route as RecursosRouteImport } from './routes/recursos'
 import { Route as AuthenticatedAssociadosRouteImport } from './routes/_authenticated/associados'
 import { Route as AuthenticatedAssociadosListaRouteImport } from './routes/_authenticated/associados-lista'
 import { Route as AuthenticatedCaixaRouteImport } from './routes/_authenticated/caixa'
@@ -43,6 +46,21 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContatoRoute = ContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanosPrecosRoute = PlanosPrecosRouteImport.update({
+  id: '/planos-precos',
+  path: '/planos-precos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecursosRoute = RecursosRouteImport.update({
+  id: '/recursos',
+  path: '/recursos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAssociadosRoute = AuthenticatedAssociadosRouteImport.update({
@@ -147,6 +165,9 @@ const ApiPublicWebhooksCobrancaProvedorRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/contato': typeof ContatoRoute
+  '/planos-precos': typeof PlanosPrecosRoute
+  '/recursos': typeof RecursosRoute
   '/associados': typeof AuthenticatedAssociadosRoute
   '/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/caixa': typeof AuthenticatedCaixaRoute
@@ -169,6 +190,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/contato': typeof ContatoRoute
+  '/planos-precos': typeof PlanosPrecosRoute
+  '/recursos': typeof RecursosRoute
   '/associados': typeof AuthenticatedAssociadosRoute
   '/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/caixa': typeof AuthenticatedCaixaRoute
@@ -193,6 +217,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/contato': typeof ContatoRoute
+  '/planos-precos': typeof PlanosPrecosRoute
+  '/recursos': typeof RecursosRoute
   '/_authenticated/associados': typeof AuthenticatedAssociadosRoute
   '/_authenticated/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/_authenticated/caixa': typeof AuthenticatedCaixaRoute
@@ -217,6 +244,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/contato'
+    | '/planos-precos'
+    | '/recursos'
     | '/associados'
     | '/associados-lista'
     | '/caixa'
@@ -239,6 +269,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/contato'
+    | '/planos-precos'
+    | '/recursos'
     | '/associados'
     | '/associados-lista'
     | '/caixa'
@@ -262,6 +295,9 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/contato'
+    | '/planos-precos'
+    | '/recursos'
     | '/_authenticated/associados'
     | '/_authenticated/associados-lista'
     | '/_authenticated/caixa'
@@ -286,6 +322,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ContatoRoute: typeof ContatoRoute
+  PlanosPrecosRoute: typeof PlanosPrecosRoute
+  RecursosRoute: typeof RecursosRoute
   ApiPublicHooksBackupAutomaticoRoute: typeof ApiPublicHooksBackupAutomaticoRoute
   ApiPublicWebhooksCobrancaProvedorRoute: typeof ApiPublicWebhooksCobrancaProvedorRoute
 }
@@ -311,6 +350,27 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contato': {
+      id: '/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof ContatoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/planos-precos': {
+      id: '/planos-precos'
+      path: '/planos-precos'
+      fullPath: '/planos-precos'
+      preLoaderRoute: typeof PlanosPrecosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recursos': {
+      id: '/recursos'
+      path: '/recursos'
+      fullPath: '/recursos'
+      preLoaderRoute: typeof RecursosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/associados': {
@@ -487,6 +547,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ContatoRoute: ContatoRoute,
+  PlanosPrecosRoute: PlanosPrecosRoute,
+  RecursosRoute: RecursosRoute,
   ApiPublicHooksBackupAutomaticoRoute: ApiPublicHooksBackupAutomaticoRoute,
   ApiPublicWebhooksCobrancaProvedorRoute:
     ApiPublicWebhooksCobrancaProvedorRoute,
