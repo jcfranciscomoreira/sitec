@@ -57,4 +57,3 @@ jobs:
             pm2 status nuvemplanos
 
             echo "==> Deploy concluído com sucesso"
-```
