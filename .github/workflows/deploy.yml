@@ -1,3 +1,4 @@
+```yaml
 name: Deploy to VPS
 
 on:
@@ -8,6 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -15,16 +17,45 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
           script: |
-            cd ${{ secrets.DEPLOY_PATH }} || exit 1
+            set -e
+
+            echo "==> Entrando no projeto"
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            echo "==> Atualizando código"
             git fetch origin main
             git reset --hard origin/main
+            git clean -fd
+
+            echo "==> Instalando dependências"
             npm install
+
+            echo "==> Gerando build Nitro"
             NITRO_PRESET=node-server npm run build
-            if [ ! -d ".output/public" ]; then
-              echo "$(date): ERRO - build não gerou .output/public, abortando deploy." >> /var/log/deploy.log
+
+            echo "==> Validando build"
+            if [ ! -d ".output" ]; then
+              echo "ERRO: diretório .output não foi criado."
               exit 1
             fi
-            cp -r .output/public/* /var/www/nuvemplanos/
-            pm2 restart nuvemplanos
-            echo "$(date): Deploy via GitHub Actions concluído." >> /var/log/deploy.log
+
+            if [ ! -d ".output/public" ]; then
+              echo "ERRO: build não gerou .output/public."
+              exit 1
+            fi
+
+            echo "==> Atualizando arquivos públicos"
+            mkdir -p /var/www/nuvemplanos/
+            cp -r .output/public/. /var/www/nuvemplanos/
+
+            echo "==> Reiniciando aplicação"
+            pm2 restart nuvemplanos --update-env
+
+            echo "==> Verificando PM2"
+            pm2 status nuvemplanos
+
+            echo "==> Deploy concluído com sucesso"
+```
