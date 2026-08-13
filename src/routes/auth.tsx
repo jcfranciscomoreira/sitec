@@ -102,7 +102,7 @@ function AuthPage() {
                   <div className="space-y-2">
                     <Label htmlFor="password-s">Senha</Label>
                     <Input id="password-s" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-                    <p className="text-xs text-muted-foreground">O primeiro usuário criado será administrador.</p>
+                    <p className="text-xs text-muted-foreground">quando o usuário criar conta ele está criando uma nova empresa funerária no sistema</p>
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Criando..." : "Criar conta"}
