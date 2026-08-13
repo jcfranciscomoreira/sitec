@@ -9,6 +9,14 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Test connectivity
+        run: |
+          echo "Runner IP:"
+          curl -s https://ifconfig.me
+          echo ""
+          echo "Testing port 22:"
+          nc -zv -w5 ${{ secrets.SSH_HOST }} 22 || echo "PORT 22 UNREACHABLE"
+
       - name: Decode SSH key
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY_B64 }}" | base64 -d > deploy_key
@@ -24,7 +32,6 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ env.DEPLOY_KEY }}
-          debug: true
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
             git pull origin main
