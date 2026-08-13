@@ -1,3 +1,4 @@
+```yaml
 name: Deploy to VPS
 
 on:
@@ -18,6 +19,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script_stop: true
+
           script: |
             set -e
 
@@ -27,27 +29,20 @@ jobs:
             echo "==> Atualizando código"
             git fetch origin main
             git reset --hard origin/main
-            git clean -fd
 
             echo "==> Instalando dependências"
             npm install
 
-            echo "==> Gerando build Nitro"
+            echo "==> Gerando build"
             NITRO_PRESET=node-server npm run build
 
-            echo "==> Validando build"
-            if [ ! -d ".output" ]; then
-              echo "ERRO: diretório .output não foi criado."
-              exit 1
-            fi
-
+            echo "==> Verificando build"
             if [ ! -d ".output/public" ]; then
-              echo "ERRO: build não gerou .output/public."
+              echo "ERRO: build não gerou .output/public"
               exit 1
             fi
 
-            echo "==> Atualizando arquivos públicos"
-            mkdir -p /var/www/nuvemplanos/
+            echo "==> Copiando arquivos públicos"
             cp -r .output/public/. /var/www/nuvemplanos/
 
             echo "==> Reiniciando aplicação"
@@ -57,3 +52,4 @@ jobs:
             pm2 status nuvemplanos
 
             echo "==> Deploy concluído com sucesso"
+```
