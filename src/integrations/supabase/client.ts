@@ -38,8 +38,8 @@ function createSupabaseClient() {
       ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
       ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
+    const message = `Atenção: Variável(is) de ambiente Supabase ausente(s): ${missing.join(', ')}. Verifique as chaves VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY no seu ambiente.`;
+    console.error(`[Supabase Client] ${message}`);
     throw new Error(message);
   }
 

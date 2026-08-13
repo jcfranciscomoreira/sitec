@@ -41,8 +41,8 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
         ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
         ...(!SUPABASE_PUBLISHABLE_KEY ? ['SUPABASE_PUBLISHABLE_KEY'] : []),
       ];
-      const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-      console.error(`[Supabase] ${message}`);
+      const message = `Atenção: Variável(is) de ambiente Supabase ausente(s): ${missing.join(', ')}. Em servidores próprios, certifique-se de configurar as chaves de ambiente necessárias.`;
+      console.error(`[Supabase Auth] ${message}`);
       throw new Error(message);
     }
     
