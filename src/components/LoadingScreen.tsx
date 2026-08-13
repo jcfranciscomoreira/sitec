@@ -53,9 +53,13 @@ export function LoadingScreen({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="mt-6 text-center animate-pulse">
-            <p className="font-serif text-lg font-semibold text-foreground">{config.nome_sistema}</p>
-            {config.subtitulo && (
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">{config.subtitulo}</p>
+            {docReady && (
+              <>
+                <p className="font-serif text-lg font-semibold text-foreground">{config.nome_sistema}</p>
+                {config.subtitulo && (
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{config.subtitulo}</p>
+                )}
+              </>
             )}
           </div>
         </div>

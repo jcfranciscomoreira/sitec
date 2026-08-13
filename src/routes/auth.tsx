@@ -46,7 +46,12 @@ function AuthPage() {
       options: { emailRedirectTo: window.location.origin, data: { nome } },
     });
     setLoading(false);
-    if (error) return toast.error("Falha ao criar conta", { description: error.message });
+    if (error) {
+      const msg = /weak|pwned|known to be/i.test(error.message)
+        ? "Esta senha aparece em vazamentos públicos. Escolha uma senha mais forte (letras, números e símbolos)."
+        : error.message;
+      return toast.error("Falha ao criar conta", { description: msg });
+    }
     toast.success("Conta criada", { description: "Você já pode acessar o sistema." });
     const { error: e2 } = await supabase.auth.signInWithPassword({ email, password });
     if (!e2) navigate({ to: "/dashboard", replace: true });
