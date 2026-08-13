@@ -28,7 +28,6 @@ import { Route as AuthenticatedPlanosRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedRecebimentoRouteImport } from './routes/_authenticated/recebimento'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated/relatorios'
 import { Route as AuthenticatedServicoFunerarioRouteImport } from './routes/_authenticated/servico-funerario'
-import { Route as AuthenticatedTenantsRouteImport } from './routes/_authenticated/tenants'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated/vendas'
 import { Route as AuthenticatedVendasRelatorioRouteImport } from './routes/_authenticated/vendas-relatorio'
@@ -134,11 +133,6 @@ const AuthenticatedServicoFunerarioRoute =
     path: '/servico-funerario',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedTenantsRoute = AuthenticatedTenantsRouteImport.update({
-  id: '/tenants',
-  path: '/tenants',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -187,7 +181,6 @@ export interface FileRoutesByFullPath {
   '/recebimento': typeof AuthenticatedRecebimentoRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/servico-funerario': typeof AuthenticatedServicoFunerarioRoute
-  '/tenants': typeof AuthenticatedTenantsRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
@@ -213,7 +206,6 @@ export interface FileRoutesByTo {
   '/recebimento': typeof AuthenticatedRecebimentoRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/servico-funerario': typeof AuthenticatedServicoFunerarioRoute
-  '/tenants': typeof AuthenticatedTenantsRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
@@ -241,7 +233,6 @@ export interface FileRoutesById {
   '/_authenticated/recebimento': typeof AuthenticatedRecebimentoRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/servico-funerario': typeof AuthenticatedServicoFunerarioRoute
-  '/_authenticated/tenants': typeof AuthenticatedTenantsRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
   '/_authenticated/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
@@ -269,7 +260,6 @@ export interface FileRouteTypes {
     | '/recebimento'
     | '/relatorios'
     | '/servico-funerario'
-    | '/tenants'
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
@@ -295,7 +285,6 @@ export interface FileRouteTypes {
     | '/recebimento'
     | '/relatorios'
     | '/servico-funerario'
-    | '/tenants'
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
@@ -322,7 +311,6 @@ export interface FileRouteTypes {
     | '/_authenticated/recebimento'
     | '/_authenticated/relatorios'
     | '/_authenticated/servico-funerario'
-    | '/_authenticated/tenants'
     | '/_authenticated/usuarios'
     | '/_authenticated/vendas'
     | '/_authenticated/vendas-relatorio'
@@ -476,13 +464,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedServicoFunerarioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/tenants': {
-      id: '/_authenticated/tenants'
-      path: '/tenants'
-      fullPath: '/tenants'
-      preLoaderRoute: typeof AuthenticatedTenantsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
       path: '/usuarios'
@@ -535,7 +516,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRecebimentoRoute: typeof AuthenticatedRecebimentoRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedServicoFunerarioRoute: typeof AuthenticatedServicoFunerarioRoute
-  AuthenticatedTenantsRoute: typeof AuthenticatedTenantsRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedVendasRoute: typeof AuthenticatedVendasRoute
   AuthenticatedVendasRelatorioRoute: typeof AuthenticatedVendasRelatorioRoute
@@ -555,7 +535,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRecebimentoRoute: AuthenticatedRecebimentoRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedServicoFunerarioRoute: AuthenticatedServicoFunerarioRoute,
-  AuthenticatedTenantsRoute: AuthenticatedTenantsRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedVendasRoute: AuthenticatedVendasRoute,
   AuthenticatedVendasRelatorioRoute: AuthenticatedVendasRelatorioRoute,
