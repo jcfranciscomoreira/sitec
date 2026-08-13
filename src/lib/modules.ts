@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, FileText, Wallet, HandCoins,
   Receipt, Layers, MapPin, BarChart3, Shield, FileBarChart,
-  Cross
+  Cross, Building2
 } from "lucide-react";
 
 export type AppModuleTab = { key: string; label: string };
@@ -64,6 +64,7 @@ export const MODULES: AppModule[] = [
     { key: "inadimplencia", label: "Inadimplência" },
   ] },
   { group: "Administração", key: "usuarios", label: "Usuários", url: "/usuarios", icon: Shield },
+  { group: "Administração", key: "empresas", label: "Gestão de Empresas", url: "/empresas", icon: Building2 },
 ];
 
 export const MODULE_GROUPS: string[] = Array.from(new Set(MODULES.map((m) => m.group)));
