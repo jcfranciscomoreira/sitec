@@ -383,14 +383,16 @@ function AssociadosPage() {
                 <div className="space-y-2"><Label>Data de adesão</Label><Input name="data_adesao" type="date" defaultValue={editing?.data_adesao ?? new Date().toISOString().slice(0, 10)} /></div>
                 <div className="space-y-2"><Label>Dia de vencimento</Label><Input name="dia_vencimento" type="number" min={1} max={28} defaultValue={editing?.dia_vencimento ?? 10} /></div>
                 <div className="space-y-2">
-                  <Label>Forma de pagamento</Label>
+                  <Label>Forma de pagamento padrão</Label>
                   <Select value={formaPag} onValueChange={(v) => { setFormaPag(v); if (v !== "cobrador") setCobradorId(""); }}>
                     <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="boleto">Boleto</SelectItem>
-                      <SelectItem value="carne">Carnê</SelectItem>
-                      <SelectItem value="escritorio">No escritório</SelectItem>
-                      <SelectItem value="cobrador">Cobrador</SelectItem>
+                      <SelectItem value="boleto_pix">Boleto / PIX (Automático Asaas)</SelectItem>
+                      <SelectItem value="boleto">Boleto Bancário (Asaas)</SelectItem>
+                      <SelectItem value="pix">PIX (Asaas)</SelectItem>
+                      <SelectItem value="carne">Carnê (Escritório)</SelectItem>
+                      <SelectItem value="cobrador">Cobrador / Agente</SelectItem>
+                      <SelectItem value="escritorio">Pagamento no Balcão</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
