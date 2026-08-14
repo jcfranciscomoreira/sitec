@@ -21,6 +21,9 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
+  const [empresa, setEmpresa] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
