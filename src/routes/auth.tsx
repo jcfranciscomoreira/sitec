@@ -134,6 +134,15 @@ function AuthPage() {
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Entrando..." : "Entrar"}
                   </Button>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="w-full text-xs"
+                    onClick={handleForgotPassword}
+                    disabled={loading}
+                  >
+                    Esqueci minha senha / alterar senha
+                  </Button>
                 </form>
               </TabsContent>
               <TabsContent value="signup">
