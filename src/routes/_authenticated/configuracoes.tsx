@@ -85,11 +85,40 @@ function IdentidadeVisual() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("tenant_id")
+        .eq("id", user.id)
+        .single();
+
+      let query = supabase
         .from("configuracoes")
-        .select("nome_sistema, subtitulo, logo_url, cnpj, endereco, telefone")
-        .eq("id", 1)
-        .maybeSingle();
+        .select("nome_sistema, subtitulo, logo_url, cnpj, endereco, telefone, id")
+        .eq("id", 1);
+      
+      if (profile?.tenant_id && profile.tenant_id !== '00000000-0000-0000-0000-000000000000') {
+        const { data: tenantConfig } = await supabase
+          .from("configuracoes")
+          .select("nome_sistema, subtitulo, logo_url, cnpj, endereco, telefone, id")
+          .eq("tenant_id", profile.tenant_id)
+          .maybeSingle();
+        
+        if (tenantConfig) {
+          setNome(tenantConfig.nome_sistema ?? "");
+          setSubtitulo(tenantConfig.subtitulo ?? "");
+          setLogo(tenantConfig.logo_url ?? null);
+          setCnpj((tenantConfig as any).cnpj ?? "");
+          setEndereco((tenantConfig as any).endereco ?? "");
+          setTelefone((tenantConfig as any).telefone ?? "");
+          setLoading(false);
+          return;
+        }
+      }
+
+      const { data, error } = await query.maybeSingle();
       if (error) toast.error(error.message);
       if (data) {
         setNome(data.nome_sistema ?? "");
@@ -113,19 +142,50 @@ function IdentidadeVisual() {
   async function save() {
     if (!nome.trim()) { toast.error("Informe o nome"); return; }
     setSaving(true);
-    const { error } = await supabase
-      .from("configuracoes")
-      .update({
-        nome_sistema: nome.trim(),
-        subtitulo: subtitulo.trim() || null,
-        logo_url: logo,
-        cnpj: cnpj.trim() || null,
-        endereco: endereco.trim() || null,
-        telefone: telefone.trim() || null,
-      } as any)
-      .eq("id", 1);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("tenant_id")
+      .eq("id", user?.id)
+      .single();
+
+    const payload = {
+      nome_sistema: nome.trim(),
+      subtitulo: subtitulo.trim() || null,
+      logo_url: logo,
+      cnpj: cnpj.trim() || null,
+      endereco: endereco.trim() || null,
+      telefone: telefone.trim() || null,
+    };
+
+    let result;
+    if (profile?.tenant_id && profile.tenant_id !== '00000000-0000-0000-0000-000000000000') {
+      // Tentar encontrar config do tenant
+      const { data: existing } = await supabase
+        .from("configuracoes")
+        .select("id")
+        .eq("tenant_id", profile.tenant_id)
+        .maybeSingle();
+      
+      if (existing) {
+        result = await supabase
+          .from("configuracoes")
+          .update(payload as any)
+          .eq("id", existing.id);
+      } else {
+        result = await supabase
+          .from("configuracoes")
+          .insert({ ...payload, tenant_id: profile.tenant_id } as any);
+      }
+    } else {
+      result = await supabase
+        .from("configuracoes")
+        .update(payload as any)
+        .eq("id", 1);
+    }
+
     setSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (result.error) { toast.error(result.error.message); return; }
     await reloadConfiguracoes();
     toast.success("Configurações salvas");
   }
