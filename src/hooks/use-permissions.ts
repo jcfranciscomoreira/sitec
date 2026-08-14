@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "operador" | "vendedor" | "cobrador" | "agente";
+export type AppRole = "admin" | "operador" | "vendedor" | "cobrador" | "agente" | "super_admin";
 
 export function usePermissions() {
   const [allowedModules, setAllowedModules] = useState<Set<string> | null>(null);
@@ -15,7 +15,7 @@ export function usePermissions() {
       if (!user) { if (!cancel) { setAllowedModules(new Set()); setLoading(false); } return; }
       const { data: ur } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
       const userRoles = (ur ?? []).map((r: any) => r.role as AppRole);
-      if (userRoles.includes("admin")) {
+      if (userRoles.includes("admin") || userRoles.includes("super_admin")) {
         if (!cancel) { setRoles(userRoles); setAllowedModules(new Set(["*"])); setLoading(false); }
         return;
       }
@@ -52,5 +52,13 @@ export function usePermissions() {
     return true;
   }
 
-  return { roles, can, canTab, loading, isAdmin: roles.includes("admin") };
+  const isSuperAdmin = roles.includes("super_admin");
+  return {
+    roles,
+    can,
+    canTab,
+    loading,
+    isSuperAdmin,
+    isAdmin: roles.includes("admin") || isSuperAdmin,
+  };
 }
