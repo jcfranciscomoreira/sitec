@@ -7,7 +7,8 @@ async function assertAdmin(context: any) {
     .from("user_roles")
     .select("role")
     .eq("user_id", context.userId)
-    .eq("role", "admin")
+    .in("role", ["admin", "super_admin"])
+    .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Apenas administradores podem bonificar parcelas");

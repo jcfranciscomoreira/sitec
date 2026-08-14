@@ -25,7 +25,7 @@ export const updateRolePermission = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => updateSchema.parse(d))
   .handler(async ({ context, data }) => {
     const { data: isAdmin } = await context.supabase
-      .from("user_roles").select("role").eq("user_id", context.userId).eq("role", "admin").maybeSingle();
+      .from("user_roles").select("role").eq("user_id", context.userId).in("role", ["admin", "super_admin"]).limit(1).maybeSingle();
     if (!isAdmin) throw new Error("Apenas administradores podem alterar permissões");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
@@ -37,7 +37,7 @@ export const updateRolePermission = createServerFn({ method: "POST" })
 
 async function assertAdmin(ctx: any) {
   const { data: isAdmin } = await ctx.supabase
-    .from("user_roles").select("role").eq("user_id", ctx.userId).eq("role", "admin").maybeSingle();
+    .from("user_roles").select("role").eq("user_id", ctx.userId).in("role", ["admin", "super_admin"]).limit(1).maybeSingle();
   if (!isAdmin) throw new Error("Apenas administradores podem alterar permissões");
 }
 
