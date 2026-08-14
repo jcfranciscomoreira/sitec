@@ -28,7 +28,7 @@ async function handleSubscriptionCreated(subscription: any, env: StripeEnv) {
   const periodStart = item?.current_period_start ?? subscription.current_period_start;
   const periodEnd = item?.current_period_end ?? subscription.current_period_end;
 
-  await getSupabase().from("subscriptions").upsert(
+  await (getSupabase().from("subscriptions" as any) as any).upsert(
     {
       user_id: userId,
       stripe_subscription_id: subscription.id,
@@ -44,17 +44,16 @@ async function handleSubscriptionCreated(subscription: any, env: StripeEnv) {
     { onConflict: "stripe_subscription_id" }
   );
 
-  // Se a assinatura for ativa, atualizar o status do tenant vinculado ao usuário
   if (subscription.status === 'active' || subscription.status === 'trialing') {
-    const { data: profile } = await getSupabase()
-      .from("profiles")
+    const { data: profile } = await (getSupabase()
+      .from("profiles" as any) as any)
       .select("tenant_id")
       .eq("id", userId)
       .single();
     
     if (profile?.tenant_id) {
-      await getSupabase()
-        .from("tenants")
+      await (getSupabase()
+        .from("tenants" as any) as any)
         .update({ 
           plan_status: subscription.status,
           stripe_subscription_id: subscription.id,
@@ -74,8 +73,8 @@ async function handleSubscriptionUpdated(subscription: any, env: StripeEnv) {
   const periodStart = item?.current_period_start ?? subscription.current_period_start;
   const periodEnd = item?.current_period_end ?? subscription.current_period_end;
 
-  await getSupabase()
-    .from("subscriptions")
+  await (getSupabase()
+    .from("subscriptions" as any) as any)
     .update({
       status: subscription.status,
       product_id: productId,
@@ -88,18 +87,17 @@ async function handleSubscriptionUpdated(subscription: any, env: StripeEnv) {
     .eq("stripe_subscription_id", subscription.id)
     .eq("environment", env);
 
-  // Atualizar o tenant
   const userId = subscription.metadata?.userId;
   if (userId) {
-    const { data: profile } = await getSupabase()
-      .from("profiles")
+    const { data: profile } = await (getSupabase()
+      .from("profiles" as any) as any)
       .select("tenant_id")
       .eq("id", userId)
       .single();
     
     if (profile?.tenant_id) {
-      await getSupabase()
-        .from("tenants")
+      await (getSupabase()
+        .from("tenants" as any) as any)
         .update({ 
           plan_status: subscription.status 
         })
@@ -109,8 +107,8 @@ async function handleSubscriptionUpdated(subscription: any, env: StripeEnv) {
 }
 
 async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
-  await getSupabase()
-    .from("subscriptions")
+  await (getSupabase()
+    .from("subscriptions" as any) as any)
     .update({
       status: "canceled",
       updated_at: new Date().toISOString(),
@@ -120,15 +118,15 @@ async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
 
   const userId = subscription.metadata?.userId;
   if (userId) {
-    const { data: profile } = await getSupabase()
-      .from("profiles")
+    const { data: profile } = await (getSupabase()
+      .from("profiles" as any) as any)
       .select("tenant_id")
       .eq("id", userId)
       .single();
     
     if (profile?.tenant_id) {
-      await getSupabase()
-        .from("tenants")
+      await (getSupabase()
+        .from("tenants" as any) as any)
         .update({ plan_status: 'canceled' })
         .eq("id", profile.tenant_id);
     }
