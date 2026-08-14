@@ -11,7 +11,6 @@ import { toast } from "sonner";
 import { createTenant } from "@/lib/tenants.functions";
 import { useServerFn } from "@tanstack/react-start";
 
-
 export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({ meta: [{ title: "Acessar — Nuvem Planos" }] }),
@@ -26,7 +25,8 @@ function AuthPage() {
   const [nome, setNome] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
+  const createTenantFn = useServerFn(createTenant);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -46,21 +46,44 @@ function AuthPage() {
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
+    setIsSubmitting(true);
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email, password,
-      options: { emailRedirectTo: window.location.origin, data: { nome } },
-    });
-    setLoading(false);
-    if (error) {
-      const msg = /weak|pwned|known to be/i.test(error.message)
-        ? "Esta senha aparece em vazamentos públicos. Escolha uma senha mais forte (letras, números e símbolos)."
-        : error.message;
-      return toast.error("Falha ao criar conta", { description: msg });
+    
+    try {
+      // 1. Criar conta no Auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email, 
+        password,
+        options: { 
+          emailRedirectTo: window.location.origin, 
+          data: { nome } 
+        },
+      });
+
+      if (signUpError) {
+        const msg = /weak|pwned|known to be/i.test(signUpError.message)
+          ? "Esta senha aparece em vazamentos públicos. Escolha uma senha mais forte (letras, números e símbolos)."
+          : signUpError.message;
+        throw new Error(msg);
+      }
+
+      // 2. Login imediato para poder chamar a server function protegida
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) throw signInError;
+
+      // 3. Criar tenant e vincular ao perfil
+      await createTenantFn({ data: { nome: empresa } });
+
+      toast.success("Conta e empresa criadas com sucesso!", { 
+        description: "Você está sendo redirecionado para o dashboard." 
+      });
+      navigate({ to: "/dashboard", replace: true });
+    } catch (error: any) {
+      toast.error("Falha ao criar conta", { description: error.message });
+    } finally {
+      setLoading(false);
+      setIsSubmitting(false);
     }
-    toast.success("Conta criada", { description: "Você já pode acessar o sistema." });
-    const { error: e2 } = await supabase.auth.signInWithPassword({ email, password });
-    if (!e2) navigate({ to: "/dashboard", replace: true });
   }
 
   return (
@@ -70,7 +93,7 @@ function AuthPage() {
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gold text-gold-foreground shadow-elevated">
             <Cross className="h-7 w-7" />
           </div>
-          <h1 className="font-serif text-3xl font-semibold">Nuvem Planos</h1>
+          <h1 className="font-serif text-3xl font-semibold text-white">Nuvem Planos</h1>
           <p className="mt-1 text-sm text-primary-foreground/70">Gestão de Planos Funerários</p>
         </div>
 
@@ -103,8 +126,15 @@ function AuthPage() {
               <TabsContent value="signup">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nome">Nome completo</Label>
+                    <Label htmlFor="nome">Seu nome completo</Label>
                     <Input id="nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="empresa">Nome da sua empresa funerária</Label>
+                    <div className="relative">
+                      <Building2 className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input id="empresa" className="pl-9" value={empresa} onChange={(e) => setEmpresa(e.target.value)} required placeholder="Ex: Funerária Paz Celestial" />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email-s">E-mail</Label>
@@ -113,10 +143,10 @@ function AuthPage() {
                   <div className="space-y-2">
                     <Label htmlFor="password-s">Senha</Label>
                     <Input id="password-s" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-                    <p className="text-xs text-muted-foreground">quando o usuário criar conta ele está criando uma nova empresa funerária no sistema</p>
+                    <p className="text-xs text-muted-foreground">Ao criar conta, você estabelece uma nova empresa funerária isolada no sistema.</p>
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Criando..." : "Criar conta"}
+                  <Button type="submit" className="w-full" disabled={loading || isSubmitting}>
+                    {loading ? "Processando..." : "Criar empresa e conta"}
                   </Button>
                 </form>
               </TabsContent>
