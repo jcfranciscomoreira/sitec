@@ -60,8 +60,17 @@ function AuthPage() {
         },
       });
 
-      if (signUpError) throw signUpError;
+      if (signUpError) {
+        const msg = signUpError.message?.toLowerCase() ?? "";
+        if (msg.includes("already registered") || msg.includes("already been registered")) {
+          throw new Error(
+            "Este e-mail já possui cadastro. Use a aba \"Entrar\" para acessar sua conta.",
+          );
+        }
+        throw signUpError;
+      }
       if (!signUpData.user) throw new Error("Falha ao criar usuário.");
+
 
       // 2. Garantir sessão: usa a sessão do cadastro ou faz login imediato
       if (!signUpData.session) {
