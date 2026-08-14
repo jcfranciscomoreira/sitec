@@ -9,10 +9,22 @@ async function ensureAdmin(supabase: any, userId: string) {
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
-    .eq("role", "admin")
+    .in("role", ["admin", "super_admin"])
+    .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Apenas administradores podem gerenciar usuários");
+}
+
+/** Impede alterar ou excluir o usuário mestre do sistema. */
+async function ensureNotMaster(admin: any, targetUserId: string) {
+  const { data } = await admin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", targetUserId)
+    .eq("role", "super_admin")
+    .maybeSingle();
+  if (data) throw new Error("O usuário mestre do sistema não pode ser alterado ou excluído");
 }
 
 export const listUsuarios = createServerFn({ method: "GET" })
