@@ -143,10 +143,11 @@ function IdentidadeVisual() {
     if (!nome.trim()) { toast.error("Informe o nome"); return; }
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data: profile } = await supabase
       .from("profiles")
       .select("tenant_id")
-      .eq("id", user?.id)
+      .eq("id", user.id)
       .single();
 
     const payload = {
