@@ -52,7 +52,7 @@ export const Route = createFileRoute("/api/public/webhooks/cobranca/$provedor")(
               .select("id, status").eq("cobranca_id", pay.id).maybeSingle();
             if (!m) { await markProcessed(null, "Mensalidade não encontrada"); return new Response("ok"); }
 
-            const pagou = evento === "PAYMENT_RECEIVED" || evento === "PAYMENT_CONFIRMED" || pay.status === "RECEIVED" || pay.status === "CONFIRMED";
+            const pagou = evento === "PAYMENT_RECEIVED" || evento === "PAYMENT_CONFIRMED" || pay.status === "RECEIVED" || pay.status === "CONFIRMED" || pay.status === "RECEIVED_IN_CASH" || pay.status === "SETTLED";
             if (pagou && m.status !== "pago") {
               const forma = (pay.billingType === "PIX" ? "pix" : pay.billingType === "BOLETO" ? "boleto" : "pix");
               const { error } = await supabaseAdmin.from("mensalidades").update({

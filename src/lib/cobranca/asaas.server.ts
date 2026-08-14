@@ -136,7 +136,7 @@ export async function consultarCobrancaAsaas(apiKey: string, ambiente: Env, cobr
   const r = await asaasFetch({ apiKey, ambiente }, `/payments/${cobrancaId}`);
   return {
     status: r.status as string,
-    pago: r.status === "RECEIVED" || r.status === "CONFIRMED" || r.status === "RECEIVED_IN_CASH",
+    pago: r.status === "RECEIVED" || r.status === "CONFIRMED" || r.status === "RECEIVED_IN_CASH" || r.status === "SETTLED",
     dataPagamento: (r.paymentDate || r.clientPaymentDate) as string | null,
     valorPago: (r.value ?? null) as number | null,
   };
