@@ -1,53 +1,42 @@
-## Objetivo
-Ativar a aba **O.S.** com a lista real, gerar automaticamente **Contas a Receber** ao salvar OS com itens e criar um **módulo de Estoque** que abate automaticamente quando a OS é concluída.
+# Plano de Implementação: SaaS Multi-tenant (Nuvem Planos)
 
-## 1. Aba "O.S." — listagem
-Em `src/routes/_authenticated/servico-funerario.tsx`, substituir o placeholder da aba `os` por uma tabela responsiva com:
-- Nº OS, Data, Falecido, Agente Responsável, Status (badge colorido), Valor total, Ações (abrir OSDialog, imprimir).
-- Filtros: status (Aberta/Em Execução/Concluída/Cancelada) e busca por nome/nº.
-- Fonte: `servicos_funerarios` + join com `servico_financeiro` para o valor.
+Transformação do sistema em uma plataforma SaaS multi-empresa com faturamento via Stripe, isolamento de dados e personalização por tenant.
 
-## 2. Contas a Receber automáticas
-No `OSDialog.tsx`, ao salvar a OS com `os_materiais`/checklist e valor total > 0:
-- Upsert em `servico_financeiro` (já existe) com o total calculado.
-- Upsert de UMA linha em `contas_financeiras`:
-  - `tipo = 'entrada'`, `categoria = 'Serviço Funerário'`
-  - `descricao = 'OS #<num> - <falecido>'`
-  - `valor = total`, `vencimento = os_data` (ou hoje)
-  - `status = 'pendente'`, `fornecedor_cliente = responsavel_nome`
-  - `filial_id` do serviço
-- Chave de idempotência: nova coluna `servico_id uuid` em `contas_financeiras` (com UNIQUE) para upsert e evitar duplicação em re-salvamentos.
-- Se OS for cancelada, marcar a conta como `cancelado`.
-- Regra: **não gera** para tipo `Plano` (já coberto pela mensalidade). Gera para Particular/Convênio/Prefeitura.
+## Objetivos
+- Integrar Stripe para faturamento de assinaturas por empresa.
+- Garantir isolamento de dados por `tenant_id` em todas as tabelas.
+- Personalização de marca (logo, cores, nome) por tenant.
+- Fluxo de onboarding automatizado (cadastro -> criação de empresa -> checkout).
 
-## 3. Módulo Estoque (tabela separada)
-Nova tabela `public.estoque_itens`:
-- `nome`, `unidade`, `quantidade` (numeric), `estoque_minimo`, `produto_id` (fk opcional → `servicos_produtos`), `ativo`, `filial_id`, timestamps.
-- RLS: leitura/escrita para staff (padrão do módulo funerário).
-- GRANTs para `authenticated` e `service_role`.
+## Etapas Técnicas
 
-Nova tabela `public.estoque_movimentos` (auditoria):
-- `item_id`, `tipo` ('entrada'|'saida'|'ajuste'), `quantidade`, `servico_id` (opcional), `observacao`, `created_by`, `created_at`.
+### 1. Banco de Dados (Supabase)
+- Adicionar `tenant_id uuid references tenants(id)` em todas as tabelas operacionais:
+  - `associados`, `planos`, `mensalidades`, `filiais`, `contas_financeiras`, `estoque_itens`, `servicos_funerarios`, etc.
+- Atualizar políticas RLS para filtrar por `auth.uid()` -> `profiles.tenant_id`.
+- Adicionar colunas de configuração visual na tabela `tenants`.
+- Adicionar colunas para controle de assinatura Stripe na tabela `tenants` (`stripe_customer_id`, `stripe_subscription_id`, `plan_status`).
 
-Nova aba **Estoque** em Serviço Funerário com:
-- Lista de itens (nome, quantidade, mínimo, badge "abaixo do mínimo").
-- CRUD do item, entrada manual, ajuste, vínculo opcional com produto do catálogo.
-- Histórico de movimentos por item.
+### 2. Autenticação e Onboarding
+- Modificar `src/routes/auth.tsx`:
+  - No `signUp`, criar um novo `tenant` e um `profile` vinculado a ele.
+  - Definir o primeiro usuário como `admin`.
+- Criar `src/lib/tenants.functions.ts` para gerenciar a criação de empresas.
 
-## 4. Baixa automática ao concluir OS
-No `OSDialog.tsx`, quando o status muda para **Concluída**:
-- Para cada item do checklist vinculado a `produto_id` que exista em `estoque_itens` (via `produto_id`):
-  - Inserir movimento `saida` com quantidade do checklist.
-  - Decrementar `estoque_itens.quantidade`.
-- Idempotência: gravar `servico_id` no movimento e checar se já existe movimento de saída para aquele `(servico_id, item_id)` antes de debitar (evita dupla baixa se reabrir e concluir de novo).
-- Toast avisando itens sem estoque suficiente (não bloqueia, permite negativo com aviso — comportamento operacional comum).
+### 3. Integração Stripe
+- Habilitar Stripe via ferramenta Lovable.
+- Criar rotas de API para checkout e webhooks (`src/routes/api/public/stripe-webhook.ts`).
+- Adicionar middleware ou loader global para verificar status da assinatura antes de permitir acesso ao dashboard.
 
-## 5. Módulos e permissões
-- Adicionar aba `estoque` em `SERVICO_FUNERARIO_MODULE` (`src/lib/servico-funerario-module.ts`).
-- Permissão herdada do módulo `servico-funerario` (sem novo módulo raiz).
+### 4. Personalização Visual (White-label)
+- Criar um hook `useTenantConfig` para buscar as configurações do tenant atual.
+- Injetar variáveis CSS (Tailwind v4) dinamicamente baseadas nas cores do tenant.
+- Atualizar componentes de cabeçalho e login para usar o logo do tenant.
 
-## Detalhes técnicos
-- Migrations: uma para `estoque_itens` + `estoque_movimentos` + policies + grants; outra pequena para adicionar `servico_id uuid UNIQUE` em `contas_financeiras`.
-- Server functions novas em `src/lib/estoque.functions.ts` (list/upsert/movimentar) usando `requireSupabaseAuth`.
-- Lógica de contas + baixa de estoque encapsulada em helpers chamados pelo `OSDialog` após o save principal.
-- Sem alterações de UI fora do módulo Serviço Funerário e da tabela `contas_financeiras`.
+### 5. RBAC por Tenant
+- Refinar a função `has_role` para validar o papel dentro do escopo do tenant do usuário.
+
+## Detalhes Técnicos
+- **Isolamento**: Cada consulta ao banco incluirá obrigatoriamente o filtro de `tenant_id`.
+- **Faturamento**: O acesso ao sistema será bloqueado se `plan_status !== 'active'`.
+- **Performance**: Usar cache para configurações do tenant para evitar múltiplas consultas durante a navegação.
