@@ -1832,19 +1832,30 @@ export type Database = {
         Row: {
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          tenant_id: string | null
           user_id: string
         }
         Insert: {
           id?: string
           role: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string | null
           user_id: string
         }
         Update: {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          tenant_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vendas_pins: {
         Row: {
