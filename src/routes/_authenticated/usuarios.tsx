@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
   notFoundComponent: () => <div className="p-6">Página não encontrada</div>,
 });
 
-type Role = "admin" | "operador" | "vendedor" | "cobrador" | "agente";
+type Role = "admin" | "operador" | "vendedor" | "cobrador" | "agente" | "super_admin";
 type Usuario = {
   id: string;
   email: string;
@@ -42,6 +42,7 @@ type Usuario = {
 };
 
 const ROLE_LABEL: Record<Role, string> = {
+  super_admin: "Mestre do sistema",
   admin: "Administrador",
   operador: "Operador",
   vendedor: "Vendedor",
@@ -50,6 +51,7 @@ const ROLE_LABEL: Record<Role, string> = {
 };
 
 const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
+  super_admin: "default",
   admin: "default",
   operador: "secondary",
   vendedor: "outline",
@@ -57,7 +59,9 @@ const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
   agente: "outline",
 };
 
+// super_admin nunca é atribuível pelo painel.
 const ALL_ROLES: Role[] = ["admin", "operador", "vendedor", "cobrador", "agente"];
+const isMaster = (u: Usuario) => u.roles.includes("super_admin");
 // Módulos vêm do registro central em src/lib/modules.ts.
 // Adicione novos módulos lá — aparecerão automaticamente nas permissões.
 import { MODULES } from "@/lib/modules";
