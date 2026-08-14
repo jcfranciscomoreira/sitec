@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Settings, Cross } from "lucide-react";
+import { Settings, Cross, LayoutDashboard, Building2, FileText } from "lucide-react";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import { useBranding } from "@/hooks/useBranding";
 
