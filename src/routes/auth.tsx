@@ -44,6 +44,23 @@ function AuthPage() {
     navigate({ to: "/dashboard", replace: true });
   }
 
+  async function handleForgotPassword() {
+    if (!email) {
+      return toast.error("Informe seu e-mail", {
+        description: "Digite o e-mail da conta para receber o link de alteração de senha.",
+      });
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) return toast.error("Falha ao enviar e-mail", { description: error.message });
+    toast.success("E-mail enviado!", {
+      description: "Acesse o link recebido para definir uma nova senha.",
+    });
+  }
+
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setIsSubmitting(true);
@@ -133,6 +150,15 @@ function AuthPage() {
                   </div>
                   <Button type="submit" className="w-full" disabled={loading}>
                     {loading ? "Entrando..." : "Entrar"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="w-full text-xs"
+                    onClick={handleForgotPassword}
+                    disabled={loading}
+                  >
+                    Esqueci minha senha / alterar senha
                   </Button>
                 </form>
               </TabsContent>

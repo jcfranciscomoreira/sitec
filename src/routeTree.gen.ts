@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as PlanosPrecosRouteImport } from './routes/planos-precos'
 import { Route as RecursosRouteImport } from './routes/recursos'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAssociadosRouteImport } from './routes/_authenticated/associados'
 import { Route as AuthenticatedAssociadosListaRouteImport } from './routes/_authenticated/associados-lista'
@@ -66,6 +67,11 @@ const PlanosPrecosRoute = PlanosPrecosRouteImport.update({
 const RecursosRoute = RecursosRouteImport.update({
   id: '/recursos',
   path: '/recursos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/contato': typeof ContatoRoute
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/associados': typeof AuthenticatedAssociadosRoute
   '/associados-lista': typeof AuthenticatedAssociadosListaRoute
@@ -232,6 +239,7 @@ export interface FileRoutesByTo {
   '/contato': typeof ContatoRoute
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/associados': typeof AuthenticatedAssociadosRoute
   '/associados-lista': typeof AuthenticatedAssociadosListaRoute
@@ -264,6 +272,7 @@ export interface FileRoutesById {
   '/contato': typeof ContatoRoute
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/associados': typeof AuthenticatedAssociadosRoute
   '/_authenticated/associados-lista': typeof AuthenticatedAssociadosListaRoute
@@ -296,6 +305,7 @@ export interface FileRouteTypes {
     | '/contato'
     | '/planos-precos'
     | '/recursos'
+    | '/reset-password'
     | '/admin'
     | '/associados'
     | '/associados-lista'
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/contato'
     | '/planos-precos'
     | '/recursos'
+    | '/reset-password'
     | '/admin'
     | '/associados'
     | '/associados-lista'
@@ -357,6 +368,7 @@ export interface FileRouteTypes {
     | '/contato'
     | '/planos-precos'
     | '/recursos'
+    | '/reset-password'
     | '/_authenticated/admin'
     | '/_authenticated/associados'
     | '/_authenticated/associados-lista'
@@ -389,6 +401,7 @@ export interface RootRouteChildren {
   ContatoRoute: typeof ContatoRoute
   PlanosPrecosRoute: typeof PlanosPrecosRoute
   RecursosRoute: typeof RecursosRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicHooksBackupAutomaticoRoute: typeof ApiPublicHooksBackupAutomaticoRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicWebhooksCobrancaProvedorRoute: typeof ApiPublicWebhooksCobrancaProvedorRoute
@@ -436,6 +449,13 @@ declare module '@tanstack/react-router' {
       path: '/recursos'
       fullPath: '/recursos'
       preLoaderRoute: typeof RecursosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin': {
@@ -667,6 +687,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContatoRoute: ContatoRoute,
   PlanosPrecosRoute: PlanosPrecosRoute,
   RecursosRoute: RecursosRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicHooksBackupAutomaticoRoute: ApiPublicHooksBackupAutomaticoRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicWebhooksCobrancaProvedorRoute:
