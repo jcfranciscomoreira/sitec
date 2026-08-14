@@ -58,7 +58,7 @@ function abrirJanelaCarteirinha(title: string, cardsHtml: string) {
 }
 
 
-type FormaPag = "boleto" | "carne" | "escritorio" | "cobrador";
+type FormaPag = "boleto" | "pix" | "boleto_pix" | "carne" | "escritorio" | "cobrador";
 type Associado = {
   id: string; codigo: number; nome: string; cpf: string | null; rg: string | null;
   data_nascimento: string | null; telefone: string | null; email: string | null;
