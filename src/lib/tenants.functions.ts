@@ -16,7 +16,9 @@ export const createTenant = createServerFn({ method: "POST" })
       .insert({
         nome: data.nome,
         status: "ativo",
-        plan_status: "trialing",
+        plan_status: "active",
+        trial_ends_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+
       })
       .select()
       .single();

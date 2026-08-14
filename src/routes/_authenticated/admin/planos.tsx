@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
 import { toast } from "sonner";
@@ -24,10 +26,14 @@ type SystemPlan = {
   nome: string;
   descricao: string | null;
   preco_mensal: number;
+  preco_semestral: number | null;
+  preco_anual: number | null;
+  periodo: "mensal" | "semestral" | "anual";
   limite_usuarios: number | null;
   limite_associados: number | null;
   ativo: boolean;
 };
+
 
 function AdminPlanosPage() {
   const qc = useQueryClient();
@@ -82,7 +88,11 @@ function AdminPlanosPage() {
       nome: String(fd.get("nome")),
       descricao: String(fd.get("descricao")),
       preco_mensal: Number(fd.get("preco_mensal")),
+      preco_semestral: fd.get("preco_semestral") ? Number(fd.get("preco_semestral")) : null,
+      preco_anual: fd.get("preco_anual") ? Number(fd.get("preco_anual")) : null,
+      periodo: fd.get("periodo") as any,
       limite_usuarios: fd.get("limite_usuarios") ? Number(fd.get("limite_usuarios")) : null,
+
       limite_associados: fd.get("limite_associados") ? Number(fd.get("limite_associados")) : null,
       ativo: true
     });
@@ -114,14 +124,40 @@ function AdminPlanosPage() {
                     <Input name="preco_mensal" type="number" step="0.01" defaultValue={editing?.preco_mensal} required />
                   </div>
                   <div className="space-y-2">
+                    <Label>Periodicidade Padrão</Label>
+                    <Select name="periodo" defaultValue={editing?.periodo || "mensal"}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="mensal">Mensal</SelectItem>
+                        <SelectItem value="semestral">Semestral</SelectItem>
+                        <SelectItem value="anual">Anual</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Preço Semestral (R$)</Label>
+                    <Input name="preco_semestral" type="number" step="0.01" defaultValue={editing?.preco_semestral || ""} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Preço Anual (R$)</Label>
+                    <Input name="preco_anual" type="number" step="0.01" defaultValue={editing?.preco_anual || ""} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
                     <Label>Limite de Usuários</Label>
                     <Input name="limite_usuarios" type="number" defaultValue={editing?.limite_usuarios || ""} placeholder="Ilimitado" />
                   </div>
+                  <div className="space-y-2">
+                    <Label>Limite de Associados</Label>
+                    <Input name="limite_associados" type="number" defaultValue={editing?.limite_associados || ""} placeholder="Ilimitado" />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>Limite de Associados</Label>
-                  <Input name="limite_associados" type="number" defaultValue={editing?.limite_associados || ""} placeholder="Ilimitado" />
-                </div>
+
                 <DialogFooter>
                   <Button type="submit" disabled={upsert.isPending}>Salvar Plano</Button>
                 </DialogFooter>
@@ -143,11 +179,20 @@ function AdminPlanosPage() {
             <TableBody>
               {plans.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-medium">{p.nome}</TableCell>
-                  <TableCell>{brl(p.preco_mensal)}</TableCell>
+                  <TableCell className="font-medium">
+                    {p.nome}
+                    <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <Calendar className="h-3 w-3" /> {p.periodo}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm font-semibold">{brl(p.preco_mensal)}/mês</div>
+                    {p.preco_anual && <div className="text-[10px] text-muted-foreground">{brl(p.preco_anual)}/ano</div>}
+                  </TableCell>
                   <TableCell className="text-xs">
                     {p.limite_usuarios || "∞"} usuários / {p.limite_associados || "∞"} associados
                   </TableCell>
+
                   <TableCell>
                     <Badge variant={p.ativo ? "default" : "secondary"}>{p.ativo ? "Ativo" : "Inativo"}</Badge>
                   </TableCell>
