@@ -39,7 +39,7 @@ function AdminPlanosPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from("system_plans" as any).select("*").order("preco_mensal");
       if (error) throw error;
-      return data as SystemPlan[];
+      return (data as any) as SystemPlan[];
     },
   });
 
