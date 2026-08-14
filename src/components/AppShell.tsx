@@ -31,9 +31,13 @@ function AppSidebar() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      supabase.from("profiles").select("tenant_id").eq("id", user.id).single().then(({ data }) => {
-        setIsSuper(data?.tenant_id === "00000000-0000-0000-0000-000000000000");
-      });
+      supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "super_admin" as any)
+        .maybeSingle()
+        .then(({ data }) => setIsSuper(!!data));
     });
   }, []);
 

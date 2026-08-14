@@ -6,11 +6,12 @@ export const isSuperAdmin = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("tenant_id")
-      .eq("id", userId)
-      .single();
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "super_admin" as any)
+      .maybeSingle();
 
-    return profile?.tenant_id === "00000000-0000-0000-0000-000000000000";
+    return !!data;
   });

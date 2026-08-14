@@ -6,13 +6,14 @@ export const Route = createFileRoute("/_authenticated/admin")({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw redirect({ to: "/auth" });
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("tenant_id")
-      .eq("id", user.id)
-      .single();
+    const { data: master } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "super_admin" as any)
+      .maybeSingle();
 
-    if (profile?.tenant_id !== "00000000-0000-0000-0000-000000000000") {
+    if (!master) {
       throw redirect({ to: "/dashboard" });
     }
   },

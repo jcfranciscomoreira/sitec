@@ -9,10 +9,22 @@ async function ensureAdmin(supabase: any, userId: string) {
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
-    .eq("role", "admin")
+    .in("role", ["admin", "super_admin"])
+    .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Apenas administradores podem gerenciar usuários");
+}
+
+/** Impede alterar ou excluir o usuário mestre do sistema. */
+async function ensureNotMaster(admin: any, targetUserId: string) {
+  const { data } = await admin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", targetUserId)
+    .eq("role", "super_admin")
+    .maybeSingle();
+  if (data) throw new Error("O usuário mestre do sistema não pode ser alterado ou excluído");
 }
 
 export const listUsuarios = createServerFn({ method: "GET" })
@@ -112,6 +124,7 @@ export const updateUsuarioRole = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await ensureNotMaster(supabaseAdmin, data.userId);
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     const { error } = await supabaseAdmin
       .from("user_roles")
@@ -170,6 +183,7 @@ export const deleteUsuario = createServerFn({ method: "POST" })
       throw new Error("Você não pode excluir o próprio usuário");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await ensureNotMaster(supabaseAdmin, data.userId);
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };

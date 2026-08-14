@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated/usuarios")({
   notFoundComponent: () => <div className="p-6">Página não encontrada</div>,
 });
 
-type Role = "admin" | "operador" | "vendedor" | "cobrador" | "agente";
+type Role = "admin" | "operador" | "vendedor" | "cobrador" | "agente" | "super_admin";
 type Usuario = {
   id: string;
   email: string;
@@ -42,6 +42,7 @@ type Usuario = {
 };
 
 const ROLE_LABEL: Record<Role, string> = {
+  super_admin: "Mestre do sistema",
   admin: "Administrador",
   operador: "Operador",
   vendedor: "Vendedor",
@@ -50,6 +51,7 @@ const ROLE_LABEL: Record<Role, string> = {
 };
 
 const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
+  super_admin: "default",
   admin: "default",
   operador: "secondary",
   vendedor: "outline",
@@ -57,7 +59,9 @@ const ROLE_VARIANT: Record<Role, "default" | "secondary" | "outline"> = {
   agente: "outline",
 };
 
+// super_admin nunca é atribuível pelo painel.
 const ALL_ROLES: Role[] = ["admin", "operador", "vendedor", "cobrador", "agente"];
+const isMaster = (u: Usuario) => u.roles.includes("super_admin");
 // Módulos vêm do registro central em src/lib/modules.ts.
 // Adicione novos módulos lá — aparecerão automaticamente nas permissões.
 import { MODULES } from "@/lib/modules";
@@ -177,7 +181,8 @@ function UsuariosPage() {
                   </TableHeader>
                   <TableBody>
                     {users.map((u) => {
-                      const currentRole = (u.roles[0] ?? "operador") as Role;
+                      const master = isMaster(u);
+                      const currentRole = (master ? "super_admin" : u.roles[0] ?? "operador") as Role;
                       return (
                         <TableRow key={u.id}>
                           <TableCell className="font-medium">{u.nome || "—"}</TableCell>
@@ -190,29 +195,37 @@ function UsuariosPage() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Badge variant={ROLE_VARIANT[currentRole]}>{ROLE_LABEL[currentRole]}</Badge>
-                              <Select value={currentRole} onValueChange={(v) => changeRole(u.id, v as Role)}>
-                                <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  {ALL_ROLES.map((r) => (
-                                    <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              {master ? (
+                                <span className="text-xs text-muted-foreground">Acesso total ao SaaS (protegido)</span>
+                              ) : (
+                                <Select value={currentRole} onValueChange={(v) => changeRole(u.id, v as Role)}>
+                                  <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {ALL_ROLES.map((r) => (
+                                      <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {u.last_sign_in_at ? new Date(u.last_sign_in_at).toLocaleString("pt-BR") : "—"}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button size="sm" variant="outline" onClick={() => setPermsUser(u)}>
-                              <ShieldCheck className="mr-1 h-3 w-3" /> Permissões
-                            </Button>
+                            {!master && (
+                              <Button size="sm" variant="outline" onClick={() => setPermsUser(u)}>
+                                <ShieldCheck className="mr-1 h-3 w-3" /> Permissões
+                              </Button>
+                            )}
                             <Button size="sm" variant="outline" className="ml-1" onClick={() => setResetUser(u)}>
                               <KeyRound className="mr-1 h-3 w-3" /> Senha
                             </Button>
-                            <Button size="sm" variant="ghost" className="ml-1 text-destructive" onClick={() => handleDelete(u)}>
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {!master && (
+                              <Button size="sm" variant="ghost" className="ml-1 text-destructive" onClick={() => handleDelete(u)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </TableCell>
                         </TableRow>
                       );
