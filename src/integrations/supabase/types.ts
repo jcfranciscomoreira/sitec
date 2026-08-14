@@ -1786,6 +1786,42 @@ export type Database = {
         }
         Relationships: []
       }
+      system_plans: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          limite_associados: number | null
+          limite_usuarios: number | null
+          nome: string
+          preco_mensal: number
+          recursos: Json | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          limite_associados?: number | null
+          limite_usuarios?: number | null
+          nome: string
+          preco_mensal?: number
+          recursos?: Json | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          limite_associados?: number | null
+          limite_usuarios?: number | null
+          nome?: string
+          preco_mensal?: number
+          recursos?: Json | null
+        }
+        Relationships: []
+      }
       tenants: {
         Row: {
           cnpj: string | null
@@ -1797,6 +1833,7 @@ export type Database = {
           id: string
           logo_url: string | null
           nome: string
+          plan_id: string | null
           plan_status: string | null
           primary_color: string | null
           secondary_color: string | null
@@ -1817,6 +1854,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           nome: string
+          plan_id?: string | null
           plan_status?: string | null
           primary_color?: string | null
           secondary_color?: string | null
@@ -1837,6 +1875,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           nome?: string
+          plan_id?: string | null
           plan_status?: string | null
           primary_color?: string | null
           secondary_color?: string | null
@@ -1847,7 +1886,15 @@ export type Database = {
           telefone?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tenants_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "system_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_permissions: {
         Row: {

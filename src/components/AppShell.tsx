@@ -1,7 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Settings, Cross } from "lucide-react";
+import { Settings, Cross, LayoutDashboard, Building2, FileText } from "lucide-react";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import { useBranding } from "@/hooks/useBranding";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 import { usePermissions } from "@/hooks/use-permissions";
 import { MODULES, MODULE_GROUPS } from "@/lib/modules";
@@ -24,6 +26,16 @@ function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { config } = useConfiguracoes();
   const { can, loading: permsLoading } = usePermissions();
+  const [isSuper, setIsSuper] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("profiles").select("tenant_id").eq("id", user.id).single().then(({ data }) => {
+        setIsSuper(data?.tenant_id === "00000000-0000-0000-0000-000000000000");
+      });
+    });
+  }, []);
 
   return (
     <Sidebar collapsible="icon">
@@ -45,7 +57,10 @@ function AppSidebar() {
 
       <SidebarContent>
         {groups.map((g) => {
-          const items = permsLoading ? g.items : g.items.filter((i) => can(i.module));
+          const items = permsLoading ? g.items : g.items.filter((i) => {
+            if (i.module.startsWith("admin-")) return isSuper;
+            return can(i.module);
+          });
           if (items.length === 0) return null;
           return (
             <SidebarGroup key={g.label}>
