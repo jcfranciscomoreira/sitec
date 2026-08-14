@@ -183,6 +183,7 @@ export const deleteUsuario = createServerFn({ method: "POST" })
       throw new Error("Você não pode excluir o próprio usuário");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await ensureNotMaster(supabaseAdmin, data.userId);
     const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
     if (error) throw new Error(error.message);
     return { ok: true };
