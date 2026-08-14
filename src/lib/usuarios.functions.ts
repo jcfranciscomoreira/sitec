@@ -124,6 +124,7 @@ export const updateUsuarioRole = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await ensureAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await ensureNotMaster(supabaseAdmin, data.userId);
     await supabaseAdmin.from("user_roles").delete().eq("user_id", data.userId);
     const { error } = await supabaseAdmin
       .from("user_roles")
