@@ -60,16 +60,16 @@ function AuthPage() {
         },
       });
 
-      if (signUpError) {
-        const msg = /weak|pwned|known to be/i.test(signUpError.message)
-          ? "Esta senha aparece em vazamentos públicos. Escolha uma senha mais forte (letras, números e símbolos)."
-          : signUpError.message;
-        throw new Error(msg);
-      }
+      if (signUpError) throw signUpError;
+      if (!signUpData.user) throw new Error("Falha ao criar usuário.");
 
-      // 2. Login imediato para poder chamar a server function protegida
+      // 2. Tentar login imediato (pode falhar se precisar de confirmação de e-mail, mas o Lovable Cloud costuma ter auto-confirm em dev)
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInError) throw signInError;
+      
+      // Se o login falhar mas o cadastro deu certo, pode ser que o usuário precise confirmar e-mail
+      // Mas para o fluxo seguir (tenant creation), precisamos estar logados.
+      if (signInError) throw new Error("Conta criada! Por favor, confirme seu e-mail ou tente entrar.");
+
 
       // 3. Criar tenant e vincular ao perfil
       await createTenantFn({ data: { nome: empresa } });

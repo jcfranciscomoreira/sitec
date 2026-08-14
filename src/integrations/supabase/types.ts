@@ -1795,7 +1795,10 @@ export type Database = {
           limite_associados: number | null
           limite_usuarios: number | null
           nome: string
+          periodo: Database["public"]["Enums"]["plan_period"] | null
+          preco_anual: number | null
           preco_mensal: number
+          preco_semestral: number | null
           recursos: Json | null
         }
         Insert: {
@@ -1806,7 +1809,10 @@ export type Database = {
           limite_associados?: number | null
           limite_usuarios?: number | null
           nome: string
+          periodo?: Database["public"]["Enums"]["plan_period"] | null
+          preco_anual?: number | null
           preco_mensal?: number
+          preco_semestral?: number | null
           recursos?: Json | null
         }
         Update: {
@@ -1817,7 +1823,10 @@ export type Database = {
           limite_associados?: number | null
           limite_usuarios?: number | null
           nome?: string
+          periodo?: Database["public"]["Enums"]["plan_period"] | null
+          preco_anual?: number | null
           preco_mensal?: number
+          preco_semestral?: number | null
           recursos?: Json | null
         }
         Relationships: []
@@ -1830,6 +1839,7 @@ export type Database = {
           dominio: string | null
           email: string | null
           endereco: string | null
+          expires_at: string | null
           id: string
           logo_url: string | null
           nome: string
@@ -1842,6 +1852,7 @@ export type Database = {
           stripe_subscription_id: string | null
           subtitulo: string | null
           telefone: string | null
+          trial_ends_at: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1851,6 +1862,7 @@ export type Database = {
           dominio?: string | null
           email?: string | null
           endereco?: string | null
+          expires_at?: string | null
           id?: string
           logo_url?: string | null
           nome: string
@@ -1863,6 +1875,7 @@ export type Database = {
           stripe_subscription_id?: string | null
           subtitulo?: string | null
           telefone?: string | null
+          trial_ends_at?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1872,6 +1885,7 @@ export type Database = {
           dominio?: string | null
           email?: string | null
           endereco?: string | null
+          expires_at?: string | null
           id?: string
           logo_url?: string | null
           nome?: string
@@ -1884,6 +1898,7 @@ export type Database = {
           stripe_subscription_id?: string | null
           subtitulo?: string | null
           telefone?: string | null
+          trial_ends_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -2085,6 +2100,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "operador" | "vendedor" | "cobrador" | "agente"
+      plan_period: "mensal" | "semestral" | "anual"
       servico_status:
         | "Em Atendimento"
         | "Preparação"
@@ -2229,6 +2245,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "operador", "vendedor", "cobrador", "agente"],
+      plan_period: ["mensal", "semestral", "anual"],
       servico_status: [
         "Em Atendimento",
         "Preparação",
