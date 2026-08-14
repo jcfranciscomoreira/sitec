@@ -152,11 +152,12 @@ function AdminPlanosPage() {
                     <Label>Limite de Usuários</Label>
                     <Input name="limite_usuarios" type="number" defaultValue={editing?.limite_usuarios || ""} placeholder="Ilimitado" />
                   </div>
-
-                <div className="space-y-2">
-                  <Label>Limite de Associados</Label>
-                  <Input name="limite_associados" type="number" defaultValue={editing?.limite_associados || ""} placeholder="Ilimitado" />
+                  <div className="space-y-2">
+                    <Label>Limite de Associados</Label>
+                    <Input name="limite_associados" type="number" defaultValue={editing?.limite_associados || ""} placeholder="Ilimitado" />
+                  </div>
                 </div>
+
                 <DialogFooter>
                   <Button type="submit" disabled={upsert.isPending}>Salvar Plano</Button>
                 </DialogFooter>
