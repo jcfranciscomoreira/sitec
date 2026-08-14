@@ -65,6 +65,9 @@ export const MODULES: AppModule[] = [
   ] },
   { group: "Administração", key: "usuarios", label: "Usuários", url: "/usuarios", icon: Shield },
   { group: "Administração", key: "empresas", label: "Gestão de Empresas", url: "/empresas", icon: Building2 },
+  { group: "Sistema (Admin)", key: "admin-dashboard", label: "Painel Admin", url: "/admin/dashboard", icon: LayoutDashboard },
+  { group: "Sistema (Admin)", key: "admin-tenants", label: "Empresas SaaS", url: "/admin/tenants", icon: Building2 },
+  { group: "Sistema (Admin)", key: "admin-planos", label: "Planos SaaS", url: "/admin/planos", icon: FileText },
 ];
 
 export const MODULE_GROUPS: string[] = Array.from(new Set(MODULES.map((m) => m.group)));
