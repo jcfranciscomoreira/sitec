@@ -5,7 +5,7 @@ import { getProvider } from "@/lib/cobranca/providers";
 
 async function assertAdmin(ctx: any) {
   const { data } = await ctx.supabase
-    .from("user_roles").select("role").eq("user_id", ctx.userId).eq("role", "admin").maybeSingle();
+    .from("user_roles").select("role").eq("user_id", ctx.userId).in("role", ["admin", "super_admin"]).limit(1).maybeSingle();
   if (!data) throw new Error("Apenas administradores podem alterar a integração bancária");
 }
 

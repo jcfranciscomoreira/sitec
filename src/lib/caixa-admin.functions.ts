@@ -39,7 +39,8 @@ export const verificarSenhaAdmin = createServerFn({ method: "POST" })
       .from("user_roles")
       .select("role")
       .eq("user_id", auth.user.id)
-      .eq("role", "admin")
+      .in("role", ["admin", "super_admin"])
+      .limit(1)
       .maybeSingle();
 
     await client.auth.signOut();
