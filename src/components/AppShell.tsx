@@ -1,6 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Settings, Cross } from "lucide-react";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
+import { useBranding } from "@/hooks/useBranding";
+
 import { usePermissions } from "@/hooks/use-permissions";
 import { MODULES, MODULE_GROUPS } from "@/lib/modules";
 import type { ReactNode } from "react";
