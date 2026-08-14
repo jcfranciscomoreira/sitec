@@ -232,6 +232,7 @@ export type Database = {
           itens: Json
           responsavel_id: string | null
           responsavel_nome: string | null
+          tenant_id: string | null
           total_qtd: number
           total_valor: number
         }
@@ -243,6 +244,7 @@ export type Database = {
           itens?: Json
           responsavel_id?: string | null
           responsavel_nome?: string | null
+          tenant_id?: string | null
           total_qtd?: number
           total_valor?: number
         }
@@ -254,10 +256,19 @@ export type Database = {
           itens?: Json
           responsavel_id?: string | null
           responsavel_nome?: string | null
+          tenant_id?: string | null
           total_qtd?: number
           total_valor?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "baixa_sessoes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       caixa_movimentos: {
         Row: {
@@ -681,6 +692,7 @@ export type Database = {
           key: string
           label: string
           ordem: number
+          tenant_id: string | null
           updated_at: string
         }
         Insert: {
@@ -690,6 +702,7 @@ export type Database = {
           key: string
           label: string
           ordem?: number
+          tenant_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -699,9 +712,18 @@ export type Database = {
           key?: string
           label?: string
           ordem?: number
+          tenant_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "crm_stages_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dependentes: {
         Row: {
