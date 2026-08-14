@@ -2,6 +2,8 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import { Settings, Cross, LayoutDashboard, Building2, FileText } from "lucide-react";
 import { useConfiguracoes } from "@/hooks/use-configuracoes";
 import { useBranding } from "@/hooks/useBranding";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 import { usePermissions } from "@/hooks/use-permissions";
 import { MODULES, MODULE_GROUPS } from "@/lib/modules";
