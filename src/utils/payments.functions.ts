@@ -87,7 +87,6 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
           metadata: { userId: data.userId },
           ...(isRecurring && { subscription_data: { metadata: { userId: data.userId } } }),
         }),
-        // Ativar managed_payments se possível (estou assumindo que o vendedor é elegível por padrão)
         managed_payments: { enabled: true },
       } as any);
 
@@ -103,8 +102,9 @@ export const createPortalSession = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
+    // Use query direct by userId since subscriptions are filtered by RLS
     const { data: sub, error: subError } = await supabase
-      .from("subscriptions")
+      .from("subscriptions" as any)
       .select("stripe_customer_id")
       .eq("user_id", userId)
       .eq("environment", data.environment)
@@ -112,12 +112,12 @@ export const createPortalSession = createServerFn({ method: "POST" })
       .limit(1)
       .maybeSingle();
     
-    if (subError || !sub?.stripe_customer_id) throw new Error("Assinatura não encontrada");
+    if (subError || !(sub as any)?.stripe_customer_id) throw new Error("Assinatura não encontrada");
 
     try {
       const stripe = createStripeClient(data.environment);
       const portal = await stripe.billingPortal.sessions.create({
-        customer: sub.stripe_customer_id,
+        customer: (sub as any).stripe_customer_id,
         ...(data.returnUrl && { return_url: data.returnUrl }),
       });
       return { url: portal.url };
