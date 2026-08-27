@@ -14,6 +14,7 @@ import {
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { TrialBanner } from "@/components/TrialBanner";
 
 const groups = MODULE_GROUPS.map((label) => ({
   label,
@@ -121,7 +122,10 @@ export function AppShell({ title, subtitle, actions, children }: {
             <div className="flex shrink-0 items-center gap-2">{actions}</div>
             <UserMenu />
           </header>
-          <main className="flex-1 p-3 sm:p-4 lg:p-8">{children}</main>
+          <main className="flex-1 p-3 sm:p-4 lg:p-8">
+            <TrialBanner />
+            {children}
+          </main>
         </div>
       </div>
     </SidebarProvider>
