@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ConsoleRouteImport } from './routes/console'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as PlanosPrecosRouteImport } from './routes/planos-precos'
 import { Route as RecursosRouteImport } from './routes/recursos'
@@ -51,6 +52,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsoleRoute = ConsoleRouteImport.update({
+  id: '/console',
+  path: '/console',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContatoRoute = ContatoRouteImport.update({
@@ -160,19 +166,19 @@ const AuthenticatedVendasRelatorioRoute =
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const ConsoleIndexRoute = ConsoleIndexRouteImport.update({
-  id: '/console/',
-  path: '/console/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => ConsoleRoute,
 } as any)
 const ConsoleEmpresasRoute = ConsoleEmpresasRouteImport.update({
-  id: '/console/empresas',
-  path: '/console/empresas',
-  getParentRoute: () => rootRouteImport,
+  id: '/empresas',
+  path: '/empresas',
+  getParentRoute: () => ConsoleRoute,
 } as any)
 const ConsolePlanosRoute = ConsolePlanosRouteImport.update({
-  id: '/console/planos',
-  path: '/console/planos',
-  getParentRoute: () => rootRouteImport,
+  id: '/planos',
+  path: '/planos',
+  getParentRoute: () => ConsoleRoute,
 } as any)
 const ApiPublicHooksBackupAutomaticoRoute =
   ApiPublicHooksBackupAutomaticoRouteImport.update({
@@ -196,6 +202,7 @@ const ApiPublicWebhooksCobrancaProvedorRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/console': typeof ConsoleRouteWithChildren
   '/contato': typeof ContatoRoute
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
@@ -258,6 +265,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/console': typeof ConsoleRouteWithChildren
   '/contato': typeof ContatoRoute
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
@@ -290,6 +298,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/console'
     | '/contato'
     | '/planos-precos'
     | '/recursos'
@@ -351,6 +360,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/console'
     | '/contato'
     | '/planos-precos'
     | '/recursos'
@@ -383,13 +393,11 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ConsoleRoute: typeof ConsoleRouteWithChildren
   ContatoRoute: typeof ContatoRoute
   PlanosPrecosRoute: typeof PlanosPrecosRoute
   RecursosRoute: typeof RecursosRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  ConsoleEmpresasRoute: typeof ConsoleEmpresasRoute
-  ConsolePlanosRoute: typeof ConsolePlanosRoute
-  ConsoleIndexRoute: typeof ConsoleIndexRoute
   ApiPublicHooksBackupAutomaticoRoute: typeof ApiPublicHooksBackupAutomaticoRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicWebhooksCobrancaProvedorRoute: typeof ApiPublicWebhooksCobrancaProvedorRoute
@@ -416,6 +424,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/console': {
+      id: '/console'
+      path: '/console'
+      fullPath: '/console'
+      preLoaderRoute: typeof ConsoleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contato': {
@@ -560,24 +575,24 @@ declare module '@tanstack/react-router' {
     }
     '/console/': {
       id: '/console/'
-      path: '/console'
+      path: '/'
       fullPath: '/console/'
       preLoaderRoute: typeof ConsoleIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ConsoleRoute
     }
     '/console/empresas': {
       id: '/console/empresas'
-      path: '/console/empresas'
+      path: '/empresas'
       fullPath: '/console/empresas'
       preLoaderRoute: typeof ConsoleEmpresasRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ConsoleRoute
     }
     '/console/planos': {
       id: '/console/planos'
-      path: '/console/planos'
+      path: '/planos'
       fullPath: '/console/planos'
       preLoaderRoute: typeof ConsolePlanosRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ConsoleRoute
     }
     '/api/public/hooks/backup-automatico': {
       id: '/api/public/hooks/backup-automatico'
@@ -644,17 +659,30 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ConsoleRouteChildren {
+  ConsoleEmpresasRoute: typeof ConsoleEmpresasRoute
+  ConsolePlanosRoute: typeof ConsolePlanosRoute
+  ConsoleIndexRoute: typeof ConsoleIndexRoute
+}
+
+const ConsoleRouteChildren: ConsoleRouteChildren = {
+  ConsoleEmpresasRoute: ConsoleEmpresasRoute,
+  ConsolePlanosRoute: ConsolePlanosRoute,
+  ConsoleIndexRoute: ConsoleIndexRoute,
+}
+
+const ConsoleRouteWithChildren =
+  ConsoleRoute._addFileChildren(ConsoleRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ConsoleRoute: ConsoleRouteWithChildren,
   ContatoRoute: ContatoRoute,
   PlanosPrecosRoute: PlanosPrecosRoute,
   RecursosRoute: RecursosRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  ConsoleEmpresasRoute: ConsoleEmpresasRoute,
-  ConsolePlanosRoute: ConsolePlanosRoute,
-  ConsoleIndexRoute: ConsoleIndexRoute,
   ApiPublicHooksBackupAutomaticoRoute: ApiPublicHooksBackupAutomaticoRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicWebhooksCobrancaProvedorRoute:
