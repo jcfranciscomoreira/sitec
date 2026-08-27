@@ -36,6 +36,7 @@ import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedVendasRelatorioRouteImport } from './routes/_authenticated/vendas-relatorio'
 import { Route as ConsoleIndexRouteImport } from './routes/console.index'
 import { Route as ConsoleEmpresasRouteImport } from './routes/console.empresas'
+import { Route as ConsoleFinanceiroRouteImport } from './routes/console.financeiro'
 import { Route as ConsolePlanosRouteImport } from './routes/console.planos'
 import { Route as ApiPublicHooksBackupAutomaticoRouteImport } from './routes/api/public/hooks/backup-automatico'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
@@ -181,6 +182,11 @@ const ConsoleEmpresasRoute = ConsoleEmpresasRouteImport.update({
   path: '/empresas',
   getParentRoute: () => ConsoleRoute,
 } as any)
+const ConsoleFinanceiroRoute = ConsoleFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => ConsoleRoute,
+} as any)
 const ConsolePlanosRoute = ConsolePlanosRouteImport.update({
   id: '/planos',
   path: '/planos',
@@ -231,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
+  '/console/financeiro': typeof ConsoleFinanceiroRoute
   '/console/planos': typeof ConsolePlanosRoute
   '/console/': typeof ConsoleIndexRoute
   '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
@@ -262,6 +269,7 @@ export interface FileRoutesByTo {
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
+  '/console/financeiro': typeof ConsoleFinanceiroRoute
   '/console/planos': typeof ConsolePlanosRoute
   '/console': typeof ConsoleIndexRoute
   '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
@@ -296,6 +304,7 @@ export interface FileRoutesById {
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
   '/_authenticated/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
+  '/console/financeiro': typeof ConsoleFinanceiroRoute
   '/console/planos': typeof ConsolePlanosRoute
   '/console/': typeof ConsoleIndexRoute
   '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
@@ -330,6 +339,7 @@ export interface FileRouteTypes {
     | '/vendas'
     | '/vendas-relatorio'
     | '/console/empresas'
+    | '/console/financeiro'
     | '/console/planos'
     | '/console/'
     | '/api/public/hooks/backup-automatico'
@@ -361,6 +371,7 @@ export interface FileRouteTypes {
     | '/vendas'
     | '/vendas-relatorio'
     | '/console/empresas'
+    | '/console/financeiro'
     | '/console/planos'
     | '/console'
     | '/api/public/hooks/backup-automatico'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/_authenticated/vendas'
     | '/_authenticated/vendas-relatorio'
     | '/console/empresas'
+    | '/console/financeiro'
     | '/console/planos'
     | '/console/'
     | '/api/public/hooks/backup-automatico'
@@ -607,6 +619,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsoleEmpresasRouteImport
       parentRoute: typeof ConsoleRoute
     }
+    '/console/financeiro': {
+      id: '/console/financeiro'
+      path: '/financeiro'
+      fullPath: '/console/financeiro'
+      preLoaderRoute: typeof ConsoleFinanceiroRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
     '/console/planos': {
       id: '/console/planos'
       path: '/planos'
@@ -681,12 +700,14 @@ const AuthenticatedRouteRouteWithChildren =
 
 interface ConsoleRouteChildren {
   ConsoleEmpresasRoute: typeof ConsoleEmpresasRoute
+  ConsoleFinanceiroRoute: typeof ConsoleFinanceiroRoute
   ConsolePlanosRoute: typeof ConsolePlanosRoute
   ConsoleIndexRoute: typeof ConsoleIndexRoute
 }
 
 const ConsoleRouteChildren: ConsoleRouteChildren = {
   ConsoleEmpresasRoute: ConsoleEmpresasRoute,
+  ConsoleFinanceiroRoute: ConsoleFinanceiroRoute,
   ConsolePlanosRoute: ConsolePlanosRoute,
   ConsoleIndexRoute: ConsoleIndexRoute,
 }
