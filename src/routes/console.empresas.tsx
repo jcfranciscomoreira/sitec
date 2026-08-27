@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AppShell } from "@/components/AppShell";
+import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { fmtDate } from "@/lib/format";
 
-export const Route = createFileRoute("/_authenticated/admin/tenants")({
+export const Route = createFileRoute("/console/empresas")({
   component: AdminTenantsPage,
 });
 
@@ -79,7 +79,7 @@ function AdminTenantsPage() {
   }
 
   return (
-    <AppShell title="Empresas SaaS" subtitle="Gestão global de todos os clientes Nuvem Planos">
+    <ConsoleShell title="Empresas SaaS" subtitle="Gestão global de todos os clientes Nuvem Planos">
       <Card>
         <CardHeader>
           <CardTitle>Empresas Ativas no Sistema</CardTitle>
@@ -230,6 +230,6 @@ function AdminTenantsPage() {
           )}
         </DialogContent>
       </Dialog>
-    </AppShell>
+    </ConsoleShell>
   );
 }
