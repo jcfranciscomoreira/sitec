@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ConsoleRouteImport } from './routes/console'
+import { Route as ConsoleLoginRouteImport } from './routes/console-login'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as PlanosPrecosRouteImport } from './routes/planos-precos'
 import { Route as RecursosRouteImport } from './routes/recursos'
@@ -57,6 +58,11 @@ const AuthRoute = AuthRouteImport.update({
 const ConsoleRoute = ConsoleRouteImport.update({
   id: '/console',
   path: '/console',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsoleLoginRoute = ConsoleLoginRouteImport.update({
+  id: '/console-login',
+  path: '/console-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContatoRoute = ContatoRouteImport.update({
@@ -203,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/console': typeof ConsoleRouteWithChildren
+  '/console-login': typeof ConsoleLoginRoute
   '/contato': typeof ContatoRoute
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
@@ -233,6 +240,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/console-login': typeof ConsoleLoginRoute
   '/contato': typeof ContatoRoute
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/console': typeof ConsoleRouteWithChildren
+  '/console-login': typeof ConsoleLoginRoute
   '/contato': typeof ContatoRoute
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/console'
+    | '/console-login'
     | '/contato'
     | '/planos-precos'
     | '/recursos'
@@ -329,6 +339,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/console-login'
     | '/contato'
     | '/planos-precos'
     | '/recursos'
@@ -361,6 +372,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/console'
+    | '/console-login'
     | '/contato'
     | '/planos-precos'
     | '/recursos'
@@ -394,6 +406,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ConsoleRoute: typeof ConsoleRouteWithChildren
+  ConsoleLoginRoute: typeof ConsoleLoginRoute
   ContatoRoute: typeof ContatoRoute
   PlanosPrecosRoute: typeof PlanosPrecosRoute
   RecursosRoute: typeof RecursosRoute
@@ -431,6 +444,13 @@ declare module '@tanstack/react-router' {
       path: '/console'
       fullPath: '/console'
       preLoaderRoute: typeof ConsoleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/console-login': {
+      id: '/console-login'
+      path: '/console-login'
+      fullPath: '/console-login'
+      preLoaderRoute: typeof ConsoleLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contato': {
@@ -679,6 +699,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ConsoleRoute: ConsoleRouteWithChildren,
+  ConsoleLoginRoute: ConsoleLoginRoute,
   ContatoRoute: ContatoRoute,
   PlanosPrecosRoute: PlanosPrecosRoute,
   RecursosRoute: RecursosRoute,
