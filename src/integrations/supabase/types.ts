@@ -1853,6 +1853,81 @@ export type Database = {
         }
         Relationships: []
       }
+      tenant_faturas: {
+        Row: {
+          cobranca_id: string | null
+          cobranca_status: string | null
+          created_at: string
+          created_by: string | null
+          data_pagamento: string | null
+          id: string
+          linha_digitavel: string | null
+          link_boleto: string | null
+          periodo: Database["public"]["Enums"]["plan_period"]
+          pix_copia_cola: string | null
+          plan_id: string | null
+          qr_code_base64: string | null
+          status: string
+          tenant_id: string
+          updated_at: string
+          valor: number
+          vencimento: string
+        }
+        Insert: {
+          cobranca_id?: string | null
+          cobranca_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_pagamento?: string | null
+          id?: string
+          linha_digitavel?: string | null
+          link_boleto?: string | null
+          periodo?: Database["public"]["Enums"]["plan_period"]
+          pix_copia_cola?: string | null
+          plan_id?: string | null
+          qr_code_base64?: string | null
+          status?: string
+          tenant_id: string
+          updated_at?: string
+          valor: number
+          vencimento?: string
+        }
+        Update: {
+          cobranca_id?: string | null
+          cobranca_status?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_pagamento?: string | null
+          id?: string
+          linha_digitavel?: string | null
+          link_boleto?: string | null
+          periodo?: Database["public"]["Enums"]["plan_period"]
+          pix_copia_cola?: string | null
+          plan_id?: string | null
+          qr_code_base64?: string | null
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+          valor?: number
+          vencimento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_faturas_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "system_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_faturas_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenants: {
         Row: {
           cnpj: string | null
