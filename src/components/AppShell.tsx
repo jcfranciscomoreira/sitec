@@ -14,6 +14,7 @@ import {
   SidebarHeader, SidebarFooter,
 } from "@/components/ui/sidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { TrialBanner } from "@/components/TrialBanner";
 
 const groups = MODULE_GROUPS.map((label) => ({
   label,
