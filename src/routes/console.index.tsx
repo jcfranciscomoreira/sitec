@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AppShell } from "@/components/AppShell";
+import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Building2, CreditCard, Activity, TrendingUp, DollarSign } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { brl } from "@/lib/format";
 
-export const Route = createFileRoute("/_authenticated/admin/dashboard")({
+export const Route = createFileRoute("/console/")({
   component: AdminDashboardPage,
 });
 
@@ -42,7 +42,7 @@ function AdminDashboardPage() {
   });
 
   return (
-    <AppShell title="Painel Administrativo" subtitle="Visão geral do ecossistema SaaS">
+    <ConsoleShell title="Painel Administrativo" subtitle="Visão geral do ecossistema SaaS">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -112,6 +112,6 @@ function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </AppShell>
+    </ConsoleShell>
   );
 }
