@@ -16,7 +16,6 @@ import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as PlanosPrecosRouteImport } from './routes/planos-precos'
 import { Route as RecursosRouteImport } from './routes/recursos'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAssociadosRouteImport } from './routes/_authenticated/associados'
 import { Route as AuthenticatedAssociadosListaRouteImport } from './routes/_authenticated/associados-lista'
 import { Route as AuthenticatedCaixaRouteImport } from './routes/_authenticated/caixa'
@@ -33,9 +32,9 @@ import { Route as AuthenticatedServicoFunerarioRouteImport } from './routes/_aut
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated/vendas'
 import { Route as AuthenticatedVendasRelatorioRouteImport } from './routes/_authenticated/vendas-relatorio'
-import { Route as AuthenticatedAdminDashboardRouteImport } from './routes/_authenticated/admin/dashboard'
-import { Route as AuthenticatedAdminPlanosRouteImport } from './routes/_authenticated/admin/planos'
-import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin/tenants'
+import { Route as ConsoleIndexRouteImport } from './routes/console.index'
+import { Route as ConsoleEmpresasRouteImport } from './routes/console.empresas'
+import { Route as ConsolePlanosRouteImport } from './routes/console.planos'
 import { Route as ApiPublicHooksBackupAutomaticoRouteImport } from './routes/api/public/hooks/backup-automatico'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicWebhooksCobrancaProvedorRouteImport } from './routes/api/public/webhooks/cobranca.$provedor'
@@ -73,11 +72,6 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAssociadosRoute = AuthenticatedAssociadosRouteImport.update({
   id: '/associados',
@@ -165,24 +159,21 @@ const AuthenticatedVendasRelatorioRoute =
     path: '/vendas-relatorio',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminDashboardRoute =
-  AuthenticatedAdminDashboardRouteImport.update({
-    id: '/dashboard',
-    path: '/dashboard',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminPlanosRoute =
-  AuthenticatedAdminPlanosRouteImport.update({
-    id: '/planos',
-    path: '/planos',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminTenantsRoute =
-  AuthenticatedAdminTenantsRouteImport.update({
-    id: '/tenants',
-    path: '/tenants',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
+const ConsoleIndexRoute = ConsoleIndexRouteImport.update({
+  id: '/console/',
+  path: '/console/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsoleEmpresasRoute = ConsoleEmpresasRouteImport.update({
+  id: '/console/empresas',
+  path: '/console/empresas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConsolePlanosRoute = ConsolePlanosRouteImport.update({
+  id: '/console/planos',
+  path: '/console/planos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksBackupAutomaticoRoute =
   ApiPublicHooksBackupAutomaticoRouteImport.update({
     id: '/api/public/hooks/backup-automatico',
@@ -209,7 +200,6 @@ export interface FileRoutesByFullPath {
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/associados': typeof AuthenticatedAssociadosRoute
   '/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/caixa': typeof AuthenticatedCaixaRoute
@@ -226,9 +216,9 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
-  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/admin/planos': typeof AuthenticatedAdminPlanosRoute
-  '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
+  '/console/empresas': typeof ConsoleEmpresasRoute
+  '/console/planos': typeof ConsolePlanosRoute
+  '/console/': typeof ConsoleIndexRoute
   '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/webhooks/cobranca/$provedor': typeof ApiPublicWebhooksCobrancaProvedorRoute
@@ -240,7 +230,6 @@ export interface FileRoutesByTo {
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/associados': typeof AuthenticatedAssociadosRoute
   '/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/caixa': typeof AuthenticatedCaixaRoute
@@ -257,9 +246,9 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
-  '/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/admin/planos': typeof AuthenticatedAdminPlanosRoute
-  '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
+  '/console/empresas': typeof ConsoleEmpresasRoute
+  '/console/planos': typeof ConsolePlanosRoute
+  '/console': typeof ConsoleIndexRoute
   '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/webhooks/cobranca/$provedor': typeof ApiPublicWebhooksCobrancaProvedorRoute
@@ -273,7 +262,6 @@ export interface FileRoutesById {
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/associados': typeof AuthenticatedAssociadosRoute
   '/_authenticated/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/_authenticated/caixa': typeof AuthenticatedCaixaRoute
@@ -290,9 +278,9 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
   '/_authenticated/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
-  '/_authenticated/admin/dashboard': typeof AuthenticatedAdminDashboardRoute
-  '/_authenticated/admin/planos': typeof AuthenticatedAdminPlanosRoute
-  '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRoute
+  '/console/empresas': typeof ConsoleEmpresasRoute
+  '/console/planos': typeof ConsolePlanosRoute
+  '/console/': typeof ConsoleIndexRoute
   '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/webhooks/cobranca/$provedor': typeof ApiPublicWebhooksCobrancaProvedorRoute
@@ -306,7 +294,6 @@ export interface FileRouteTypes {
     | '/planos-precos'
     | '/recursos'
     | '/reset-password'
-    | '/admin'
     | '/associados'
     | '/associados-lista'
     | '/caixa'
@@ -323,9 +310,9 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
-    | '/admin/dashboard'
-    | '/admin/planos'
-    | '/admin/tenants'
+    | '/console/empresas'
+    | '/console/planos'
+    | '/console/'
     | '/api/public/hooks/backup-automatico'
     | '/api/public/payments/webhook'
     | '/api/public/webhooks/cobranca/$provedor'
@@ -337,7 +324,6 @@ export interface FileRouteTypes {
     | '/planos-precos'
     | '/recursos'
     | '/reset-password'
-    | '/admin'
     | '/associados'
     | '/associados-lista'
     | '/caixa'
@@ -354,9 +340,9 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
-    | '/admin/dashboard'
-    | '/admin/planos'
-    | '/admin/tenants'
+    | '/console/empresas'
+    | '/console/planos'
+    | '/console'
     | '/api/public/hooks/backup-automatico'
     | '/api/public/payments/webhook'
     | '/api/public/webhooks/cobranca/$provedor'
@@ -369,7 +355,6 @@ export interface FileRouteTypes {
     | '/planos-precos'
     | '/recursos'
     | '/reset-password'
-    | '/_authenticated/admin'
     | '/_authenticated/associados'
     | '/_authenticated/associados-lista'
     | '/_authenticated/caixa'
@@ -386,9 +371,9 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/_authenticated/vendas'
     | '/_authenticated/vendas-relatorio'
-    | '/_authenticated/admin/dashboard'
-    | '/_authenticated/admin/planos'
-    | '/_authenticated/admin/tenants'
+    | '/console/empresas'
+    | '/console/planos'
+    | '/console/'
     | '/api/public/hooks/backup-automatico'
     | '/api/public/payments/webhook'
     | '/api/public/webhooks/cobranca/$provedor'
@@ -402,6 +387,9 @@ export interface RootRouteChildren {
   PlanosPrecosRoute: typeof PlanosPrecosRoute
   RecursosRoute: typeof RecursosRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ConsoleEmpresasRoute: typeof ConsoleEmpresasRoute
+  ConsolePlanosRoute: typeof ConsolePlanosRoute
+  ConsoleIndexRoute: typeof ConsoleIndexRoute
   ApiPublicHooksBackupAutomaticoRoute: typeof ApiPublicHooksBackupAutomaticoRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicWebhooksCobrancaProvedorRoute: typeof ApiPublicWebhooksCobrancaProvedorRoute
@@ -457,13 +445,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/associados': {
       id: '/_authenticated/associados'
@@ -577,26 +558,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVendasRelatorioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/dashboard': {
-      id: '/_authenticated/admin/dashboard'
-      path: '/dashboard'
-      fullPath: '/admin/dashboard'
-      preLoaderRoute: typeof AuthenticatedAdminDashboardRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+    '/console/': {
+      id: '/console/'
+      path: '/console'
+      fullPath: '/console/'
+      preLoaderRoute: typeof ConsoleIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin/planos': {
-      id: '/_authenticated/admin/planos'
-      path: '/planos'
-      fullPath: '/admin/planos'
-      preLoaderRoute: typeof AuthenticatedAdminPlanosRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+    '/console/empresas': {
+      id: '/console/empresas'
+      path: '/console/empresas'
+      fullPath: '/console/empresas'
+      preLoaderRoute: typeof ConsoleEmpresasRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin/tenants': {
-      id: '/_authenticated/admin/tenants'
-      path: '/tenants'
-      fullPath: '/admin/tenants'
-      preLoaderRoute: typeof AuthenticatedAdminTenantsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+    '/console/planos': {
+      id: '/console/planos'
+      path: '/console/planos'
+      fullPath: '/console/planos'
+      preLoaderRoute: typeof ConsolePlanosRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/backup-automatico': {
       id: '/api/public/hooks/backup-automatico'
@@ -622,23 +603,7 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedAdminRouteChildren {
-  AuthenticatedAdminDashboardRoute: typeof AuthenticatedAdminDashboardRoute
-  AuthenticatedAdminPlanosRoute: typeof AuthenticatedAdminPlanosRoute
-  AuthenticatedAdminTenantsRoute: typeof AuthenticatedAdminTenantsRoute
-}
-
-const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
-  AuthenticatedAdminDashboardRoute: AuthenticatedAdminDashboardRoute,
-  AuthenticatedAdminPlanosRoute: AuthenticatedAdminPlanosRoute,
-  AuthenticatedAdminTenantsRoute: AuthenticatedAdminTenantsRoute,
-}
-
-const AuthenticatedAdminRouteWithChildren =
-  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAssociadosRoute: typeof AuthenticatedAssociadosRoute
   AuthenticatedAssociadosListaRoute: typeof AuthenticatedAssociadosListaRoute
   AuthenticatedCaixaRoute: typeof AuthenticatedCaixaRoute
@@ -658,7 +623,6 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAssociadosRoute: AuthenticatedAssociadosRoute,
   AuthenticatedAssociadosListaRoute: AuthenticatedAssociadosListaRoute,
   AuthenticatedCaixaRoute: AuthenticatedCaixaRoute,
@@ -688,6 +652,9 @@ const rootRouteChildren: RootRouteChildren = {
   PlanosPrecosRoute: PlanosPrecosRoute,
   RecursosRoute: RecursosRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ConsoleEmpresasRoute: ConsoleEmpresasRoute,
+  ConsolePlanosRoute: ConsolePlanosRoute,
+  ConsoleIndexRoute: ConsoleIndexRoute,
   ApiPublicHooksBackupAutomaticoRoute: ApiPublicHooksBackupAutomaticoRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicWebhooksCobrancaProvedorRoute:
