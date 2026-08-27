@@ -38,6 +38,7 @@ import { Route as ConsoleIndexRouteImport } from './routes/console.index'
 import { Route as ConsoleEmpresasRouteImport } from './routes/console.empresas'
 import { Route as ConsoleFinanceiroRouteImport } from './routes/console.financeiro'
 import { Route as ConsolePlanosRouteImport } from './routes/console.planos'
+import { Route as ConsoleUsuariosRouteImport } from './routes/console.usuarios'
 import { Route as ApiPublicHooksBackupAutomaticoRouteImport } from './routes/api/public/hooks/backup-automatico'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 import { Route as ApiPublicWebhooksCobrancaProvedorRouteImport } from './routes/api/public/webhooks/cobranca.$provedor'
@@ -192,6 +193,11 @@ const ConsolePlanosRoute = ConsolePlanosRouteImport.update({
   path: '/planos',
   getParentRoute: () => ConsoleRoute,
 } as any)
+const ConsoleUsuariosRoute = ConsoleUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => ConsoleRoute,
+} as any)
 const ApiPublicHooksBackupAutomaticoRoute =
   ApiPublicHooksBackupAutomaticoRouteImport.update({
     id: '/api/public/hooks/backup-automatico',
@@ -239,6 +245,7 @@ export interface FileRoutesByFullPath {
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
   '/console/planos': typeof ConsolePlanosRoute
+  '/console/usuarios': typeof ConsoleUsuariosRoute
   '/console/': typeof ConsoleIndexRoute
   '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
   '/console/planos': typeof ConsolePlanosRoute
+  '/console/usuarios': typeof ConsoleUsuariosRoute
   '/console': typeof ConsoleIndexRoute
   '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
   '/console/planos': typeof ConsolePlanosRoute
+  '/console/usuarios': typeof ConsoleUsuariosRoute
   '/console/': typeof ConsoleIndexRoute
   '/api/public/hooks/backup-automatico': typeof ApiPublicHooksBackupAutomaticoRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -341,6 +350,7 @@ export interface FileRouteTypes {
     | '/console/empresas'
     | '/console/financeiro'
     | '/console/planos'
+    | '/console/usuarios'
     | '/console/'
     | '/api/public/hooks/backup-automatico'
     | '/api/public/payments/webhook'
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/console/empresas'
     | '/console/financeiro'
     | '/console/planos'
+    | '/console/usuarios'
     | '/console'
     | '/api/public/hooks/backup-automatico'
     | '/api/public/payments/webhook'
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/console/empresas'
     | '/console/financeiro'
     | '/console/planos'
+    | '/console/usuarios'
     | '/console/'
     | '/api/public/hooks/backup-automatico'
     | '/api/public/payments/webhook'
@@ -633,6 +645,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsolePlanosRouteImport
       parentRoute: typeof ConsoleRoute
     }
+    '/console/usuarios': {
+      id: '/console/usuarios'
+      path: '/usuarios'
+      fullPath: '/console/usuarios'
+      preLoaderRoute: typeof ConsoleUsuariosRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
     '/api/public/hooks/backup-automatico': {
       id: '/api/public/hooks/backup-automatico'
       path: '/api/public/hooks/backup-automatico'
@@ -702,6 +721,7 @@ interface ConsoleRouteChildren {
   ConsoleEmpresasRoute: typeof ConsoleEmpresasRoute
   ConsoleFinanceiroRoute: typeof ConsoleFinanceiroRoute
   ConsolePlanosRoute: typeof ConsolePlanosRoute
+  ConsoleUsuariosRoute: typeof ConsoleUsuariosRoute
   ConsoleIndexRoute: typeof ConsoleIndexRoute
 }
 
@@ -709,6 +729,7 @@ const ConsoleRouteChildren: ConsoleRouteChildren = {
   ConsoleEmpresasRoute: ConsoleEmpresasRoute,
   ConsoleFinanceiroRoute: ConsoleFinanceiroRoute,
   ConsolePlanosRoute: ConsolePlanosRoute,
+  ConsoleUsuariosRoute: ConsoleUsuariosRoute,
   ConsoleIndexRoute: ConsoleIndexRoute,
 }
 
