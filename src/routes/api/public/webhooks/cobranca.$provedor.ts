@@ -50,7 +50,42 @@ export const Route = createFileRoute("/api/public/webhooks/cobranca/$provedor")(
             // Localiza mensalidade pela cobranca_id
             const { data: m } = await supabaseAdmin.from("mensalidades")
               .select("id, status").eq("cobranca_id", pay.id).maybeSingle();
-            if (!m) { await markProcessed(null, "Mensalidade não encontrada"); return new Response("ok"); }
+            if (!m) {
+              // Pode ser uma fatura de assinatura do SaaS
+              const { data: fat } = await supabaseAdmin.from("tenant_faturas")
+                .select("id, tenant_id, plan_id, periodo, status").eq("cobranca_id", pay.id).maybeSingle();
+              if (!fat) { await markProcessed(null, "Cobrança não encontrada"); return new Response("ok"); }
+
+              const ev = payload?.event as string | undefined;
+              const confirmado = ev === "PAYMENT_RECEIVED" || ev === "PAYMENT_CONFIRMED"
+                || ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH", "SETTLED"].includes(pay.status);
+
+              if (confirmado && fat.status !== "pago") {
+                const meses = fat.periodo === "anual" ? 12 : fat.periodo === "semestral" ? 6 : 1;
+                const { data: t } = await supabaseAdmin.from("tenants")
+                  .select("expires_at").eq("id", fat.tenant_id).maybeSingle();
+                const base = t?.expires_at && new Date(t.expires_at) > new Date()
+                  ? new Date(t.expires_at) : new Date();
+                base.setMonth(base.getMonth() + meses);
+
+                await supabaseAdmin.from("tenant_faturas").update({
+                  status: "pago",
+                  cobranca_status: pay.status,
+                  data_pagamento: pay.paymentDate || pay.clientPaymentDate || new Date().toISOString().slice(0, 10),
+                }).eq("id", fat.id);
+
+                await supabaseAdmin.from("tenants").update({
+                  plan_status: "active",
+                  plan_id: fat.plan_id,
+                  status: "ativo",
+                  expires_at: base.toISOString(),
+                }).eq("id", fat.tenant_id);
+              } else {
+                await supabaseAdmin.from("tenant_faturas").update({ cobranca_status: pay.status }).eq("id", fat.id);
+              }
+              await markProcessed(null);
+              return new Response("ok");
+            }
 
             const pagou = evento === "PAYMENT_RECEIVED" || evento === "PAYMENT_CONFIRMED" || pay.status === "RECEIVED" || pay.status === "CONFIRMED" || pay.status === "RECEIVED_IN_CASH" || pay.status === "SETTLED";
             if (pagou && m.status !== "pago") {
