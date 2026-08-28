@@ -7,7 +7,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
-const NAV = [
+const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/console", label: "Visão geral", icon: LayoutDashboard, exact: true },
   { to: "/console/empresas", label: "Empresas", icon: Building2 },
   { to: "/console/planos", label: "Planos de acesso", icon: FileText },
@@ -49,7 +49,7 @@ export function ConsoleShell({ title, subtitle, actions, children }: {
             return (
               <Link
                 key={item.to}
-                to={item.to}
+                to={item.to as any}
                 className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
                   active ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "hover:bg-sidebar-accent/50"
                 }`}
@@ -83,7 +83,7 @@ export function ConsoleShell({ title, subtitle, actions, children }: {
 
         <div className="flex gap-1 overflow-x-auto border-b border-border bg-card px-2 py-2 md:hidden">
           {NAV.map((item) => (
-            <Link key={item.to} to={item.to} className="whitespace-nowrap rounded-md px-3 py-1.5 text-xs hover:bg-accent">
+            <Link key={item.to} to={item.to as any} className="whitespace-nowrap rounded-md px-3 py-1.5 text-xs hover:bg-accent">
               {item.label}
             </Link>
           ))}
