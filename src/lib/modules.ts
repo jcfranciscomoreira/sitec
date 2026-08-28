@@ -66,9 +66,7 @@ export const MODULES: AppModule[] = [
   { group: "Administração", key: "usuarios", label: "Usuários", url: "/usuarios", icon: Shield },
   // Removido modulo redundante de empresas em favor do admin SaaS global
 
-  { group: "Sistema (Admin)", key: "admin-dashboard", label: "Painel Admin", url: "/admin/dashboard", icon: LayoutDashboard },
-  { group: "Sistema (Admin)", key: "admin-tenants", label: "Empresas SaaS", url: "/admin/tenants", icon: Building2 },
-  { group: "Sistema (Admin)", key: "admin-planos", label: "Planos SaaS", url: "/admin/planos", icon: FileText },
+  { group: "Sistema (Admin)", key: "admin-console", label: "Console da Plataforma", url: "/console", icon: Building2 },
 ];
 
 export const MODULE_GROUPS: string[] = Array.from(new Set(MODULES.map((m) => m.group)));

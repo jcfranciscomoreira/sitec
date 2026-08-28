@@ -34,7 +34,9 @@ import { Route as AuthenticatedServicoFunerarioRouteImport } from './routes/_aut
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated/vendas'
 import { Route as AuthenticatedVendasRelatorioRouteImport } from './routes/_authenticated/vendas-relatorio'
+import { Route as AdminSplatRouteImport } from './routes/admin.$'
 import { Route as ConsoleIndexRouteImport } from './routes/console.index'
+import { Route as ConsoleConfiguracoesRouteImport } from './routes/console.configuracoes'
 import { Route as ConsoleEmpresasRouteImport } from './routes/console.empresas'
 import { Route as ConsoleFinanceiroRouteImport } from './routes/console.financeiro'
 import { Route as ConsolePlanosRouteImport } from './routes/console.planos'
@@ -173,9 +175,19 @@ const AuthenticatedVendasRelatorioRoute =
     path: '/vendas-relatorio',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AdminSplatRoute = AdminSplatRouteImport.update({
+  id: '/admin/$',
+  path: '/admin/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConsoleIndexRoute = ConsoleIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ConsoleRoute,
+} as any)
+const ConsoleConfiguracoesRoute = ConsoleConfiguracoesRouteImport.update({
+  id: '/configuracoes',
+  path: '/configuracoes',
   getParentRoute: () => ConsoleRoute,
 } as any)
 const ConsoleEmpresasRoute = ConsoleEmpresasRouteImport.update({
@@ -242,6 +254,8 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/admin/$': typeof AdminSplatRoute
+  '/console/configuracoes': typeof ConsoleConfiguracoesRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
   '/console/planos': typeof ConsolePlanosRoute
@@ -275,6 +289,8 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/admin/$': typeof AdminSplatRoute
+  '/console/configuracoes': typeof ConsoleConfiguracoesRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
   '/console/planos': typeof ConsolePlanosRoute
@@ -311,6 +327,8 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
   '/_authenticated/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/admin/$': typeof AdminSplatRoute
+  '/console/configuracoes': typeof ConsoleConfiguracoesRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
   '/console/planos': typeof ConsolePlanosRoute
@@ -347,6 +365,8 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
+    | '/admin/$'
+    | '/console/configuracoes'
     | '/console/empresas'
     | '/console/financeiro'
     | '/console/planos'
@@ -380,6 +400,8 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
+    | '/admin/$'
+    | '/console/configuracoes'
     | '/console/empresas'
     | '/console/financeiro'
     | '/console/planos'
@@ -415,6 +437,8 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/_authenticated/vendas'
     | '/_authenticated/vendas-relatorio'
+    | '/admin/$'
+    | '/console/configuracoes'
     | '/console/empresas'
     | '/console/financeiro'
     | '/console/planos'
@@ -435,6 +459,7 @@ export interface RootRouteChildren {
   PlanosPrecosRoute: typeof PlanosPrecosRoute
   RecursosRoute: typeof RecursosRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  AdminSplatRoute: typeof AdminSplatRoute
   ApiPublicHooksBackupAutomaticoRoute: typeof ApiPublicHooksBackupAutomaticoRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicWebhooksCobrancaProvedorRoute: typeof ApiPublicWebhooksCobrancaProvedorRoute
@@ -617,11 +642,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVendasRelatorioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/admin/$': {
+      id: '/admin/$'
+      path: '/admin/$'
+      fullPath: '/admin/$'
+      preLoaderRoute: typeof AdminSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/console/': {
       id: '/console/'
       path: '/'
       fullPath: '/console/'
       preLoaderRoute: typeof ConsoleIndexRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
+    '/console/configuracoes': {
+      id: '/console/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/console/configuracoes'
+      preLoaderRoute: typeof ConsoleConfiguracoesRouteImport
       parentRoute: typeof ConsoleRoute
     }
     '/console/empresas': {
@@ -718,6 +757,7 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface ConsoleRouteChildren {
+  ConsoleConfiguracoesRoute: typeof ConsoleConfiguracoesRoute
   ConsoleEmpresasRoute: typeof ConsoleEmpresasRoute
   ConsoleFinanceiroRoute: typeof ConsoleFinanceiroRoute
   ConsolePlanosRoute: typeof ConsolePlanosRoute
@@ -726,6 +766,7 @@ interface ConsoleRouteChildren {
 }
 
 const ConsoleRouteChildren: ConsoleRouteChildren = {
+  ConsoleConfiguracoesRoute: ConsoleConfiguracoesRoute,
   ConsoleEmpresasRoute: ConsoleEmpresasRoute,
   ConsoleFinanceiroRoute: ConsoleFinanceiroRoute,
   ConsolePlanosRoute: ConsolePlanosRoute,
@@ -746,6 +787,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlanosPrecosRoute: PlanosPrecosRoute,
   RecursosRoute: RecursosRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  AdminSplatRoute: AdminSplatRoute,
   ApiPublicHooksBackupAutomaticoRoute: ApiPublicHooksBackupAutomaticoRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicWebhooksCobrancaProvedorRoute:
