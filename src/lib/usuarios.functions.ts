@@ -184,7 +184,25 @@ export const deleteUsuario = createServerFn({ method: "POST" })
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await ensureNotMaster(supabaseAdmin, data.userId);
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    const uid = data.userId;
+
+    // Remove/limpa todos os vínculos do usuário antes de apagar a conta.
+    // Vínculos que bloqueiam a exclusão (sem cascade):
+    await supabaseAdmin.from("associados").update({ created_by: null }).eq("created_by", uid);
+    await supabaseAdmin.from("baixa_sessoes").update({ responsavel_id: null }).eq("responsavel_id", uid);
+    await supabaseAdmin.from("crm_leads").update({ responsavel_id: null }).eq("responsavel_id", uid);
+    await supabaseAdmin.from("cobradores").update({ user_id: null, ativo: false }).eq("user_id", uid);
+
+    // Dados próprios do usuário:
+    await supabaseAdmin.from("vendas_pins").delete().eq("vendedor_id", uid);
+    await supabaseAdmin.from("user_permissions").delete().eq("user_id", uid);
+    await supabaseAdmin.from("user_roles").delete().eq("user_id", uid);
+    await supabaseAdmin.from("subscriptions").delete().eq("user_id", uid);
+    await supabaseAdmin.from("logs_auditoria").delete().eq("user_id", uid);
+    await supabaseAdmin.from("backup_logs").delete().eq("user_id", uid);
+    await supabaseAdmin.from("profiles").delete().eq("id", uid);
+
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(uid);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
