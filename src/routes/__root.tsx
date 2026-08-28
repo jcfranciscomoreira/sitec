@@ -89,6 +89,16 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const router = useRouter();
 
+  // Subdomínio dedicado ao console da plataforma (ex.: admin.seudominio / console.seudominio)
+  useEffect(() => {
+    const host = window.location.hostname;
+    const isConsoleHost = host.startsWith("admin.") || host.startsWith("console.");
+    const path = window.location.pathname;
+    if (isConsoleHost && !path.startsWith("/console")) {
+      router.navigate({ to: "/console", replace: true });
+    }
+  }, [router]);
+
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
