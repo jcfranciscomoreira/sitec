@@ -34,6 +34,7 @@ import { Route as AuthenticatedServicoFunerarioRouteImport } from './routes/_aut
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated/vendas'
 import { Route as AuthenticatedVendasRelatorioRouteImport } from './routes/_authenticated/vendas-relatorio'
+import { Route as AdminSplatRouteImport } from './routes/admin.$'
 import { Route as ConsoleIndexRouteImport } from './routes/console.index'
 import { Route as ConsoleConfiguracoesRouteImport } from './routes/console.configuracoes'
 import { Route as ConsoleEmpresasRouteImport } from './routes/console.empresas'
@@ -174,6 +175,11 @@ const AuthenticatedVendasRelatorioRoute =
     path: '/vendas-relatorio',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AdminSplatRoute = AdminSplatRouteImport.update({
+  id: '/admin/$',
+  path: '/admin/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConsoleIndexRoute = ConsoleIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -248,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/admin/$': typeof AdminSplatRoute
   '/console/configuracoes': typeof ConsoleConfiguracoesRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
@@ -282,6 +289,7 @@ export interface FileRoutesByTo {
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/admin/$': typeof AdminSplatRoute
   '/console/configuracoes': typeof ConsoleConfiguracoesRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
@@ -319,6 +327,7 @@ export interface FileRoutesById {
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
   '/_authenticated/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
+  '/admin/$': typeof AdminSplatRoute
   '/console/configuracoes': typeof ConsoleConfiguracoesRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
@@ -356,6 +365,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
+    | '/admin/$'
     | '/console/configuracoes'
     | '/console/empresas'
     | '/console/financeiro'
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/usuarios'
     | '/vendas'
     | '/vendas-relatorio'
+    | '/admin/$'
     | '/console/configuracoes'
     | '/console/empresas'
     | '/console/financeiro'
@@ -426,6 +437,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usuarios'
     | '/_authenticated/vendas'
     | '/_authenticated/vendas-relatorio'
+    | '/admin/$'
     | '/console/configuracoes'
     | '/console/empresas'
     | '/console/financeiro'
@@ -447,6 +459,7 @@ export interface RootRouteChildren {
   PlanosPrecosRoute: typeof PlanosPrecosRoute
   RecursosRoute: typeof RecursosRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  AdminSplatRoute: typeof AdminSplatRoute
   ApiPublicHooksBackupAutomaticoRoute: typeof ApiPublicHooksBackupAutomaticoRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicWebhooksCobrancaProvedorRoute: typeof ApiPublicWebhooksCobrancaProvedorRoute
@@ -629,6 +642,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVendasRelatorioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/admin/$': {
+      id: '/admin/$'
+      path: '/admin/$'
+      fullPath: '/admin/$'
+      preLoaderRoute: typeof AdminSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/console/': {
       id: '/console/'
       path: '/'
@@ -767,6 +787,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlanosPrecosRoute: PlanosPrecosRoute,
   RecursosRoute: RecursosRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  AdminSplatRoute: AdminSplatRoute,
   ApiPublicHooksBackupAutomaticoRoute: ApiPublicHooksBackupAutomaticoRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicWebhooksCobrancaProvedorRoute:
