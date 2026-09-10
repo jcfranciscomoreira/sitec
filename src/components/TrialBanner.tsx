@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { brl, fmtDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
 
 type Periodo = "mensal" | "semestral" | "anual";
 const PERIODOS: { key: Periodo; label: string; meses: number }[] = [
@@ -25,6 +26,7 @@ function precoDoPlano(p: any, periodo: Periodo) {
 }
 
 export function TrialBanner() {
+  const { isAdmin, loading: permsLoading } = usePermissions();
   const fetchAssinatura = useServerFn(getAssinatura);
   const pagar = useServerFn(criarPagamentoAssinatura);
   const qc = useQueryClient();
