@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { brl, fmtDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/use-permissions";
 
 type Periodo = "mensal" | "semestral" | "anual";
 const PERIODOS: { key: Periodo; label: string; meses: number }[] = [
@@ -25,6 +26,7 @@ function precoDoPlano(p: any, periodo: Periodo) {
 }
 
 export function TrialBanner() {
+  const { isAdmin, loading: permsLoading } = usePermissions();
   const fetchAssinatura = useServerFn(getAssinatura);
   const pagar = useServerFn(criarPagamentoAssinatura);
   const qc = useQueryClient();
@@ -48,7 +50,7 @@ export function TrialBanner() {
     onError: (e: any) => toast.error(e?.message ?? "Falha ao gerar cobrança"),
   });
 
-  if (!data || data.pago) return null;
+  if (!data || data.pago || permsLoading) return null;
 
   const dias = data.diasRestantes ?? 0;
   const expirado = data.expirado;
@@ -76,15 +78,21 @@ export function TrialBanner() {
                   : `Período de teste — faltam ${dias} ${dias === 1 ? "dia" : "dias"}`}
               </p>
               <p className="text-xs text-muted-foreground">
-                {expirado
-                  ? "Escolha um plano e faça o pagamento para continuar usando o sistema."
-                  : `Seu acesso gratuito termina em ${fmtDate(data.fim)}. Escolha um plano para continuar sem interrupções.`}
+                {isAdmin
+                  ? expirado
+                    ? "Escolha um plano e faça o pagamento para continuar usando o sistema."
+                    : `Seu acesso gratuito termina em ${fmtDate(data.fim)}. Escolha um plano para continuar sem interrupções.`
+                  : expirado
+                    ? "Fale com o administrador da sua empresa para escolher um plano e liberar o acesso."
+                    : `Seu acesso gratuito termina em ${fmtDate(data.fim)}. Somente o administrador da empresa pode contratar um plano.`}
               </p>
             </div>
           </div>
-          <Button onClick={() => setOpen(true)} variant={urgente ? "destructive" : "default"} className="shrink-0">
-            <CreditCard className="mr-2 h-4 w-4" /> Escolher plano e pagar
-          </Button>
+          {isAdmin && (
+            <Button onClick={() => setOpen(true)} variant={urgente ? "destructive" : "default"} className="shrink-0">
+              <CreditCard className="mr-2 h-4 w-4" /> Escolher plano e pagar
+            </Button>
+          )}
         </CardContent>
       </Card>
 
