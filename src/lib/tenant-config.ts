@@ -14,10 +14,10 @@ export async function getCurrentTenantId(): Promise<string> {
   return data.tenant_id;
 }
 
-export async function getCurrentTenantConfig<T extends string>(columns: T) {
+export async function getCurrentTenantConfig(columns: string): Promise<{ data: any; tenantId: string }> {
   const tenantId = await getCurrentTenantId();
-  const { data, error } = await supabase
-    .from("configuracoes")
+  const configurations = supabase.from("configuracoes") as any;
+  const { data, error } = await configurations
     .select(columns)
     .eq("tenant_id", tenantId)
     .maybeSingle();
