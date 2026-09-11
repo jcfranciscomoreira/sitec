@@ -180,3 +180,100 @@ export const criarPagamentoAssinatura = createServerFn({ method: "POST" })
       throw new Error(e?.message ?? "Falha ao gerar cobrança no Asaas");
     }
   });
+
+// ---------------------------------------------------------------------------
+// Faturas da assinatura (painel da empresa)
+// ---------------------------------------------------------------------------
+
+export const listarFaturasEmpresa = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+
+    const { data: profile } = await supabase
+      .from("profiles").select("tenant_id").eq("id", userId).maybeSingle();
+    const tenantId = profile?.tenant_id ?? null;
+    if (!tenantId || tenantId === MATRIZ) return [];
+
+    const { data } = await supabase
+      .from("tenant_faturas")
+      .select("id, status, valor, periodo, vencimento, data_pagamento, cobranca_status, link_boleto, linha_digitavel, pix_copia_cola, qr_code_base64, created_at, plan_id, system_plans(nome)")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: false });
+
+    return data ?? [];
+  });
+
+/** Consulta o provedor e atualiza o status das faturas pendentes da empresa. */
+export const sincronizarFaturasEmpresa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+
+    const { data: profile } = await supabase
+      .from("profiles").select("tenant_id").eq("id", userId).maybeSingle();
+    const tenantId = profile?.tenant_id ?? null;
+    if (!tenantId || tenantId === MATRIZ) return { atualizadas: 0 };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: pendentes } = await supabaseAdmin
+      .from("tenant_faturas")
+      .select("id, tenant_id, plan_id, periodo, status, cobranca_id")
+      .eq("tenant_id", tenantId)
+      .eq("status", "pendente")
+      .not("cobranca_id", "is", null);
+
+    if (!pendentes || pendentes.length === 0) return { atualizadas: 0 };
+
+    const { data: integs } = await supabaseAdmin
+      .from("integracao_bancaria")
+      .select("ambiente, ativo, tenant_id, secrets_encrypted")
+      .eq("provedor", "asaas");
+    const integ =
+      (integs ?? []).find((i: any) => i.tenant_id === MATRIZ) ??
+      (integs ?? []).find((i: any) => i.ativo) ??
+      (integs ?? [])[0];
+    if (!integ?.secrets_encrypted) return { atualizadas: 0 };
+
+    const { decryptJson } = await import("@/lib/cobranca/crypto.server");
+    const apiKey = decryptJson((integ as any).secrets_encrypted)["api_key"];
+    if (!apiKey) return { atualizadas: 0 };
+
+    const ambiente = (integ as any).ambiente === "producao" ? "producao" : "sandbox";
+    const { consultarCobrancaAsaas } = await import("@/lib/cobranca/asaas.server");
+
+    let atualizadas = 0;
+    for (const f of pendentes) {
+      try {
+        const r = await consultarCobrancaAsaas(apiKey, ambiente, f.cobranca_id as string);
+        if (r.pago) {
+          const meses = MESES[f.periodo] ?? 1;
+          const { data: t } = await supabaseAdmin
+            .from("tenants").select("expires_at").eq("id", f.tenant_id).maybeSingle();
+          const base = t?.expires_at && new Date(t.expires_at) > new Date()
+            ? new Date(t.expires_at) : new Date();
+          base.setMonth(base.getMonth() + meses);
+
+          await supabaseAdmin.from("tenant_faturas").update({
+            status: "pago",
+            cobranca_status: r.status,
+            data_pagamento: r.dataPagamento ?? new Date().toISOString().slice(0, 10),
+          }).eq("id", f.id);
+
+          await supabaseAdmin.from("tenants").update({
+            plan_status: "active",
+            plan_id: f.plan_id,
+            status: "ativo",
+            expires_at: base.toISOString(),
+          }).eq("id", f.tenant_id);
+          atualizadas++;
+        } else {
+          await supabaseAdmin.from("tenant_faturas")
+            .update({ cobranca_status: r.status }).eq("id", f.id);
+        }
+      } catch { /* ignora falhas pontuais do provedor */ }
+    }
+
+    return { atualizadas };
+  });
