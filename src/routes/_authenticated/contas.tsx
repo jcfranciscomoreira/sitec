@@ -93,13 +93,6 @@ function ContasPage() {
   const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
   const [periodo, setPeriodo] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
 
-  useEffect(() => {
-    if (mesesComRegistro.length === 0) return;
-    if (!mesesComRegistro.includes(mes)) {
-      setMes(mesesComRegistro[0]);
-    }
-  }, [mesesComRegistro, mes]);
-
   const periodoAtivo = useMemo(() => {
     if (modoPeriodo === "mes") return mesRange(mes);
     if (modoPeriodo === "periodo" && periodo.inicio && periodo.fim) {
