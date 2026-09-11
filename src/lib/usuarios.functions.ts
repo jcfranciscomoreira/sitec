@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-type AppRole = "admin" | "operador" | "vendedor" | "cobrador";
+type AppRole = "admin" | "operador" | "vendedor" | "cobrador" | "agente" | "super_admin";
 
 async function getAdminTenant(supabase: any, userId: string) {
   const { data: profile, error: profileError } = await supabase
@@ -151,8 +151,7 @@ export const createUsuario = createServerFn({ method: "POST" })
     const newId = created.user?.id;
     if (!newId) throw new Error("Não foi possível criar o usuário");
 
-    // handle_new_user trigger inserts default role 'operador' (or 'admin' for the first user).
-    // Replace with the requested role.
+    // O papel e a empresa são sempre definidos pelo administrador solicitante.
     await supabaseAdmin.from("user_roles").delete().eq("user_id", newId);
     const { error: profileErr } = await supabaseAdmin
       .from("profiles")
@@ -174,6 +173,7 @@ export const createUsuario = createServerFn({ method: "POST" })
       const { data: existing } = await supabaseAdmin
         .from("cobradores")
         .select("id,user_id")
+        .eq("tenant_id", tenantId)
         .or(`user_id.eq.${newId},nome.eq.${data.nome}`)
         .maybeSingle();
       if (existing) {
@@ -216,6 +216,7 @@ export const updateUsuarioRole = createServerFn({ method: "POST" })
       const { data: existing } = await supabaseAdmin
         .from("cobradores")
         .select("id")
+        .eq("tenant_id", tenantId)
         .or(`user_id.eq.${data.userId},nome.eq.${nome}`)
         .maybeSingle();
       if (existing) {

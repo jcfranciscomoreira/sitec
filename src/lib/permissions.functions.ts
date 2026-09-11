@@ -25,8 +25,8 @@ export const updateRolePermission = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => updateSchema.parse(d))
   .handler(async ({ context, data }) => {
     const { data: isAdmin } = await context.supabase
-      .from("user_roles").select("role").eq("user_id", context.userId).in("role", ["admin", "super_admin"]).limit(1).maybeSingle();
-    if (!isAdmin) throw new Error("Apenas administradores podem alterar permissões");
+      .from("user_roles").select("role").eq("user_id", context.userId).eq("role", "super_admin").maybeSingle();
+    if (!isAdmin) throw new Error("Apenas o usuário mestre pode alterar permissões globais de papéis");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("role_permissions")
