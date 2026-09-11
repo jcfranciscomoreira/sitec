@@ -125,14 +125,18 @@ function ContasPage() {
   });
 
   const mesAtual = new Date().toISOString().slice(0, 7);
-  const mesDefault = mesesComRegistro.includes(mesAtual) ? mesAtual : (mesesComRegistro[0] ?? mesAtual);
+  const mesesDisponiveis = useMemo(() => {
+    const todos = new Set([...mesesComRegistro, mesAtual]);
+    return Array.from(todos).sort().reverse();
+  }, [mesesComRegistro, mesAtual]);
+  const mesDefault = mesesDisponiveis.includes(mesAtual) ? mesAtual : (mesesDisponiveis[0] ?? mesAtual);
 
   useEffect(() => {
-    if (mesesComRegistro.length === 0) return;
-    if (!mesesComRegistro.includes(mes)) {
+    if (mesesDisponiveis.length === 0) return;
+    if (!mesesDisponiveis.includes(mes)) {
       setMes(mesDefault);
     }
-  }, [mesesComRegistro, mes, mesDefault]);
+  }, [mesesDisponiveis, mes, mesDefault]);
 
   const { data: lista = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["contas", tipo, status, periodoAtivo?.inicio ?? "todos", periodoAtivo?.fim ?? ""],
