@@ -28,6 +28,27 @@ async function asaasFetch(creds: AsaasCreds, path: string, init?: RequestInit) {
   return json;
 }
 
+function wait(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+async function obterPixDaCobranca(creds: AsaasCreds, cobrancaId: string) {
+  for (let tentativa = 0; tentativa < 4; tentativa++) {
+    try {
+      const pix = await asaasFetch(creds, `/payments/${cobrancaId}/pixQrCode`);
+      const pixCopiaCola = pix?.payload ?? null;
+      const qrCodeBase64 = pix?.encodedImage ?? null;
+      if (pixCopiaCola || qrCodeBase64) return { pixCopiaCola, qrCodeBase64 };
+    } catch {
+      // O Asaas pode levar alguns instantes para disponibilizar o PIX do boleto.
+    }
+
+    if (tentativa < 3) await wait(700 * (tentativa + 1));
+  }
+
+  return { pixCopiaCola: null, qrCodeBase64: null };
+}
+
 export async function testarConexaoAsaas(creds: AsaasCreds) {
   await asaasFetch(creds, "/myAccount");
   return { ok: true };
@@ -86,16 +107,9 @@ export async function criarCobrancaAsaas(input: CriarCobrancaInput) {
 
   const cobrancaId: string = cobranca.id;
 
-  // PIX QR
-  let pixCopiaCola: string | null = null;
-  let qrCodeBase64: string | null = null;
-  if (billingType !== "BOLETO") {
-    try {
-      const pix = await asaasFetch(creds, `/payments/${cobrancaId}/pixQrCode`);
-      pixCopiaCola = pix?.payload ?? null;
-      qrCodeBase64 = pix?.encodedImage ?? null;
-    } catch { /* boleto puro não retorna pix */ }
-  }
+  // O Asaas também disponibiliza PIX para cobranças com boleto. A geração pode
+  // ser assíncrona, então repetimos a consulta antes de devolver a cobrança.
+  const { pixCopiaCola, qrCodeBase64 } = await obterPixDaCobranca(creds, cobrancaId);
 
   // Boleto
   let linhaDigitavel: string | null = null;
