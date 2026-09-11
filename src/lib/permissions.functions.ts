@@ -25,8 +25,8 @@ export const updateRolePermission = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => updateSchema.parse(d))
   .handler(async ({ context, data }) => {
     const { data: isAdmin } = await context.supabase
-      .from("user_roles").select("role").eq("user_id", context.userId).in("role", ["admin", "super_admin"]).limit(1).maybeSingle();
-    if (!isAdmin) throw new Error("Apenas administradores podem alterar permissões");
+      .from("user_roles").select("role").eq("user_id", context.userId).eq("role", "super_admin").maybeSingle();
+    if (!isAdmin) throw new Error("Apenas o usuário mestre pode alterar permissões globais de papéis");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin
       .from("role_permissions")
@@ -36,17 +36,29 @@ export const updateRolePermission = createServerFn({ method: "POST" })
   });
 
 async function assertAdmin(ctx: any) {
+  const { data: profile, error: profileError } = await ctx.supabase
+    .from("profiles").select("tenant_id").eq("id", ctx.userId).maybeSingle();
+  if (profileError) throw new Error(profileError.message);
+  if (!profile?.tenant_id) throw new Error("Sua conta não está vinculada a uma empresa");
   const { data: isAdmin } = await ctx.supabase
-    .from("user_roles").select("role").eq("user_id", ctx.userId).in("role", ["admin", "super_admin"]).limit(1).maybeSingle();
+    .from("user_roles").select("role").eq("user_id", ctx.userId).eq("tenant_id", profile.tenant_id).in("role", ["admin", "super_admin"]).limit(1).maybeSingle();
   if (!isAdmin) throw new Error("Apenas administradores podem alterar permissões");
+  return profile.tenant_id as string;
+}
+
+async function assertUserInTenant(admin: any, userId: string, tenantId: string) {
+  const { data, error } = await admin.from("profiles").select("id").eq("id", userId).eq("tenant_id", tenantId).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error("Usuário não encontrado nesta empresa");
 }
 
 export const listUserPermissions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ userId: z.string().uuid() }).parse(d))
   .handler(async ({ context, data }) => {
-    await assertAdmin(context);
+    const tenantId = await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertUserInTenant(supabaseAdmin, data.userId, tenantId);
     const { data: rows, error } = await supabaseAdmin
       .from("user_permissions").select("module, allowed").eq("user_id", data.userId);
     if (error) throw new Error(error.message);
@@ -61,8 +73,9 @@ export const setUserPermission = createServerFn({ method: "POST" })
     allowed: z.boolean().nullable(),
   }).parse(d))
   .handler(async ({ context, data }) => {
-    await assertAdmin(context);
+    const tenantId = await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertUserInTenant(supabaseAdmin, data.userId, tenantId);
     if (data.allowed === null) {
       const { error } = await supabaseAdmin.from("user_permissions")
         .delete().eq("user_id", data.userId).eq("module", data.module);
@@ -82,8 +95,9 @@ export const setUserPermissionsBulk = createServerFn({ method: "POST" })
     permissions: z.array(z.object({ module: z.string().min(1).max(64), allowed: z.boolean() })),
   }).parse(d))
   .handler(async ({ context, data }) => {
-    await assertAdmin(context);
+    const tenantId = await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await assertUserInTenant(supabaseAdmin, data.userId, tenantId);
     await supabaseAdmin.from("user_permissions").delete().eq("user_id", data.userId);
     if (data.permissions.length > 0) {
       const rows = data.permissions.map((p) => ({ user_id: data.userId, module: p.module, allowed: p.allowed }));
