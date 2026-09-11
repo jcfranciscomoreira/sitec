@@ -40,6 +40,12 @@ export const getAssinatura = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(5);
 
+    const { data: configuracao } = await supabase
+      .from("configuracoes")
+      .select("cnpj")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+
     const agora = Date.now();
     const fim = tenant.expires_at ?? tenant.trial_ends_at;
     const diasRestantes = fim
@@ -56,6 +62,7 @@ export const getAssinatura = createServerFn({ method: "GET" })
       expirado: diasRestantes !== null && diasRestantes <= 0,
       diasRestantes,
       fim,
+      documentoConfigurado: Boolean(configuracao?.cnpj?.replace(/\D/g, "")),
       planos: planos ?? [],
       faturas: faturas ?? [],
     };
@@ -87,8 +94,18 @@ export const criarPagamentoAssinatura = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Apenas o administrador da empresa pode contratar um plano");
 
     const { data: tenant } = await supabase
-      .from("tenants").select("id, nome, email, cnpj, telefone").eq("id", tenantId).maybeSingle();
+      .from("tenants").select("id, nome, email, telefone").eq("id", tenantId).maybeSingle();
     if (!tenant) throw new Error("Empresa não encontrada");
+
+    const { data: configuracao } = await supabase
+      .from("configuracoes")
+      .select("cnpj")
+      .eq("tenant_id", tenantId)
+      .maybeSingle();
+    const documento = configuracao?.cnpj?.replace(/\D/g, "") ?? "";
+    if (documento.length !== 11 && documento.length !== 14) {
+      throw new Error("Informe um CPF ou CNPJ válido nas Configurações da Empresa antes de gerar a cobrança");
+    }
 
     const { data: plano } = await supabase
       .from("system_plans")
@@ -135,7 +152,7 @@ export const criarPagamentoAssinatura = createServerFn({ method: "POST" })
         associado: {
           id: tenantId,
           nome: tenant.nome,
-          cpf: tenant.cnpj ?? null,
+          cpf: documento,
           email: tenant.email ?? null,
           telefone: tenant.telefone ?? null,
         },

@@ -30,8 +30,12 @@ let cache: Configuracoes | null = readStorage();
 const listeners = new Set<(c: Configuracoes) => void>();
 
 async function load() {
-  const { data } = await getCurrentTenantConfig("nome_sistema, subtitulo, logo_url, google_maps_browser_key, google_maps_tracking_id");
-  cache = (data as Configuracoes) ?? DEFAULT;
+  try {
+    const { data } = await getCurrentTenantConfig("nome_sistema, subtitulo, logo_url, google_maps_browser_key, google_maps_tracking_id");
+    cache = (data as Configuracoes) ?? DEFAULT;
+  } catch {
+    cache = DEFAULT;
+  }
   writeStorage(cache);
   listeners.forEach((l) => l(cache!));
   return cache;

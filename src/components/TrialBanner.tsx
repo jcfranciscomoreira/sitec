@@ -91,7 +91,13 @@ export function TrialBanner() {
             </div>
           </div>
           {isAdmin && (
-            <Button onClick={() => setOpen(true)} variant={urgente ? "destructive" : "default"} className="shrink-0">
+            <Button
+              onClick={() => setOpen(true)}
+              variant={urgente ? "destructive" : "default"}
+              className="shrink-0"
+              disabled={!data.documentoConfigurado}
+              title={!data.documentoConfigurado ? "Informe o CPF ou CNPJ nas Configurações da Empresa" : undefined}
+            >
               <CreditCard className="mr-2 h-4 w-4" /> Escolher plano e pagar
             </Button>
           )}
