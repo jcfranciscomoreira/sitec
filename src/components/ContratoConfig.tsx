@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentTenantConfig } from "@/lib/tenant-config";
 import { DEFAULT_CONTRATO_HTML, CONTRATO_PLACEHOLDERS } from "@/lib/contrato-template";
 
 function exec(cmd: string, value?: string) {
@@ -29,7 +30,7 @@ export function ContratoConfigTab() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("configuracoes").select("contrato_template").eq("id", 1).maybeSingle();
+      const { data } = await getCurrentTenantConfig("contrato_template");
       const stored = (data as any)?.contrato_template as string | null;
       setInitialHtml(stored && stored.trim() ? stored : DEFAULT_CONTRATO_HTML);
       setLoading(false);
@@ -148,7 +149,8 @@ export function ContratoConfigTab() {
     if (!editorRef.current) return;
     setSaving(true);
     const html = editorRef.current.innerHTML;
-    const { error } = await supabase.from("configuracoes").update({ contrato_template: html }).eq("id", 1);
+    const { tenantId } = await getCurrentTenantConfig("id");
+    const { error } = await supabase.from("configuracoes").update({ contrato_template: html }).eq("tenant_id", tenantId);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Modelo de contrato salvo");

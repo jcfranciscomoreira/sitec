@@ -1,5 +1,5 @@
 import { createFileRoute, ErrorComponent } from "@tanstack/react-router";
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { FiliaisConfig } from "@/components/FiliaisConfig";
 import { MapsConfig } from "@/components/MapsConfig";
 import { LogsAuditoria } from "@/components/LogsAuditoria";
 import { BackupConfig } from "@/components/BackupConfig";
+import { getCurrentTenantConfig } from "@/lib/tenant-config";
 
 
 export const Route = createFileRoute("/_authenticated/configuracoes")({
@@ -85,41 +86,7 @@ function IdentidadeVisual() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("tenant_id")
-        .eq("id", user.id)
-        .single();
-
-      let query = supabase
-        .from("configuracoes")
-        .select("nome_sistema, subtitulo, logo_url, cnpj, endereco, telefone, id")
-        .eq("id", 1);
-      
-      if (profile?.tenant_id && profile.tenant_id !== '00000000-0000-0000-0000-000000000000') {
-        const { data: tenantConfig } = await supabase
-          .from("configuracoes")
-          .select("nome_sistema, subtitulo, logo_url, cnpj, endereco, telefone, id")
-          .eq("tenant_id", profile.tenant_id)
-          .maybeSingle();
-        
-        if (tenantConfig) {
-          setNome(tenantConfig.nome_sistema ?? "");
-          setSubtitulo(tenantConfig.subtitulo ?? "");
-          setLogo(tenantConfig.logo_url ?? null);
-          setCnpj((tenantConfig as any).cnpj ?? "");
-          setEndereco((tenantConfig as any).endereco ?? "");
-          setTelefone((tenantConfig as any).telefone ?? "");
-          setLoading(false);
-          return;
-        }
-      }
-
-      const { data, error } = await query.maybeSingle();
-      if (error) toast.error(error.message);
+      const { data } = await getCurrentTenantConfig("nome_sistema, subtitulo, logo_url, cnpj, endereco, telefone, id");
       if (data) {
         setNome(data.nome_sistema ?? "");
         setSubtitulo(data.subtitulo ?? "");
@@ -142,13 +109,7 @@ function IdentidadeVisual() {
   async function save() {
     if (!nome.trim()) { toast.error("Informe o nome"); return; }
     setSaving(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("tenant_id")
-      .eq("id", user.id)
-      .single();
+    const { data: existing, tenantId } = await getCurrentTenantConfig("id");
 
     const payload = {
       nome_sistema: nome.trim(),
@@ -160,29 +121,15 @@ function IdentidadeVisual() {
     };
 
     let result;
-    if (profile?.tenant_id && profile.tenant_id !== '00000000-0000-0000-0000-000000000000') {
-      // Tentar encontrar config do tenant
-      const { data: existing } = await supabase
-        .from("configuracoes")
-        .select("id")
-        .eq("tenant_id", profile.tenant_id)
-        .maybeSingle();
-      
-      if (existing) {
-        result = await supabase
-          .from("configuracoes")
-          .update(payload as any)
-          .eq("id", existing.id);
-      } else {
-        result = await supabase
-          .from("configuracoes")
-          .insert({ ...payload, tenant_id: profile.tenant_id } as any);
-      }
-    } else {
+    if (existing) {
       result = await supabase
         .from("configuracoes")
         .update(payload as any)
-        .eq("id", 1);
+        .eq("tenant_id", tenantId);
+    } else {
+      result = await supabase
+        .from("configuracoes")
+        .insert({ ...payload, tenant_id: tenantId } as any);
     }
 
     setSaving(false);

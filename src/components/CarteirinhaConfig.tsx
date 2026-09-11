@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Plus, Trash2, RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentTenantConfig } from "@/lib/tenant-config";
 import {
   DEFAULT_CARTEIRINHA, type CarteirinhaConfig, type CarteirinhaElement,
 } from "@/lib/carteirinha-template";
@@ -36,7 +37,7 @@ export function CarteirinhaConfigTab() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase.from("configuracoes").select("carteirinha_config").eq("id", 1).maybeSingle();
+      const { data } = await getCurrentTenantConfig("carteirinha_config");
       const stored = (data as any)?.carteirinha_config as CarteirinhaConfig | null;
       if (stored?.elements?.length) setCfg(stored);
       setLoading(false);
@@ -87,7 +88,8 @@ export function CarteirinhaConfigTab() {
 
   async function save() {
     setSaving(true);
-    const { error } = await supabase.from("configuracoes").update({ carteirinha_config: cfg as any }).eq("id", 1);
+    const { tenantId } = await getCurrentTenantConfig("id");
+    const { error } = await supabase.from("configuracoes").update({ carteirinha_config: cfg as any }).eq("tenant_id", tenantId);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Layout da carteirinha salvo");

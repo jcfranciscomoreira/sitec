@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentTenantConfig } from "@/lib/tenant-config";
 
 export type Configuracoes = {
   nome_sistema: string;
@@ -29,37 +30,7 @@ let cache: Configuracoes | null = readStorage();
 const listeners = new Set<(c: Configuracoes) => void>();
 
 async function load() {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return DEFAULT;
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("tenant_id")
-    .eq("id", user.id)
-    .single();
-
-  const query = supabase
-    .from("configuracoes")
-    .select("nome_sistema, subtitulo, logo_url, google_maps_browser_key, google_maps_tracking_id")
-    .eq("id", 1);
-  
-  // Se for multi-tenant, buscar pelo tenant_id
-  if (profile?.tenant_id && profile.tenant_id !== '00000000-0000-0000-0000-000000000000') {
-    const { data: tenantConfig } = await supabase
-      .from("configuracoes")
-      .select("nome_sistema, subtitulo, logo_url, google_maps_browser_key, google_maps_tracking_id")
-      .eq("tenant_id", profile.tenant_id)
-      .maybeSingle();
-    
-    if (tenantConfig) {
-      cache = tenantConfig as Configuracoes;
-      writeStorage(cache);
-      listeners.forEach((l) => l(cache!));
-      return cache;
-    }
-  }
-
-  const { data } = await query.maybeSingle();
+  const { data } = await getCurrentTenantConfig("nome_sistema, subtitulo, logo_url, google_maps_browser_key, google_maps_tracking_id");
   cache = (data as Configuracoes) ?? DEFAULT;
   writeStorage(cache);
   listeners.forEach((l) => l(cache!));

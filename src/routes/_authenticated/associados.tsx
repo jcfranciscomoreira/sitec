@@ -24,6 +24,7 @@ import { DEFAULT_CONTRATO_HTML, renderContratoHTML } from "@/lib/contrato-templa
 import { bonificarParcelas, cancelarBonificacao } from "@/lib/bonificacao.functions";
 import { usePermissions } from "@/hooks/use-permissions";
 import { maskCPF, maskRG, maskTelefone, maskCEP, onlyDigits, isValidCPF } from "@/lib/masks";
+import { getCurrentTenantConfig } from "@/lib/tenant-config";
 
 export const Route = createFileRoute("/_authenticated/associados")({
   head: () => ({ meta: [{ title: "Associados — Nuvem Planos" }] }),
@@ -31,13 +32,13 @@ export const Route = createFileRoute("/_authenticated/associados")({
 });
 
 async function loadCarteirinhaConfig(): Promise<CarteirinhaConfig> {
-  const { data } = await supabase.from("configuracoes").select("carteirinha_config").eq("id", 1).maybeSingle();
+  const { data } = await getCurrentTenantConfig("carteirinha_config");
   const stored = (data as any)?.carteirinha_config as CarteirinhaConfig | null;
   return stored?.elements?.length ? stored : DEFAULT_CARTEIRINHA;
 }
 
 async function loadContratoTemplate(): Promise<string> {
-  const { data } = await supabase.from("configuracoes").select("contrato_template").eq("id", 1).maybeSingle();
+  const { data } = await getCurrentTenantConfig("contrato_template");
   const stored = (data as any)?.contrato_template as string | null;
   return stored && stored.trim() ? stored : DEFAULT_CONTRATO_HTML;
 }

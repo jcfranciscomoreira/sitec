@@ -7,6 +7,7 @@ import { CheckCircle2, XCircle, Loader2, MapPin, ExternalLink, Eye, EyeOff } fro
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { reloadConfiguracoes } from "@/hooks/use-configuracoes";
+import { getCurrentTenantConfig } from "@/lib/tenant-config";
 
 type Status = "idle" | "testing" | "ok" | "fail";
 
@@ -27,12 +28,7 @@ export function MapsConfig() {
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from("configuracoes")
-        .select("google_maps_browser_key, google_maps_tracking_id")
-        .eq("id", 1)
-        .maybeSingle();
-      if (error) toast.error(error.message);
+      const { data } = await getCurrentTenantConfig("google_maps_browser_key, google_maps_tracking_id");
       if (data) {
         setBrowserKey((data as any).google_maps_browser_key ?? "");
         setTrackingId((data as any).google_maps_tracking_id ?? "");
@@ -47,13 +43,14 @@ export function MapsConfig() {
 
   async function save() {
     setSaving(true);
+    const { tenantId } = await getCurrentTenantConfig("id");
     const { error } = await supabase
       .from("configuracoes")
       .update({
         google_maps_browser_key: browserKey.trim() || null,
         google_maps_tracking_id: trackingId.trim() || null,
       } as any)
-      .eq("id", 1);
+      .eq("tenant_id", tenantId);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     await reloadConfiguracoes();
@@ -66,10 +63,11 @@ export function MapsConfig() {
     setBrowserKey("");
     setTrackingId("");
     setSaving(true);
+    const { tenantId } = await getCurrentTenantConfig("id");
     const { error } = await supabase
       .from("configuracoes")
       .update({ google_maps_browser_key: null, google_maps_tracking_id: null } as any)
-      .eq("id", 1);
+      .eq("tenant_id", tenantId);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
     await reloadConfiguracoes();
