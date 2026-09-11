@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
-import { Plus, Pencil, Trash2, CheckCircle2, Printer, Receipt, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle2, Printer, Receipt, ArrowUpCircle, ArrowDownCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { SkeletonTable } from "@/components/ui/skeleton-table";
 import { ErrorState } from "@/components/ui/error-state";
@@ -46,6 +46,30 @@ function mesRange(mes: string) {
   const inicio = `${mes}-01`;
   const fim = new Date(ano, m, 1).toISOString().slice(0, 10); // 1º dia do mês seguinte
   return { inicio, fim };
+}
+
+function gerarOpcoesMeses(referencia = new Date()) {
+  const opcoes: { value: string; label: string }[] = [];
+  const base = new Date(referencia.getFullYear(), referencia.getMonth(), 1);
+  for (let i = -12; i <= 12; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
+    const value = d.toISOString().slice(0, 7);
+    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    opcoes.push({ value, label: label.replace(/^\w/, (c) => c.toUpperCase()) });
+  }
+  return opcoes;
+}
+
+function mesAnterior(mes: string) {
+  const [ano, m] = mes.split("-").map(Number);
+  const d = new Date(ano, m - 1, 1);
+  return d.toISOString().slice(0, 7);
+}
+
+function mesSeguinte(mes: string) {
+  const [ano, m] = mes.split("-").map(Number);
+  const d = new Date(ano, m + 1, 1);
+  return d.toISOString().slice(0, 7);
 }
 
 function ContasPage() {
