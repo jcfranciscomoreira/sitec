@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, Pencil, Trash2, CheckCircle2, Printer, Receipt, ArrowUpCircle, ArrowDownCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { SkeletonTable } from "@/components/ui/skeleton-table";
@@ -48,25 +48,23 @@ function mesRange(mes: string) {
   return { inicio, fim };
 }
 
-function gerarOpcoesMeses(referencia = new Date()) {
-  const opcoes: { value: string; label: string }[] = [];
-  const base = new Date(referencia.getFullYear(), referencia.getMonth(), 1);
-  for (let i = -12; i <= 12; i++) {
-    const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
-    const value = d.toISOString().slice(0, 7);
-    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    opcoes.push({ value, label: label.replace(/^\w/, (c) => c.toUpperCase()) });
+function mesAnterior(mes: string, mesesComRegistro?: string[]) {
+  if (mesesComRegistro && mesesComRegistro.length > 0) {
+    const idx = mesesComRegistro.indexOf(mes);
+    if (idx > 0) return mesesComRegistro[idx - 1];
+    return mesesComRegistro[0];
   }
-  return opcoes;
-}
-
-function mesAnterior(mes: string) {
   const [ano, m] = mes.split("-").map(Number);
   const d = new Date(ano, m - 1, 1);
   return d.toISOString().slice(0, 7);
 }
 
-function mesSeguinte(mes: string) {
+function mesSeguinte(mes: string, mesesComRegistro?: string[]) {
+  if (mesesComRegistro && mesesComRegistro.length > 0) {
+    const idx = mesesComRegistro.indexOf(mes);
+    if (idx >= 0 && idx < mesesComRegistro.length - 1) return mesesComRegistro[idx + 1];
+    return mesesComRegistro[mesesComRegistro.length - 1];
+  }
   const [ano, m] = mes.split("-").map(Number);
   const d = new Date(ano, m + 1, 1);
   return d.toISOString().slice(0, 7);
@@ -115,6 +113,26 @@ function ContasPage() {
       return data as { id: string; nome: string }[];
     },
   });
+
+  const { data: mesesComRegistro = [] } = useQuery({
+    queryKey: ["contas-meses-com-registro"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("contas_financeiras").select("vencimento").order("vencimento", { ascending: false });
+      if (error) throw error;
+      const meses = Array.from(new Set((data ?? []).map((c) => c.vencimento?.slice(0, 7)).filter(Boolean))) as string[];
+      return meses.sort().reverse();
+    },
+  });
+
+  const mesAtual = new Date().toISOString().slice(0, 7);
+  const mesDefault = mesesComRegistro.includes(mesAtual) ? mesAtual : (mesesComRegistro[0] ?? mesAtual);
+
+  useEffect(() => {
+    if (mesesComRegistro.length === 0) return;
+    if (!mesesComRegistro.includes(mes)) {
+      setMes(mesDefault);
+    }
+  }, [mesesComRegistro, mes, mesDefault]);
 
   const { data: lista = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["contas", tipo, status, periodoAtivo?.inicio ?? "todos", periodoAtivo?.fim ?? ""],
@@ -321,7 +339,7 @@ function ContasPage() {
             </Select>
             {modoPeriodo === "mes" && (
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesAnterior(m))} title="Mês anterior">
+                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesAnterior(m, mesesComRegistro))} title="Mês anterior" disabled={mesesComRegistro.length === 0 || mes === mesesComRegistro[0]}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Select value={mes} onValueChange={(v) => setMes(v)}>
@@ -329,12 +347,17 @@ function ContasPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {gerarOpcoesMeses().map((opcao) => (
-                      <SelectItem key={opcao.value} value={opcao.value}>{opcao.label}</SelectItem>
-                    ))}
+                    {mesesComRegistro.length === 0 && (
+                      <SelectItem value={mes} disabled>{new Date(mes + "-01T00:00:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" }).replace(/^\w/, (c) => c.toUpperCase())}</SelectItem>
+                    )}
+                    {mesesComRegistro.map((value) => {
+                      const d = new Date(value + "-01T00:00:00");
+                      const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }).replace(/^\w/, (c) => c.toUpperCase());
+                      return <SelectItem key={value} value={value}>{label}</SelectItem>;
+                    })}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesSeguinte(m))} title="Próximo mês">
+                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesSeguinte(m, mesesComRegistro))} title="Próximo mês" disabled={mesesComRegistro.length === 0 || mes === mesesComRegistro[mesesComRegistro.length - 1]}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
