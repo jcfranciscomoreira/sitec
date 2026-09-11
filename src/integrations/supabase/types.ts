@@ -2190,6 +2190,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_tenant_invoice_payment: {
+        Args: { invoice_id: string; paid_on?: string; provider_status: string }
+        Returns: boolean
+      }
       create_tenant_for_user: {
         Args: { company_name: string; target_user: string }
         Returns: string
