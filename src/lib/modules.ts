@@ -64,6 +64,7 @@ export const MODULES: AppModule[] = [
     { key: "inadimplencia", label: "Inadimplência" },
   ] },
   { group: "Administração", key: "usuarios", label: "Usuários", url: "/usuarios", icon: Shield },
+  { group: "Administração", key: "assinatura", label: "Cobranças da assinatura", url: "/assinatura", icon: Receipt },
   // Removido modulo redundante de empresas em favor do admin SaaS global
 
   { group: "Sistema (Admin)", key: "admin-console", label: "Console da Plataforma", url: "/console", icon: Building2 },

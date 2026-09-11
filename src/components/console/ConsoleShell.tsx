@@ -2,7 +2,7 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  LayoutDashboard, Building2, FileText, DollarSign, Users, Settings2, LogOut, ArrowLeftRight, ServerCog,
+  LayoutDashboard, Building2, FileText, DollarSign, Users, Settings2, LogOut, ArrowLeftRight, ServerCog, Receipt,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ const NAV: { to: string; label: string; icon: any; exact?: boolean }[] = [
   { to: "/console/empresas", label: "Empresas", icon: Building2 },
   { to: "/console/planos", label: "Planos de acesso", icon: FileText },
   { to: "/console/financeiro", label: "Financeiro", icon: DollarSign },
+  { to: "/console/cobrancas", label: "Cobranças", icon: Receipt },
   { to: "/console/usuarios", label: "Usuários", icon: Users },
   { to: "/console/configuracoes", label: "Plataforma", icon: Settings2 },
 ] as const;

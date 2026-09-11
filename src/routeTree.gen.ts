@@ -18,6 +18,7 @@ import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as PlanosPrecosRouteImport } from './routes/planos-precos'
 import { Route as RecursosRouteImport } from './routes/recursos'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthenticatedAssinaturaRouteImport } from './routes/_authenticated/assinatura'
 import { Route as AuthenticatedAssociadosRouteImport } from './routes/_authenticated/associados'
 import { Route as AuthenticatedAssociadosListaRouteImport } from './routes/_authenticated/associados-lista'
 import { Route as AuthenticatedCaixaRouteImport } from './routes/_authenticated/caixa'
@@ -36,6 +37,7 @@ import { Route as AuthenticatedVendasRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedVendasRelatorioRouteImport } from './routes/_authenticated/vendas-relatorio'
 import { Route as AdminSplatRouteImport } from './routes/admin.$'
 import { Route as ConsoleIndexRouteImport } from './routes/console.index'
+import { Route as ConsoleCobrancasRouteImport } from './routes/console.cobrancas'
 import { Route as ConsoleConfiguracoesRouteImport } from './routes/console.configuracoes'
 import { Route as ConsoleEmpresasRouteImport } from './routes/console.empresas'
 import { Route as ConsoleFinanceiroRouteImport } from './routes/console.financeiro'
@@ -88,6 +90,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAssinaturaRoute = AuthenticatedAssinaturaRouteImport.update({
+  id: '/assinatura',
+  path: '/assinatura',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAssociadosRoute = AuthenticatedAssociadosRouteImport.update({
   id: '/associados',
@@ -185,6 +192,11 @@ const ConsoleIndexRoute = ConsoleIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ConsoleRoute,
 } as any)
+const ConsoleCobrancasRoute = ConsoleCobrancasRouteImport.update({
+  id: '/cobrancas',
+  path: '/cobrancas',
+  getParentRoute: () => ConsoleRoute,
+} as any)
 const ConsoleConfiguracoesRoute = ConsoleConfiguracoesRouteImport.update({
   id: '/configuracoes',
   path: '/configuracoes',
@@ -238,6 +250,7 @@ export interface FileRoutesByFullPath {
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/associados': typeof AuthenticatedAssociadosRoute
   '/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/caixa': typeof AuthenticatedCaixaRoute
@@ -255,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
   '/admin/$': typeof AdminSplatRoute
+  '/console/cobrancas': typeof ConsoleCobrancasRoute
   '/console/configuracoes': typeof ConsoleConfiguracoesRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
@@ -273,6 +287,7 @@ export interface FileRoutesByTo {
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/assinatura': typeof AuthenticatedAssinaturaRoute
   '/associados': typeof AuthenticatedAssociadosRoute
   '/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/caixa': typeof AuthenticatedCaixaRoute
@@ -290,6 +305,7 @@ export interface FileRoutesByTo {
   '/vendas': typeof AuthenticatedVendasRoute
   '/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
   '/admin/$': typeof AdminSplatRoute
+  '/console/cobrancas': typeof ConsoleCobrancasRoute
   '/console/configuracoes': typeof ConsoleConfiguracoesRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
@@ -311,6 +327,7 @@ export interface FileRoutesById {
   '/planos-precos': typeof PlanosPrecosRoute
   '/recursos': typeof RecursosRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/assinatura': typeof AuthenticatedAssinaturaRoute
   '/_authenticated/associados': typeof AuthenticatedAssociadosRoute
   '/_authenticated/associados-lista': typeof AuthenticatedAssociadosListaRoute
   '/_authenticated/caixa': typeof AuthenticatedCaixaRoute
@@ -328,6 +345,7 @@ export interface FileRoutesById {
   '/_authenticated/vendas': typeof AuthenticatedVendasRoute
   '/_authenticated/vendas-relatorio': typeof AuthenticatedVendasRelatorioRoute
   '/admin/$': typeof AdminSplatRoute
+  '/console/cobrancas': typeof ConsoleCobrancasRoute
   '/console/configuracoes': typeof ConsoleConfiguracoesRoute
   '/console/empresas': typeof ConsoleEmpresasRoute
   '/console/financeiro': typeof ConsoleFinanceiroRoute
@@ -349,6 +367,7 @@ export interface FileRouteTypes {
     | '/planos-precos'
     | '/recursos'
     | '/reset-password'
+    | '/assinatura'
     | '/associados'
     | '/associados-lista'
     | '/caixa'
@@ -366,6 +385,7 @@ export interface FileRouteTypes {
     | '/vendas'
     | '/vendas-relatorio'
     | '/admin/$'
+    | '/console/cobrancas'
     | '/console/configuracoes'
     | '/console/empresas'
     | '/console/financeiro'
@@ -384,6 +404,7 @@ export interface FileRouteTypes {
     | '/planos-precos'
     | '/recursos'
     | '/reset-password'
+    | '/assinatura'
     | '/associados'
     | '/associados-lista'
     | '/caixa'
@@ -401,6 +422,7 @@ export interface FileRouteTypes {
     | '/vendas'
     | '/vendas-relatorio'
     | '/admin/$'
+    | '/console/cobrancas'
     | '/console/configuracoes'
     | '/console/empresas'
     | '/console/financeiro'
@@ -421,6 +443,7 @@ export interface FileRouteTypes {
     | '/planos-precos'
     | '/recursos'
     | '/reset-password'
+    | '/_authenticated/assinatura'
     | '/_authenticated/associados'
     | '/_authenticated/associados-lista'
     | '/_authenticated/caixa'
@@ -438,6 +461,7 @@ export interface FileRouteTypes {
     | '/_authenticated/vendas'
     | '/_authenticated/vendas-relatorio'
     | '/admin/$'
+    | '/console/cobrancas'
     | '/console/configuracoes'
     | '/console/empresas'
     | '/console/financeiro'
@@ -529,6 +553,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/assinatura': {
+      id: '/_authenticated/assinatura'
+      path: '/assinatura'
+      fullPath: '/assinatura'
+      preLoaderRoute: typeof AuthenticatedAssinaturaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/associados': {
       id: '/_authenticated/associados'
@@ -656,6 +687,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsoleIndexRouteImport
       parentRoute: typeof ConsoleRoute
     }
+    '/console/cobrancas': {
+      id: '/console/cobrancas'
+      path: '/cobrancas'
+      fullPath: '/console/cobrancas'
+      preLoaderRoute: typeof ConsoleCobrancasRouteImport
+      parentRoute: typeof ConsoleRoute
+    }
     '/console/configuracoes': {
       id: '/console/configuracoes'
       path: '/configuracoes'
@@ -716,6 +754,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAssinaturaRoute: typeof AuthenticatedAssinaturaRoute
   AuthenticatedAssociadosRoute: typeof AuthenticatedAssociadosRoute
   AuthenticatedAssociadosListaRoute: typeof AuthenticatedAssociadosListaRoute
   AuthenticatedCaixaRoute: typeof AuthenticatedCaixaRoute
@@ -735,6 +774,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAssinaturaRoute: AuthenticatedAssinaturaRoute,
   AuthenticatedAssociadosRoute: AuthenticatedAssociadosRoute,
   AuthenticatedAssociadosListaRoute: AuthenticatedAssociadosListaRoute,
   AuthenticatedCaixaRoute: AuthenticatedCaixaRoute,
@@ -757,6 +797,7 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface ConsoleRouteChildren {
+  ConsoleCobrancasRoute: typeof ConsoleCobrancasRoute
   ConsoleConfiguracoesRoute: typeof ConsoleConfiguracoesRoute
   ConsoleEmpresasRoute: typeof ConsoleEmpresasRoute
   ConsoleFinanceiroRoute: typeof ConsoleFinanceiroRoute
@@ -766,6 +807,7 @@ interface ConsoleRouteChildren {
 }
 
 const ConsoleRouteChildren: ConsoleRouteChildren = {
+  ConsoleCobrancasRoute: ConsoleCobrancasRoute,
   ConsoleConfiguracoesRoute: ConsoleConfiguracoesRoute,
   ConsoleEmpresasRoute: ConsoleEmpresasRoute,
   ConsoleFinanceiroRoute: ConsoleFinanceiroRoute,
