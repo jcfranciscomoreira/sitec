@@ -37,7 +37,9 @@ export function TrialBanner() {
   const { data } = useQuery({
     queryKey: ["saas-assinatura"],
     queryFn: () => fetchAssinatura(),
-    staleTime: 60_000,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   const mutation = useMutation({
