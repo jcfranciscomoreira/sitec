@@ -351,7 +351,7 @@ function ContasPage() {
             </Select>
             {modoPeriodo === "mes" && (
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesAnterior(m))} title="Mês anterior">
+                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesAnterior(m, mesesComRegistro))} title="Mês anterior" disabled={mesesComRegistro.length === 0 || mes === mesesComRegistro[0]}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Select value={mes} onValueChange={(v) => setMes(v)}>
@@ -359,12 +359,17 @@ function ContasPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {gerarOpcoesMeses().map((opcao) => (
-                      <SelectItem key={opcao.value} value={opcao.value}>{opcao.label}</SelectItem>
-                    ))}
+                    {mesesComRegistro.length === 0 && (
+                      <SelectItem value={mes} disabled>{new Date(mes + "-01T00:00:00").toLocaleDateString("pt-BR", { month: "long", year: "numeric" }).replace(/^\w/, (c) => c.toUpperCase())}</SelectItem>
+                    )}
+                    {mesesComRegistro.map((value) => {
+                      const d = new Date(value + "-01T00:00:00");
+                      const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }).replace(/^\w/, (c) => c.toUpperCase());
+                      return <SelectItem key={value} value={value}>{label}</SelectItem>;
+                    })}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesSeguinte(m))} title="Próximo mês">
+                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesSeguinte(m, mesesComRegistro))} title="Próximo mês" disabled={mesesComRegistro.length === 0 || mes === mesesComRegistro[mesesComRegistro.length - 1]}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
