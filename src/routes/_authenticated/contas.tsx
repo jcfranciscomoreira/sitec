@@ -41,6 +41,13 @@ type Conta = {
   observacoes: string | null;
 };
 
+function mesRange(mes: string) {
+  const [ano, m] = mes.split("-").map(Number);
+  const inicio = `${mes}-01`;
+  const fim = new Date(ano, m, 1).toISOString().slice(0, 10); // 1º dia do mês seguinte
+  return { inicio, fim };
+}
+
 function ContasPage() {
   const qc = useQueryClient();
   const [tipo, setTipo] = useState<"todos" | "entrada" | "saida">("todos");
@@ -48,6 +55,32 @@ function ContasPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Conta | null>(null);
   const [payOpen, setPayOpen] = useState<Conta | null>(null);
+  const [modoPeriodo, setModoPeriodo] = useState<"mes" | "periodo" | "todos">("mes");
+  const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
+  const [periodo, setPeriodo] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
+
+  const periodoAtivo = useMemo(() => {
+    if (modoPeriodo === "mes") return mesRange(mes);
+    if (modoPeriodo === "periodo" && periodo.inicio && periodo.fim) {
+      // inclui o dia final inteiro (vencimento é date, então soma 1 dia no limite superior)
+      const fimExc = new Date(periodo.fim + "T00:00:00");
+      fimExc.setDate(fimExc.getDate() + 1);
+      return { inicio: periodo.inicio, fim: fimExc.toISOString().slice(0, 10) };
+    }
+    return null;
+  }, [modoPeriodo, mes, periodo]);
+
+  const periodoLabel = useMemo(() => {
+    if (modoPeriodo === "todos") return "Todos os períodos";
+    if (modoPeriodo === "mes" && periodoAtivo) {
+      const d = new Date(periodoAtivo.inicio + "T00:00:00");
+      return d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    }
+    if (periodoAtivo) return `${fmtDate(periodo.inicio)} a ${fmtDate(periodo.fim)}`;
+    return "Período";
+  }, [modoPeriodo, periodoAtivo, periodo]);
+
+
 
 
   const { data: filiais = [] } = useQuery({
