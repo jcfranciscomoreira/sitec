@@ -126,6 +126,19 @@ function ContasPage() {
     },
   });
 
+  const { data: mesesComRegistro = [] } = useQuery({
+    queryKey: ["contas-meses-com-registro"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("contas_financeiras").select("vencimento").order("vencimento", { ascending: false });
+      if (error) throw error;
+      const meses = Array.from(new Set((data ?? []).map((c) => c.vencimento?.slice(0, 7)).filter(Boolean))) as string[];
+      return meses.sort().reverse();
+    },
+  });
+
+  const mesAtual = new Date().toISOString().slice(0, 7);
+  const mesDefault = mesesComRegistro.includes(mesAtual) ? mesAtual : (mesesComRegistro[0] ?? mesAtual);
+
   const { data: lista = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["contas", tipo, status, periodoAtivo?.inicio ?? "todos", periodoAtivo?.fim ?? ""],
     queryFn: async () => {
