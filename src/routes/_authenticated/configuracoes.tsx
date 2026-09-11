@@ -151,7 +151,7 @@ function IdentidadeVisual() {
             <div><Label>Nome do sistema *</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} /></div>
             <div><Label>Subtítulo</Label><Input value={subtitulo} onChange={(e) => setSubtitulo(e.target.value)} /></div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div><Label>CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="00.000.000/0000-00" /></div>
+              <div><Label>CPF ou CNPJ</Label><Input value={cnpj} onChange={(e) => setCnpj(e.target.value)} placeholder="000.000.000-00 ou 00.000.000/0000-00" /></div>
               <div><Label>Telefone</Label><Input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="(00) 0000-0000" /></div>
             </div>
             <div><Label>Endereço</Label><Input value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="Rua, número, bairro, cidade - UF" /></div>

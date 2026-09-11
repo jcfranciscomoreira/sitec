@@ -36,6 +36,9 @@ export async function testarConexaoAsaas(creds: AsaasCreds) {
 // Localiza ou cria o customer Asaas para o associado
 async function upsertCustomer(creds: AsaasCreds, assoc: { id: string; nome: string; cpf?: string | null; email?: string | null; telefone?: string | null; }) {
   const cpf = (assoc.cpf ?? "").replace(/\D/g, "");
+  if (cpf.length !== 11 && cpf.length !== 14) {
+    throw new Error("CPF ou CNPJ não informado ou inválido");
+  }
   // busca por cpf
   if (cpf) {
     const found = await asaasFetch(creds, `/customers?cpfCnpj=${cpf}`);
