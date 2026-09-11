@@ -89,9 +89,7 @@ export async function criarCobrancaAsaas(input: CriarCobrancaInput) {
   const creds: AsaasCreds = { apiKey: input.apiKey, ambiente: input.ambiente };
   const customerId = await upsertCustomer(creds, input.associado);
 
-  const billingType = input.mensalidade.forma === "pix" ? "PIX"
-    : input.mensalidade.forma === "boleto" ? "BOLETO"
-    : "UNDEFINED"; // UNDEFINED = cliente escolhe (boleto ou pix)
+  const billingType = input.mensalidade.forma === "pix" ? "PIX" : "BOLETO";
 
   const cobranca = await asaasFetch(creds, "/payments", {
     method: "POST",
@@ -107,8 +105,9 @@ export async function criarCobrancaAsaas(input: CriarCobrancaInput) {
 
   const cobrancaId: string = cobranca.id;
 
-  // O Asaas também disponibiliza PIX para cobranças com boleto. A geração pode
-  // ser assíncrona, então repetimos a consulta antes de devolver a cobrança.
+  // No modo combinado, a cobrança precisa nascer como BOLETO. O tipo UNDEFINED
+  // só oferece a escolha na página do Asaas e não gera imediatamente o QR Code
+  // que exibimos dentro do sistema.
   const { pixCopiaCola, qrCodeBase64 } = await obterPixDaCobranca(creds, cobrancaId);
 
   // Boleto
