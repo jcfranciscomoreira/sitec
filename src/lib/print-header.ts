@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentTenantConfig } from "@/lib/tenant-config";
 
 export type EmpresaHeader = {
   nome: string;
@@ -13,11 +14,7 @@ let cache: EmpresaHeader | null = null;
 
 export async function loadEmpresaHeader(): Promise<EmpresaHeader> {
   if (cache) return cache;
-  const { data } = await supabase
-    .from("configuracoes")
-    .select("nome_sistema, subtitulo, logo_url, cnpj, endereco, telefone")
-    .eq("id", 1)
-    .maybeSingle();
+  const { data } = await getCurrentTenantConfig("nome_sistema, subtitulo, logo_url, cnpj, endereco, telefone");
   const d = (data as any) ?? {};
   cache = {
     nome: d.nome_sistema ?? "Nuvem Planos",
