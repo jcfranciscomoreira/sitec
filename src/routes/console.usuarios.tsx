@@ -5,7 +5,7 @@ import { ConsoleShell } from "@/components/console/ConsoleShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { listUsuarios } from "@/lib/usuarios.functions";
+import { listUsuariosGlobal } from "@/lib/usuarios.functions";
 import { fmtDate } from "@/lib/format";
 
 export const Route = createFileRoute("/console/usuarios")({
@@ -13,7 +13,7 @@ export const Route = createFileRoute("/console/usuarios")({
 });
 
 function ConsoleUsuariosPage() {
-  const fetchUsuarios = useServerFn(listUsuarios);
+  const fetchUsuarios = useServerFn(listUsuariosGlobal);
   const { data: usuarios = [], isLoading } = useQuery({
     queryKey: ["console-usuarios"],
     queryFn: () => fetchUsuarios(),
