@@ -139,6 +139,13 @@ function ContasPage() {
   const mesAtual = new Date().toISOString().slice(0, 7);
   const mesDefault = mesesComRegistro.includes(mesAtual) ? mesAtual : (mesesComRegistro[0] ?? mesAtual);
 
+  useEffect(() => {
+    if (mesesComRegistro.length === 0) return;
+    if (!mesesComRegistro.includes(mes)) {
+      setMes(mesDefault);
+    }
+  }, [mesesComRegistro, mes, mesDefault]);
+
   const { data: lista = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["contas", tipo, status, periodoAtivo?.inicio ?? "todos", periodoAtivo?.fim ?? ""],
     queryFn: async () => {
