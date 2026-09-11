@@ -320,7 +320,24 @@ function ContasPage() {
               </SelectContent>
             </Select>
             {modoPeriodo === "mes" && (
-              <Input type="month" className="w-40" value={mes} onChange={(e) => setMes(e.target.value)} />
+              <div className="flex items-center gap-1">
+                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesAnterior(m))} title="Mês anterior">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Select value={mes} onValueChange={(v) => setMes(v)}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {gerarOpcoesMeses().map((opcao) => (
+                      <SelectItem key={opcao.value} value={opcao.value}>{opcao.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesSeguinte(m))} title="Próximo mês">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             )}
             {modoPeriodo === "periodo" && (
               <>
