@@ -185,7 +185,7 @@ function ContasPage() {
       .kpi{display:flex;gap:16px;margin:16px 0}.kpi div{flex:1;border:1px solid #ddd;padding:8px;border-radius:6px}
       .kpi b{display:block;font-size:16px}</style></head><body>
       <h1>Relatório Financeiro</h1>
-      <div class="sub">Gerado em ${new Date().toLocaleString("pt-BR")} — ${lista.length} lançamentos</div>
+      <div class="sub">${periodoLabel} — Gerado em ${new Date().toLocaleString("pt-BR")} — ${lista.length} lançamentos</div>
       <div class="kpi">
         <div><span>Recebido</span><b>${brl(totais.recebido)}</b></div>
         <div><span>Pago</span><b>${brl(totais.pago)}</b></div>
