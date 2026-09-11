@@ -158,10 +158,19 @@ function AssinaturaPage() {
       </div>
 
       <div className="mt-4 flex justify-end">
-        <Button onClick={() => { setCobranca(null); setOpen(true); }}>
+        <Button
+          onClick={() => { setCobranca(null); setOpen(true); }}
+          disabled={!assinatura?.documentoConfigurado}
+          title={!assinatura?.documentoConfigurado ? "Informe o CPF ou CNPJ nas Configurações da Empresa" : undefined}
+        >
           <CreditCard className="mr-2 h-4 w-4" /> Gerar cobrança PIX/boleto
         </Button>
       </div>
+      {!assinatura?.documentoConfigurado && (
+        <p className="mt-2 text-right text-sm text-destructive">
+          Informe um CPF ou CNPJ válido nas Configurações da Empresa para gerar cobranças.
+        </p>
+      )}
 
       <Card className="mt-4 border-border/60">
         <CardHeader><CardTitle className="font-serif">Minhas faturas</CardTitle></CardHeader>
