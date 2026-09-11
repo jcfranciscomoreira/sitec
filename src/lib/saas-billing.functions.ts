@@ -4,6 +4,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const MATRIZ = "00000000-0000-0000-0000-000000000000";
 
+function getAsaasProductionKey() {
+  const apiKey = process.env["ASAAS_API_KEY"];
+  if (!apiKey) throw new Error("Asaas de produção não configurado");
+  return apiKey;
+}
+
 export const getAssinatura = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -76,6 +82,7 @@ export const criarPagamentoAssinatura = createServerFn({ method: "POST" })
 
     const { data: isAdmin } = await supabase
       .from("user_roles").select("role").eq("user_id", userId)
+      .eq("tenant_id", tenantId)
       .in("role", ["admin", "super_admin"]).limit(1).maybeSingle();
     if (!isAdmin) throw new Error("Apenas o administrador da empresa pode contratar um plano");
 
@@ -118,25 +125,12 @@ export const criarPagamentoAssinatura = createServerFn({ method: "POST" })
       .single();
     if (fatErr) throw new Error(fatErr.message);
 
-    // Credenciais Asaas da plataforma (integração da Matriz, com fallback para a ativa)
-    const { data: integs } = await supabaseAdmin
-      .from("integracao_bancaria")
-      .select("ambiente, ativo, tenant_id, secrets_encrypted")
-      .eq("provedor", "asaas");
-    const integ =
-      (integs ?? []).find((i: any) => i.tenant_id === MATRIZ) ??
-      (integs ?? []).find((i: any) => i.ativo) ??
-      (integs ?? [])[0];
-    if (!integ?.secrets_encrypted) throw new Error("Integração Asaas da plataforma não configurada");
-
-    const { decryptJson } = await import("@/lib/cobranca/crypto.server");
-    const apiKey = decryptJson((integ as any).secrets_encrypted)["api_key"];
-    if (!apiKey) throw new Error("API Key do Asaas não configurada");
+    const apiKey = getAsaasProductionKey();
 
     const { criarCobrancaAsaas } = await import("@/lib/cobranca/asaas.server");
     try {
       const cob = await criarCobrancaAsaas({
-        ambiente: (integ as any).ambiente === "producao" ? "producao" : "sandbox",
+        ambiente: "producao",
         apiKey,
         associado: {
           id: tenantId,
@@ -226,48 +220,21 @@ export const sincronizarFaturasEmpresa = createServerFn({ method: "POST" })
 
     if (!pendentes || pendentes.length === 0) return { atualizadas: 0 };
 
-    const { data: integs } = await supabaseAdmin
-      .from("integracao_bancaria")
-      .select("ambiente, ativo, tenant_id, secrets_encrypted")
-      .eq("provedor", "asaas");
-    const integ =
-      (integs ?? []).find((i: any) => i.tenant_id === MATRIZ) ??
-      (integs ?? []).find((i: any) => i.ativo) ??
-      (integs ?? [])[0];
-    if (!integ?.secrets_encrypted) return { atualizadas: 0 };
-
-    const { decryptJson } = await import("@/lib/cobranca/crypto.server");
-    const apiKey = decryptJson((integ as any).secrets_encrypted)["api_key"];
-    if (!apiKey) return { atualizadas: 0 };
-
-    const ambiente = (integ as any).ambiente === "producao" ? "producao" : "sandbox";
+    const apiKey = getAsaasProductionKey();
     const { consultarCobrancaAsaas } = await import("@/lib/cobranca/asaas.server");
 
     let atualizadas = 0;
     for (const f of pendentes) {
       try {
-        const r = await consultarCobrancaAsaas(apiKey, ambiente, f.cobranca_id as string);
+        const r = await consultarCobrancaAsaas(apiKey, "producao", f.cobranca_id as string);
         if (r.pago) {
-          const meses = MESES[f.periodo] ?? 1;
-          const { data: t } = await supabaseAdmin
-            .from("tenants").select("expires_at").eq("id", f.tenant_id).maybeSingle();
-          const base = t?.expires_at && new Date(t.expires_at) > new Date()
-            ? new Date(t.expires_at) : new Date();
-          base.setMonth(base.getMonth() + meses);
-
-          await supabaseAdmin.from("tenant_faturas").update({
-            status: "pago",
-            cobranca_status: r.status,
-            data_pagamento: r.dataPagamento ?? new Date().toISOString().slice(0, 10),
-          }).eq("id", f.id);
-
-          await supabaseAdmin.from("tenants").update({
-            plan_status: "active",
-            plan_id: f.plan_id,
-            status: "ativo",
-            expires_at: base.toISOString(),
-          }).eq("id", f.tenant_id);
-          atualizadas++;
+          const { data: changed, error } = await supabaseAdmin.rpc("confirm_tenant_invoice_payment", {
+            invoice_id: f.id,
+            provider_status: r.status,
+            paid_on: r.dataPagamento ?? new Date().toISOString().slice(0, 10),
+          });
+          if (error) throw error;
+          if (changed) atualizadas++;
         } else {
           await supabaseAdmin.from("tenant_faturas")
             .update({ cobranca_status: r.status }).eq("id", f.id);

@@ -26,18 +26,14 @@ export const Route = createFileRoute("/api/public/webhooks/cobranca/$provedor")(
 
         try {
           if (provedor === "asaas") {
-            // Validação por token no header (asaas-access-token) — lido da integração criptografada no banco
-            let expected: string | undefined;
-            try {
-              const { data: integ } = await supabaseAdmin
-                .from("integracao_bancaria").select("secrets_encrypted").eq("provedor", "asaas").maybeSingle();
-              if ((integ as any)?.secrets_encrypted) {
-                const { decryptJson } = await import("@/lib/cobranca/crypto.server");
-                expected = decryptJson((integ as any).secrets_encrypted)["webhook_token"];
-              }
-            } catch { /* segredo ausente = sem validação estrita */ }
+            const expected = process.env["ASAAS_WEBHOOK_TOKEN"];
+            const apiKey = process.env["ASAAS_API_KEY"];
+            if (!expected || !apiKey) {
+              await markProcessed(null, "Integração Asaas de produção incompleta");
+              return new Response("Webhook unavailable", { status: 503 });
+            }
             const received = request.headers.get("asaas-access-token");
-            if (expected && received !== expected) {
+            if (received !== expected) {
               await markProcessed(null, "Token inválido");
               return new Response("Invalid token", { status: 401 });
             }
@@ -61,25 +57,18 @@ export const Route = createFileRoute("/api/public/webhooks/cobranca/$provedor")(
                 || ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH", "SETTLED"].includes(pay.status);
 
               if (confirmado && fat.status !== "pago") {
-                const meses = fat.periodo === "anual" ? 12 : fat.periodo === "semestral" ? 6 : 1;
-                const { data: t } = await supabaseAdmin.from("tenants")
-                  .select("expires_at").eq("id", fat.tenant_id).maybeSingle();
-                const base = t?.expires_at && new Date(t.expires_at) > new Date()
-                  ? new Date(t.expires_at) : new Date();
-                base.setMonth(base.getMonth() + meses);
-
-                await supabaseAdmin.from("tenant_faturas").update({
-                  status: "pago",
-                  cobranca_status: pay.status,
-                  data_pagamento: pay.paymentDate || pay.clientPaymentDate || new Date().toISOString().slice(0, 10),
-                }).eq("id", fat.id);
-
-                await supabaseAdmin.from("tenants").update({
-                  plan_status: "active",
-                  plan_id: fat.plan_id,
-                  status: "ativo",
-                  expires_at: base.toISOString(),
-                }).eq("id", fat.tenant_id);
+                const { consultarCobrancaAsaas } = await import("@/lib/cobranca/asaas.server");
+                const real = await consultarCobrancaAsaas(apiKey, "producao", pay.id);
+                if (!real.pago) {
+                  await markProcessed(null, "Pagamento não confirmado diretamente no Asaas");
+                  return new Response("Payment not confirmed", { status: 409 });
+                }
+                const { error } = await supabaseAdmin.rpc("confirm_tenant_invoice_payment", {
+                  invoice_id: fat.id,
+                  provider_status: real.status,
+                  paid_on: real.dataPagamento ?? new Date().toISOString().slice(0, 10),
+                });
+                if (error) throw error;
               } else {
                 await supabaseAdmin.from("tenant_faturas").update({ cobranca_status: pay.status }).eq("id", fat.id);
               }
@@ -109,7 +98,7 @@ export const Route = createFileRoute("/api/public/webhooks/cobranca/$provedor")(
           return new Response("ok");
         } catch (e: any) {
           await markProcessed(null, e?.message ?? "Erro desconhecido");
-          return new Response("ok"); // ack pra o provedor não reenviar em loop
+          return new Response("temporary failure", { status: 500 });
         }
       },
       GET: async ({ params }) => new Response(`Webhook ${params.provedor} ok`),

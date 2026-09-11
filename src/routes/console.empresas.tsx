@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Edit, ExternalLink, Calendar, ShieldCheck, AlertCircle } from "lucide-react";
+import { Edit, ExternalLink, Calendar, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -31,7 +31,8 @@ function AdminTenantsPage() {
         .from("tenants")
         .select(`
           *,
-          system_plans (id, nome)
+          system_plans (id, nome),
+          tenant_faturas (id, status, vencimento, cobranca_status, link_boleto)
         `)
         .order("created_at", { ascending: false });
       
@@ -93,13 +94,25 @@ function AdminTenantsPage() {
                 <TableHead>Plano</TableHead>
                 <TableHead>Expiração / Trial</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Para liberar</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {tenants.map((t: any) => {
-                const isExpired = t.expires_at && new Date(t.expires_at) < new Date();
-                const isTrial = t.plan_status === 'active' && t.trial_ends_at && new Date(t.trial_ends_at) > new Date();
+                const now = new Date();
+                const paidActive = t.plan_status === "active" && t.expires_at && new Date(t.expires_at) > now;
+                const trialActive = !paidActive && t.trial_ends_at && new Date(t.trial_ends_at) > now;
+                const pending = (t.tenant_faturas ?? []).filter((f: any) => f.status === "pendente");
+                const latestPending = pending.sort((a: any, b: any) => String(b.vencimento).localeCompare(String(a.vencimento)))[0];
+                const status = paidActive ? "Ativa" : trialActive ? "Em teste" : pending.length > 0 ? "Em cobrança" : "Bloqueada";
+                const requirement = paidActive
+                  ? `Acesso liberado até ${fmtDate(t.expires_at)}`
+                  : trialActive
+                    ? `${Math.max(1, Math.ceil((new Date(t.trial_ends_at).getTime() - now.getTime()) / 86_400_000))} dias de teste restantes`
+                    : pending.length > 0
+                      ? "Aguardando confirmação do pagamento"
+                      : !t.plan_id ? "Escolher um plano e gerar cobrança" : "Gerar nova cobrança e confirmar pagamento";
 
                 return (
                   <TableRow key={t.id}>
@@ -120,7 +133,7 @@ function AdminTenantsPage() {
                       {t.expires_at ? (
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          <span className={isExpired ? "text-destructive font-bold" : ""}>
+                          <span className={!paidActive ? "text-destructive font-bold" : ""}>
                             Expira: {fmtDate(t.expires_at)}
                           </span>
                         </div>
@@ -133,10 +146,18 @@ function AdminTenantsPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={t.plan_status === 'active' ? "success" : "warning" as any}>
-                        {t.plan_status || 'pendente'}
+                      <Badge variant={paidActive ? "success" : status === "Bloqueada" ? "destructive" : "warning" as any}>
+                        {status}
                       </Badge>
-                      {isTrial && <Badge variant="secondary" className="ml-1 text-[9px] px-1 h-4 uppercase">Teste</Badge>}
+                      {latestPending?.cobranca_status && <div className="mt-1 text-[10px] text-muted-foreground">{latestPending.cobranca_status}</div>}
+                    </TableCell>
+                    <TableCell className="max-w-56 text-xs text-muted-foreground">
+                      <div>{requirement}</div>
+                      {latestPending?.link_boleto && (
+                        <a className="mt-1 inline-flex items-center gap-1 text-primary hover:underline" href={latestPending.link_boleto} target="_blank" rel="noreferrer">
+                          Abrir cobrança <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="sm" onClick={() => handleManage(t)}>
@@ -148,7 +169,7 @@ function AdminTenantsPage() {
               })}
               {tenants.length === 0 && !isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                     Nenhuma empresa encontrada.
                   </TableCell>
                 </TableRow>
