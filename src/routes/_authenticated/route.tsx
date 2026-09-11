@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw redirect({ to: "/auth" });
 
@@ -23,14 +23,10 @@ export const Route = createFileRoute("/_authenticated")({
 
       if (tenant && profile.tenant_id !== '00000000-0000-0000-0000-000000000000') {
         const now = new Date();
-        const isTrialExpired = tenant.trial_ends_at && new Date(tenant.trial_ends_at) < now;
-        const isPlanExpired = tenant.expires_at && new Date(tenant.expires_at) < now;
-        
-        // Se expirou e não está com status ativo pago
-        if ((isTrialExpired || isPlanExpired) && tenant.plan_status !== 'active') {
-           // Em um cenário real, redirecionaríamos para uma página de checkout/planos
-           // Por enquanto, vamos apenas permitir mas poderíamos lançar um redirect
-           // throw redirect({ to: "/checkout" });
+        const paidAccess = tenant.plan_status === "active" && !!tenant.expires_at && new Date(tenant.expires_at) > now;
+        const trialAccess = tenant.plan_status !== "active" && !!tenant.trial_ends_at && new Date(tenant.trial_ends_at) > now;
+        if (!paidAccess && !trialAccess && location.pathname !== "/assinatura") {
+          throw redirect({ to: "/assinatura" });
         }
       }
     }
