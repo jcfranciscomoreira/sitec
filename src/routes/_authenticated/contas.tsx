@@ -41,6 +41,13 @@ type Conta = {
   observacoes: string | null;
 };
 
+function mesRange(mes: string) {
+  const [ano, m] = mes.split("-").map(Number);
+  const inicio = `${mes}-01`;
+  const fim = new Date(ano, m, 1).toISOString().slice(0, 10); // 1º dia do mês seguinte
+  return { inicio, fim };
+}
+
 function ContasPage() {
   const qc = useQueryClient();
   const [tipo, setTipo] = useState<"todos" | "entrada" | "saida">("todos");
@@ -48,6 +55,32 @@ function ContasPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Conta | null>(null);
   const [payOpen, setPayOpen] = useState<Conta | null>(null);
+  const [modoPeriodo, setModoPeriodo] = useState<"mes" | "periodo" | "todos">("mes");
+  const [mes, setMes] = useState(() => new Date().toISOString().slice(0, 7));
+  const [periodo, setPeriodo] = useState<{ inicio: string; fim: string }>({ inicio: "", fim: "" });
+
+  const periodoAtivo = useMemo(() => {
+    if (modoPeriodo === "mes") return mesRange(mes);
+    if (modoPeriodo === "periodo" && periodo.inicio && periodo.fim) {
+      // inclui o dia final inteiro (vencimento é date, então soma 1 dia no limite superior)
+      const fimExc = new Date(periodo.fim + "T00:00:00");
+      fimExc.setDate(fimExc.getDate() + 1);
+      return { inicio: periodo.inicio, fim: fimExc.toISOString().slice(0, 10) };
+    }
+    return null;
+  }, [modoPeriodo, mes, periodo]);
+
+  const periodoLabel = useMemo(() => {
+    if (modoPeriodo === "todos") return "Todos os períodos";
+    if (modoPeriodo === "mes" && periodoAtivo) {
+      const d = new Date(periodoAtivo.inicio + "T00:00:00");
+      return d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    }
+    if (periodoAtivo) return `${fmtDate(periodo.inicio)} a ${fmtDate(periodo.fim)}`;
+    return "Período";
+  }, [modoPeriodo, periodoAtivo, periodo]);
+
+
 
 
   const { data: filiais = [] } = useQuery({
@@ -60,11 +93,12 @@ function ContasPage() {
   });
 
   const { data: lista = [], isLoading, isError, refetch } = useQuery({
-    queryKey: ["contas", tipo, status],
+    queryKey: ["contas", tipo, status, periodoAtivo?.inicio ?? "todos", periodoAtivo?.fim ?? ""],
     queryFn: async () => {
       let q = supabase.from("contas_financeiras").select("*").order("vencimento", { ascending: false });
       if (tipo !== "todos") q = q.eq("tipo", tipo);
       if (status !== "todos") q = q.eq("status", status as any);
+      if (periodoAtivo) q = q.gte("vencimento", periodoAtivo.inicio).lt("vencimento", periodoAtivo.fim);
       const { data, error } = await q.limit(500);
       if (error) throw error;
       const hoje = new Date().toISOString().slice(0, 10);
@@ -151,7 +185,7 @@ function ContasPage() {
       .kpi{display:flex;gap:16px;margin:16px 0}.kpi div{flex:1;border:1px solid #ddd;padding:8px;border-radius:6px}
       .kpi b{display:block;font-size:16px}</style></head><body>
       <h1>Relatório Financeiro</h1>
-      <div class="sub">Gerado em ${new Date().toLocaleString("pt-BR")} — ${lista.length} lançamentos</div>
+      <div class="sub">${periodoLabel} — Gerado em ${new Date().toLocaleString("pt-BR")} — ${lista.length} lançamentos</div>
       <div class="kpi">
         <div><span>Recebido</span><b>${brl(totais.recebido)}</b></div>
         <div><span>Pago</span><b>${brl(totais.pago)}</b></div>
@@ -253,6 +287,24 @@ function ContasPage() {
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <CardTitle className="font-serif">Lançamentos</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
+            <Select value={modoPeriodo} onValueChange={(v) => setModoPeriodo(v as any)}>
+              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mes">Por mês</SelectItem>
+                <SelectItem value="periodo">Período</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
+              </SelectContent>
+            </Select>
+            {modoPeriodo === "mes" && (
+              <Input type="month" className="w-40" value={mes} onChange={(e) => setMes(e.target.value)} />
+            )}
+            {modoPeriodo === "periodo" && (
+              <>
+                <Input type="date" className="w-40" value={periodo.inicio} onChange={(e) => setPeriodo((p) => ({ ...p, inicio: e.target.value }))} />
+                <span className="text-sm text-muted-foreground">até</span>
+                <Input type="date" className="w-40" value={periodo.fim} onChange={(e) => setPeriodo((p) => ({ ...p, fim: e.target.value }))} />
+              </>
+            )}
             <Tabs value={tipo} onValueChange={(v) => setTipo(v as any)}>
               <TabsList>
                 <TabsTrigger value="todos">Todos</TabsTrigger>
@@ -292,7 +344,7 @@ function ContasPage() {
                 <TableRow><TableCell colSpan={7} className="p-3"><ErrorState onRetry={() => refetch()} /></TableCell></TableRow>
               )}
               {!isLoading && !isError && lista.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="p-3"><EmptyState title="Nenhum lançamento" message="Cadastre uma nova entrada ou saída." icon={<Receipt className="h-8 w-8" />} /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="p-3"><EmptyState title="Nenhum lançamento" message={`Sem lançamentos em ${periodoLabel}. Cadastre uma nova entrada ou saída.`} icon={<Receipt className="h-8 w-8" />} /></TableCell></TableRow>
               )}
               {lista.map((c) => (
                 <TableRow key={c.id}>
