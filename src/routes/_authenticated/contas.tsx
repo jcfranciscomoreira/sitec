@@ -287,6 +287,24 @@ function ContasPage() {
         <CardHeader className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <CardTitle className="font-serif">Lançamentos</CardTitle>
           <div className="flex flex-wrap items-center gap-2">
+            <Select value={modoPeriodo} onValueChange={(v) => setModoPeriodo(v as any)}>
+              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mes">Por mês</SelectItem>
+                <SelectItem value="periodo">Período</SelectItem>
+                <SelectItem value="todos">Todos</SelectItem>
+              </SelectContent>
+            </Select>
+            {modoPeriodo === "mes" && (
+              <Input type="month" className="w-40" value={mes} onChange={(e) => setMes(e.target.value)} />
+            )}
+            {modoPeriodo === "periodo" && (
+              <>
+                <Input type="date" className="w-40" value={periodo.inicio} onChange={(e) => setPeriodo((p) => ({ ...p, inicio: e.target.value }))} />
+                <span className="text-sm text-muted-foreground">até</span>
+                <Input type="date" className="w-40" value={periodo.fim} onChange={(e) => setPeriodo((p) => ({ ...p, fim: e.target.value }))} />
+              </>
+            )}
             <Tabs value={tipo} onValueChange={(v) => setTipo(v as any)}>
               <TabsList>
                 <TabsTrigger value="todos">Todos</TabsTrigger>
