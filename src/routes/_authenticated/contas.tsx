@@ -344,7 +344,7 @@ function ContasPage() {
                 <TableRow><TableCell colSpan={7} className="p-3"><ErrorState onRetry={() => refetch()} /></TableCell></TableRow>
               )}
               {!isLoading && !isError && lista.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="p-3"><EmptyState title="Nenhum lançamento" message="Cadastre uma nova entrada ou saída." icon={<Receipt className="h-8 w-8" />} /></TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="p-3"><EmptyState title="Nenhum lançamento" message={`Sem lançamentos em ${periodoLabel}. Cadastre uma nova entrada ou saída.`} icon={<Receipt className="h-8 w-8" />} /></TableCell></TableRow>
               )}
               {lista.map((c) => (
                 <TableRow key={c.id}>
