@@ -48,18 +48,6 @@ function mesRange(mes: string) {
   return { inicio, fim };
 }
 
-function gerarOpcoesMeses(referencia = new Date()) {
-  const opcoes: { value: string; label: string }[] = [];
-  const base = new Date(referencia.getFullYear(), referencia.getMonth(), 1);
-  for (let i = -12; i <= 12; i++) {
-    const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
-    const value = d.toISOString().slice(0, 7);
-    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    opcoes.push({ value, label: label.replace(/^\w/, (c) => c.toUpperCase()) });
-  }
-  return opcoes;
-}
-
 function mesAnterior(mes: string, mesesComRegistro?: string[]) {
   if (mesesComRegistro && mesesComRegistro.length > 0) {
     const idx = mesesComRegistro.indexOf(mes);
