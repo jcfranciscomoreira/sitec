@@ -2190,7 +2190,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_own_tenant: { Args: { company_name: string }; Returns: string }
+      create_tenant_for_user: {
+        Args: { company_name: string; target_user: string }
+        Returns: string
+      }
       has_active_subscription: {
         Args: { check_env?: string; user_uuid: string }
         Returns: boolean
