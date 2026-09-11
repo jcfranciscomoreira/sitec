@@ -60,13 +60,23 @@ function gerarOpcoesMeses(referencia = new Date()) {
   return opcoes;
 }
 
-function mesAnterior(mes: string) {
+function mesAnterior(mes: string, mesesComRegistro?: string[]) {
+  if (mesesComRegistro && mesesComRegistro.length > 0) {
+    const idx = mesesComRegistro.indexOf(mes);
+    if (idx > 0) return mesesComRegistro[idx - 1];
+    return mesesComRegistro[0];
+  }
   const [ano, m] = mes.split("-").map(Number);
   const d = new Date(ano, m - 1, 1);
   return d.toISOString().slice(0, 7);
 }
 
-function mesSeguinte(mes: string) {
+function mesSeguinte(mes: string, mesesComRegistro?: string[]) {
+  if (mesesComRegistro && mesesComRegistro.length > 0) {
+    const idx = mesesComRegistro.indexOf(mes);
+    if (idx >= 0 && idx < mesesComRegistro.length - 1) return mesesComRegistro[idx + 1];
+    return mesesComRegistro[mesesComRegistro.length - 1];
+  }
   const [ano, m] = mes.split("-").map(Number);
   const d = new Date(ano, m + 1, 1);
   return d.toISOString().slice(0, 7);
