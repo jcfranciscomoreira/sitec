@@ -344,7 +344,7 @@ function ContasPage() {
             </Select>
             {modoPeriodo === "mes" && (
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesAnterior(m, mesesDisponiveis))} title="Mês anterior" disabled={mesesDisponiveis.length === 0 || mes === mesesDisponiveis[0]}>
+                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesAnterior(m, mesesDisponiveis))} title="Mês anterior" disabled={mesesDisponiveis.length === 0 || mes === mesesDisponiveis[mesesDisponiveis.length - 1]}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Select value={mes} onValueChange={(v) => setMes(v)}>
@@ -359,7 +359,7 @@ function ContasPage() {
                     })}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesSeguinte(m, mesesDisponiveis))} title="Próximo mês" disabled={mesesDisponiveis.length === 0 || mes === mesesDisponiveis[mesesDisponiveis.length - 1]}>
+                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesSeguinte(m, mesesDisponiveis))} title="Próximo mês" disabled={mesesDisponiveis.length === 0 || mes === mesesDisponiveis[0]}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
