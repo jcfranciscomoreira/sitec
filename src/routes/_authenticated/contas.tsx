@@ -48,26 +48,27 @@ function mesRange(mes: string) {
   return { inicio, fim };
 }
 
+// A lista de meses vem ordenada do mais recente para o mais antigo.
 function mesAnterior(mes: string, mesesComRegistro?: string[]) {
-  if (mesesComRegistro && mesesComRegistro.length > 0) {
-    const idx = mesesComRegistro.indexOf(mes);
-    if (idx > 0) return mesesComRegistro[idx - 1];
-    return mesesComRegistro[0];
-  }
-  const [ano, m] = mes.split("-").map(Number);
-  const d = new Date(ano, m - 1, 1);
-  return d.toISOString().slice(0, 7);
-}
-
-function mesSeguinte(mes: string, mesesComRegistro?: string[]) {
   if (mesesComRegistro && mesesComRegistro.length > 0) {
     const idx = mesesComRegistro.indexOf(mes);
     if (idx >= 0 && idx < mesesComRegistro.length - 1) return mesesComRegistro[idx + 1];
     return mesesComRegistro[mesesComRegistro.length - 1];
   }
   const [ano, m] = mes.split("-").map(Number);
-  const d = new Date(ano, m + 1, 1);
-  return d.toISOString().slice(0, 7);
+  const d = new Date(ano, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function mesSeguinte(mes: string, mesesComRegistro?: string[]) {
+  if (mesesComRegistro && mesesComRegistro.length > 0) {
+    const idx = mesesComRegistro.indexOf(mes);
+    if (idx > 0) return mesesComRegistro[idx - 1];
+    return mesesComRegistro[0];
+  }
+  const [ano, m] = mes.split("-").map(Number);
+  const d = new Date(ano, m, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 function ContasPage() {
@@ -343,7 +344,7 @@ function ContasPage() {
             </Select>
             {modoPeriodo === "mes" && (
               <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesAnterior(m, mesesDisponiveis))} title="Mês anterior" disabled={mesesDisponiveis.length === 0 || mes === mesesDisponiveis[0]}>
+                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesAnterior(m, mesesDisponiveis))} title="Mês anterior" disabled={mesesDisponiveis.length === 0 || mes === mesesDisponiveis[mesesDisponiveis.length - 1]}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Select value={mes} onValueChange={(v) => setMes(v)}>
@@ -358,7 +359,7 @@ function ContasPage() {
                     })}
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesSeguinte(m, mesesDisponiveis))} title="Próximo mês" disabled={mesesDisponiveis.length === 0 || mes === mesesDisponiveis[mesesDisponiveis.length - 1]}>
+                <Button variant="outline" size="icon" onClick={() => setMes((m) => mesSeguinte(m, mesesDisponiveis))} title="Próximo mês" disabled={mesesDisponiveis.length === 0 || mes === mesesDisponiveis[0]}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
