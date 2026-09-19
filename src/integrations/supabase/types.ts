@@ -2183,6 +2183,7 @@ export type Database = {
           payload: Json
           processado: boolean
           provedor: string
+          tenant_id: string | null
         }
         Insert: {
           created_at?: string
@@ -2193,6 +2194,7 @@ export type Database = {
           payload: Json
           processado?: boolean
           provedor: string
+          tenant_id?: string | null
         }
         Update: {
           created_at?: string
@@ -2203,8 +2205,17 @@ export type Database = {
           payload?: Json
           processado?: boolean
           provedor?: string
+          tenant_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

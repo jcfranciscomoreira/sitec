@@ -15,6 +15,13 @@
       "when": 1789829427852,
       "tag": "0001_create_platform_documentos",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789830267155,
+      "tag": "0002_scope_selected_admin_policies_by_tenant",
+      "breakpoints": true
     }
   ]
 }
