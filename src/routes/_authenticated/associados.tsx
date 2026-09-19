@@ -267,7 +267,7 @@ function AssociadosPage() {
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Contrato — ${a.nome}</title>
       <style>
         body{margin:0;background:#fff;padding:24px}
-        table{border-collapse:collapse}
+        ${CONTRATO_CSS}
         @media print{body{padding:0}}
       </style></head><body>
       ${header}
