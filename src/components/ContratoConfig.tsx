@@ -106,7 +106,7 @@ export function ContratoConfigTab() {
       toast.info("Clique no ponto do documento onde o campo deve entrar");
       return;
     }
-    const chip = `<span class="ph-chip" data-ph="${key}" contenteditable="false">${PLACEHOLDER_LABELS[key] ?? key}</span>&nbsp;`;
+    const chip = `<span class="ph-chip" data-ph="${key}" contenteditable="false">{{${key}}}</span>&nbsp;`;
     exec("insertHTML", chip);
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0) savedRange.current = sel.getRangeAt(0).cloneRange();
@@ -320,7 +320,7 @@ export function ContratoConfigTab() {
               </aside>
             </div>
             <p className="text-xs text-muted-foreground">
-              Os campos destacados em azul são substituídos automaticamente pelos dados do associado quando o contrato é gerado.
+              Os códigos destacados em azul são substituídos automaticamente pelos dados do associado quando o contrato é gerado.
               A formatação vista aqui é exatamente a que sai na impressão e no PDF.
             </p>
           </>

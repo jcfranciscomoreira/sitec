@@ -266,7 +266,9 @@ function AssociadosPage() {
     const body = renderContratoHTML(a as any, plano as any, (deps ?? []) as any, template);
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Contrato — ${a.nome}</title>
       <style>
-        body{margin:0;background:#fff;padding:24px}
+        @page{size:A4;margin:12mm}
+        html,body{margin:0;background:#fff}
+        body{padding:24px;box-sizing:border-box}
         ${CONTRATO_CSS}
         @media print{body{padding:0}}
       </style></head><body>
