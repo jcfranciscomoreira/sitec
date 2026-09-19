@@ -17,10 +17,17 @@ export const Route = createFileRoute("/api/public/webhooks/cobranca/$provedor")(
         }).select("id").maybeSingle();
         const logId = logRow?.id;
 
-        async function markProcessed(mensalidade_id?: string | null, erro?: string) {
+        async function markProcessed(
+          mensalidade_id?: string | null,
+          erro?: string,
+          tenant_id?: string | null,
+        ) {
           if (!logId) return;
           await supabaseAdmin.from("webhook_logs").update({
-            processado: !erro, erro: erro ?? null, mensalidade_id: mensalidade_id ?? null,
+            processado: !erro,
+            erro: erro ?? null,
+            mensalidade_id: mensalidade_id ?? null,
+            tenant_id: tenant_id ?? null,
           }).eq("id", logId);
         }
 
@@ -72,9 +79,15 @@ export const Route = createFileRoute("/api/public/webhooks/cobranca/$provedor")(
               } else {
                 await supabaseAdmin.from("tenant_faturas").update({ cobranca_status: pay.status }).eq("id", fat.id);
               }
-              await markProcessed(null);
+              await markProcessed(null, undefined, fat.tenant_id);
               return new Response("ok");
             }
+
+            const { data: mensalidadeTenant } = await supabaseAdmin
+              .from("mensalidades")
+              .select("tenant_id")
+              .eq("id", m.id)
+              .maybeSingle();
 
             const pagou = evento === "PAYMENT_RECEIVED" || evento === "PAYMENT_CONFIRMED" || pay.status === "RECEIVED" || pay.status === "CONFIRMED" || pay.status === "RECEIVED_IN_CASH" || pay.status === "SETTLED";
             if (pagou && m.status !== "pago") {
@@ -85,11 +98,14 @@ export const Route = createFileRoute("/api/public/webhooks/cobranca/$provedor")(
                 forma_pagamento: forma,
                 cobranca_status: pay.status,
               }).eq("id", m.id);
-              if (error) { await markProcessed(m.id, error.message); return new Response("ok"); }
+               if (error) {
+                 await markProcessed(m.id, error.message, mensalidadeTenant?.tenant_id);
+                 return new Response("ok");
+               }
             } else {
               await supabaseAdmin.from("mensalidades").update({ cobranca_status: pay.status }).eq("id", m.id);
             }
-            await markProcessed(m.id);
+            await markProcessed(m.id, undefined, mensalidadeTenant?.tenant_id);
             return new Response("ok");
           }
 
