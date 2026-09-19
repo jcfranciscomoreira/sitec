@@ -107,7 +107,7 @@ export function renderContratoHTML(
   for (const [k, v] of Object.entries(values)) {
     html = html.replaceAll(`{{${k}}}`, v);
   }
-  return `<div class="contrato-doc" style="max-width:820px;margin:0 auto;padding:40px">${html}</div>`;
+  return `<div class="contrato-doc">${html}</div>`;
 }
 
 /** Rótulo amigável de cada variável */
@@ -115,11 +115,10 @@ export const PLACEHOLDER_LABELS: Record<string, string> = Object.fromEntries(
   CONTRATO_PLACEHOLDERS.map((p) => [p.key, p.label]),
 );
 
-/** Converte {{chave}} em "chips" visuais para o editor */
+/** Converte {{chave}} em marcadores visuais, mantendo o código visível no editor */
 export function templateToEditorHTML(template: string): string {
   return template.replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_m, key: string) => {
-    const label = PLACEHOLDER_LABELS[key] ?? key;
-    return `<span class="ph-chip" data-ph="${key}" contenteditable="false">${label}</span>`;
+    return `<span class="ph-chip" data-ph="${key}" contenteditable="false">{{${key}}}</span>`;
   });
 }
 
@@ -138,7 +137,7 @@ export function editorHTMLToTemplate(html: string): string {
 
 /** CSS compartilhado entre o editor e a impressão/PDF */
 export const CONTRATO_CSS = `
-.contrato-doc{font-family:Georgia,serif;color:#111;line-height:1.55;font-size:14px}
+.contrato-doc{box-sizing:border-box;width:100%;max-width:820px;margin:0 auto;font-family:Georgia,serif;color:#111;line-height:1.55;font-size:14px}
 .contrato-doc h1{font-size:22px;font-weight:700;margin:0 0 12px}
 .contrato-doc h2{font-size:16px;font-weight:700;margin:18px 0 8px}
 .contrato-doc h3{font-size:14px;font-weight:700;margin:14px 0 6px}
@@ -151,6 +150,9 @@ export const CONTRATO_CSS = `
 .contrato-doc u{text-decoration:underline}
 .contrato-doc table{border-collapse:collapse}
 .contrato-doc img{max-width:100%}
+@media print{
+  .contrato-doc{width:100%;max-width:none;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 `.trim();
 
 /** CSS extra apenas para o editor (aparência dos campos) */
