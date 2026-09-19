@@ -5,12 +5,17 @@ import { Label } from "@/components/ui/label";
 import {
   Bold, Italic, Underline as UnderlineIcon, List, ListOrdered,
   AlignLeft, AlignCenter, AlignRight, AlignJustify, Loader2, Save, RotateCcw,
-  Heading1, Heading2, Undo2, Redo2, Eye, Plus, Minus,
+  Heading1, Heading2, Undo2, Redo2, Eye, Plus, Minus, Globe,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentTenantConfig } from "@/lib/tenant-config";
-import { DEFAULT_CONTRATO_HTML, CONTRATO_PLACEHOLDERS } from "@/lib/contrato-template";
+import {
+  DEFAULT_CONTRATO_HTML, CONTRATO_PLACEHOLDERS, CONTRATO_CSS, CONTRATO_CHIP_CSS,
+  templateToEditorHTML, editorHTMLToTemplate, PLACEHOLDER_LABELS,
+} from "@/lib/contrato-template";
+import { loadContratoTemplate, savePlatformContrato } from "@/lib/contrato-store";
+import { usePermissions } from "@/hooks/use-permissions";
 
 function exec(cmd: string, value?: string) {
   document.execCommand(cmd, false, value);
@@ -18,6 +23,7 @@ function exec(cmd: string, value?: string) {
 
 export function ContratoConfigTab() {
   const editorRef = useRef<HTMLDivElement>(null);
+  const { isSuperAdmin } = usePermissions();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [preview, setPreview] = useState(false);
@@ -30,9 +36,8 @@ export function ContratoConfigTab() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await getCurrentTenantConfig("contrato_template");
-      const stored = (data as any)?.contrato_template as string | null;
-      setInitialHtml(stored && stored.trim() ? stored : DEFAULT_CONTRATO_HTML);
+      const tpl = await loadContratoTemplate();
+      setInitialHtml(templateToEditorHTML(tpl));
       setLoading(false);
     })();
   }, []);
@@ -56,8 +61,6 @@ export function ContratoConfigTab() {
     }
   }, [loading, preview, initialHtml]);
 
-
-
   // Keep track of the last selection inside the editor (toolbar clicks steal focus)
   const savedRange = useRef<Range | null>(null);
 
@@ -73,7 +76,6 @@ export function ContratoConfigTab() {
         const el = (node.nodeType === 3 ? node.parentElement : (node as HTMLElement)) as HTMLElement | null;
         if (el) setCurrentSize(`${Math.round(parseFloat(window.getComputedStyle(el).fontSize) || 16)}px`);
       }
-
     }
     document.addEventListener("selectionchange", onSelectionChange);
     return () => document.removeEventListener("selectionchange", onSelectionChange);
@@ -99,9 +101,16 @@ export function ContratoConfigTab() {
     syncLive();
   }
 
-
   function insertPlaceholder(key: string) {
-    run("insertText", `{{${key}}}`);
+    if (!restoreSelection()) {
+      toast.info("Clique no ponto do documento onde o campo deve entrar");
+      return;
+    }
+    const chip = `<span class="ph-chip" data-ph="${key}" contenteditable="false">${PLACEHOLDER_LABELS[key] ?? key}</span>&nbsp;`;
+    exec("insertHTML", chip);
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) savedRange.current = sel.getRangeAt(0).cloneRange();
+    syncLive();
   }
 
   function insertHeading(level: 1 | 2) {
@@ -120,7 +129,6 @@ export function ContratoConfigTab() {
     span.style.fontSize = px;
     span.appendChild(range.extractContents());
     range.insertNode(span);
-    // re-select the styled content
     const newRange = document.createRange();
     newRange.selectNodeContents(span);
     sel.removeAllRanges();
@@ -129,7 +137,6 @@ export function ContratoConfigTab() {
     setCurrentSize(px);
     syncLive();
   }
-
 
   function adjustFontSize(delta: number) {
     if (!restoreSelection()) { toast.info("Selecione o texto antes de mudar o tamanho"); return; }
@@ -148,17 +155,33 @@ export function ContratoConfigTab() {
   async function save() {
     if (!editorRef.current) return;
     setSaving(true);
-    const html = editorRef.current.innerHTML;
-    const { tenantId } = await getCurrentTenantConfig("id");
-    const { error } = await supabase.from("configuracoes").update({ contrato_template: html }).eq("tenant_id", tenantId);
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Modelo de contrato salvo");
+    const html = editorHTMLToTemplate(editorRef.current.innerHTML);
+    try {
+      const { tenantId } = await getCurrentTenantConfig("id");
+      const { error } = await supabase.from("configuracoes").update({ contrato_template: html }).eq("tenant_id", tenantId);
+      if (error) throw new Error(error.message);
+      if (isSuperAdmin) {
+        const err = await savePlatformContrato(html);
+        if (err) {
+          toast.warning("Modelo salvo na sua empresa, mas não foi possível definir como padrão geral", { description: err });
+          return;
+        }
+        toast.success("Modelo salvo e definido como padrão para novas empresas");
+        return;
+      }
+      toast.success("Modelo de contrato salvo");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function reset() {
-    if (editorRef.current) editorRef.current.innerHTML = DEFAULT_CONTRATO_HTML;
-    setInitialHtml(DEFAULT_CONTRATO_HTML);
+    const html = templateToEditorHTML(DEFAULT_CONTRATO_HTML);
+    if (editorRef.current) editorRef.current.innerHTML = html;
+    setInitialHtml(html);
+    syncLive();
     toast.info("Modelo restaurado (não salvo)");
   }
 
@@ -171,11 +194,18 @@ export function ContratoConfigTab() {
     setPreview((p) => !p);
   }
 
-
   return (
     <Card>
+      <style>{`${CONTRATO_CSS}\n${CONTRATO_CHIP_CSS}`}</style>
       <CardHeader className="flex flex-row items-center justify-between gap-3 flex-wrap">
-        <CardTitle>Modelo padrão do contrato</CardTitle>
+        <div>
+          <CardTitle>Modelo padrão do contrato</CardTitle>
+          {isSuperAdmin && (
+            <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
+              <Globe className="h-3 w-3" /> O modelo que você salvar vira o padrão inicial de todas as novas empresas.
+            </p>
+          )}
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={togglePreview}><Eye className="mr-2 h-4 w-4" />{preview ? "Editar" : "Pré-visualizar"}</Button>
           <Button variant="outline" size="sm" onClick={reset}><RotateCcw className="mr-2 h-4 w-4" />Restaurar padrão</Button>
@@ -186,7 +216,9 @@ export function ContratoConfigTab() {
         {loading ? (
           <div className="flex items-center justify-center p-8 text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" />Carregando...</div>
         ) : preview ? (
-          <div className="border rounded-md bg-white p-6 overflow-auto max-h-[70vh]" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+          <div className="border rounded-md bg-white p-6 overflow-auto max-h-[70vh]">
+            <div className="contrato-doc" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+          </div>
         ) : (
           <>
             <div
@@ -234,14 +266,13 @@ export function ContratoConfigTab() {
               />
             </div>
 
-
             <div>
-              <Label className="text-xs">Inserir variável do associado/plano:</Label>
+              <Label className="text-xs">Inserir campo do associado/plano:</Label>
               <div className="flex flex-wrap gap-1 mt-1">
                 {CONTRATO_PLACEHOLDERS.map((p) => (
                   <Button key={p.key} size="sm" variant="secondary" className="h-7 text-xs"
-                    onClick={() => insertPlaceholder(p.key)} title={p.label}>
-                    {`{{${p.key}}}`}
+                    onClick={() => insertPlaceholder(p.key)} title={`Insere o campo ${p.label}`}>
+                    {p.label}
                   </Button>
                 ))}
               </div>
@@ -254,8 +285,7 @@ export function ContratoConfigTab() {
                 suppressContentEditableWarning
                 onInput={syncLive}
                 onKeyUp={syncLive}
-                className="border rounded-md bg-white p-6 min-h-[500px] max-h-[70vh] overflow-auto text-black focus:outline-none prose max-w-none"
-                style={{ fontFamily: "Georgia, serif", lineHeight: 1.55 }}
+                className="contrato-doc border rounded-md bg-white p-6 min-h-[500px] max-h-[70vh] overflow-auto text-black focus:outline-none"
               />
 
               <aside className="space-y-3">
@@ -283,18 +313,16 @@ export function ContratoConfigTab() {
 
                 <div className="border rounded-md">
                   <div className="px-3 py-2 border-b"><Label className="text-xs">Prévia ao vivo</Label></div>
-                  <div
-                    className="bg-white text-black p-3 overflow-auto max-h-[40vh] prose prose-sm max-w-none"
-                    style={{ fontFamily: "Georgia, serif", lineHeight: 1.55, zoom: 0.6 }}
-                    dangerouslySetInnerHTML={{ __html: liveHtml }}
-                  />
+                  <div className="bg-white text-black p-3 overflow-auto max-h-[40vh]" style={{ zoom: 0.6 }}>
+                    <div className="contrato-doc" dangerouslySetInnerHTML={{ __html: liveHtml }} />
+                  </div>
                 </div>
               </aside>
             </div>
             <p className="text-xs text-muted-foreground">
-              As variáveis entre <code>{`{{ }}`}</code> são substituídas automaticamente pelos dados do associado quando o contrato é gerado.
+              Os campos destacados em azul são substituídos automaticamente pelos dados do associado quando o contrato é gerado.
+              A formatação vista aqui é exatamente a que sai na impressão e no PDF.
             </p>
-
           </>
         )}
       </CardContent>
