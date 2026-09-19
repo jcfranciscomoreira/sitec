@@ -103,9 +103,59 @@ export function renderContratoHTML(
     data_hoje: hoje,
   };
 
-  let html = template;
+  let html = editorHTMLToTemplate(template);
   for (const [k, v] of Object.entries(values)) {
     html = html.replaceAll(`{{${k}}}`, v);
   }
-  return `<div style="font-family:Georgia,serif;color:#111;max-width:820px;margin:0 auto;padding:40px;line-height:1.55">${html}</div>`;
+  return `<div class="contrato-doc" style="max-width:820px;margin:0 auto;padding:40px">${html}</div>`;
 }
+
+/** Rótulo amigável de cada variável */
+export const PLACEHOLDER_LABELS: Record<string, string> = Object.fromEntries(
+  CONTRATO_PLACEHOLDERS.map((p) => [p.key, p.label]),
+);
+
+/** Converte {{chave}} em "chips" visuais para o editor */
+export function templateToEditorHTML(template: string): string {
+  return template.replace(/\{\{\s*([a-z_]+)\s*\}\}/gi, (_m, key: string) => {
+    const label = PLACEHOLDER_LABELS[key] ?? key;
+    return `<span class="ph-chip" data-ph="${key}" contenteditable="false">${label}</span>`;
+  });
+}
+
+/** Converte os "chips" do editor de volta para {{chave}} */
+export function editorHTMLToTemplate(html: string): string {
+  if (typeof document === "undefined") {
+    return html.replace(/<span[^>]*data-ph="([a-z_]+)"[^>]*>.*?<\/span>/gi, (_m, key: string) => `{{${key}}}`);
+  }
+  const root = document.createElement("div");
+  root.innerHTML = html;
+  root.querySelectorAll("[data-ph]").forEach((el) => {
+    el.replaceWith(document.createTextNode(`{{${el.getAttribute("data-ph")}}}`));
+  });
+  return root.innerHTML;
+}
+
+/** CSS compartilhado entre o editor e a impressão/PDF */
+export const CONTRATO_CSS = `
+.contrato-doc{font-family:Georgia,serif;color:#111;line-height:1.55;font-size:14px}
+.contrato-doc h1{font-size:22px;font-weight:700;margin:0 0 12px}
+.contrato-doc h2{font-size:16px;font-weight:700;margin:18px 0 8px}
+.contrato-doc h3{font-size:14px;font-weight:700;margin:14px 0 6px}
+.contrato-doc p{margin:0 0 10px}
+.contrato-doc ul{list-style:disc;padding-left:26px;margin:0 0 10px}
+.contrato-doc ol{list-style:decimal;padding-left:26px;margin:0 0 10px}
+.contrato-doc li{margin:2px 0}
+.contrato-doc b,.contrato-doc strong{font-weight:700}
+.contrato-doc i,.contrato-doc em{font-style:italic}
+.contrato-doc u{text-decoration:underline}
+.contrato-doc table{border-collapse:collapse}
+.contrato-doc img{max-width:100%}
+`.trim();
+
+/** CSS extra apenas para o editor (aparência dos campos) */
+export const CONTRATO_CHIP_CSS = `
+.contrato-doc .ph-chip{display:inline-block;background:#e8eef7;color:#1e3a5f;border:1px solid #b9cbe4;
+border-radius:4px;padding:0 6px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:600;
+line-height:1.5;white-space:nowrap;cursor:default}
+`.trim();

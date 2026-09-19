@@ -1224,6 +1224,27 @@ export type Database = {
           },
         ]
       }
+      platform_documentos: {
+        Row: {
+          html: string
+          tipo: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          html: string
+          tipo: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          html?: string
+          tipo?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

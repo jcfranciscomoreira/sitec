@@ -20,7 +20,8 @@ import { toast } from "sonner";
 import { criarCobranca, cancelarCobranca } from "@/lib/cobranca.functions";
 import { imprimirCarnesAssociado } from "@/lib/carne-print";
 import { DEFAULT_CARTEIRINHA, renderCarteirinhaHTML, type CarteirinhaConfig } from "@/lib/carteirinha-template";
-import { DEFAULT_CONTRATO_HTML, renderContratoHTML } from "@/lib/contrato-template";
+import { renderContratoHTML, CONTRATO_CSS } from "@/lib/contrato-template";
+import { loadContratoTemplate } from "@/lib/contrato-store";
 import { bonificarParcelas, cancelarBonificacao } from "@/lib/bonificacao.functions";
 import { usePermissions } from "@/hooks/use-permissions";
 import { maskCPF, maskRG, maskTelefone, maskCEP, onlyDigits, isValidCPF } from "@/lib/masks";
@@ -37,11 +38,6 @@ async function loadCarteirinhaConfig(): Promise<CarteirinhaConfig> {
   return stored?.elements?.length ? stored : DEFAULT_CARTEIRINHA;
 }
 
-async function loadContratoTemplate(): Promise<string> {
-  const { data } = await getCurrentTenantConfig("contrato_template");
-  const stored = (data as any)?.contrato_template as string | null;
-  return stored && stored.trim() ? stored : DEFAULT_CONTRATO_HTML;
-}
 
 function abrirJanelaCarteirinha(title: string, cardsHtml: string) {
   const w = window.open("", "_blank", "width=720,height=600");
@@ -271,7 +267,7 @@ function AssociadosPage() {
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Contrato — ${a.nome}</title>
       <style>
         body{margin:0;background:#fff;padding:24px}
-        table{border-collapse:collapse}
+        ${CONTRATO_CSS}
         @media print{body{padding:0}}
       </style></head><body>
       ${header}
